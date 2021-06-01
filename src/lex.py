@@ -2,11 +2,13 @@ import re
 import sys
 from ply import lex
 
+
 class Lexer():
     """ A lexer for the C language. After building it, set the
         input text with input(), and call token() to get new
         tokens.
     """
+
     def __init__(self,
                  error_func=None,
                  on_lbrace_func=None,
@@ -31,7 +33,7 @@ class Lexer():
         self.type_lookup_func = type_lookup_func
         # Keeps track of the last token returned from self.token()
         self.last_token = None
-    
+
     def build(self, **kwargs):
         """ Builds the lexer from the specification. Must be
             called after the lexer object is created.
@@ -40,17 +42,17 @@ class Lexer():
             __init__
         """
         self.lexer = lex.lex(object=self, **kwargs)
-    
+
     def reset_lineno(self):
         """ Resets the internal line number counter of the lexer.
         """
         self.lexer.lineno = 1
-    
+
     def input(self, text):
         """ set the input to text
         """
         self.lexer.input(text)
-    
+
     def token(self):
         """ get a new token from lexer
         """
@@ -63,9 +65,9 @@ class Lexer():
         """
         last_cr = self.lexer.lexdata.rfind('\n', 0, token.lexpos)
         return token.lexpos - last_cr
-    
+
     """ ================== PRIVATE ================== """
-    
+
     # Internal auxiliary methods
     def _error(self, msg, token):
         location = self._make_tok_location(token)
@@ -75,42 +77,34 @@ class Lexer():
 
     def _make_tok_location(self, token):
         return (token.lineno, self.find_tok_column(token))
-    
+
     # Reserved keywords from C89
     # reference:
     # https://baike.baidu.com/item/%E4%BF%9D%E7%95%99%E5%85%B3%E9%94%AE%E5%AD%97/22045990?fr=aladdin
     keywords = (
-        'INT','LONG','FLOAT','DOUBLE','CHAR',
-        'UNSIGNED', 'SIGNED', 'CONST', 'VOID',
+        'INT', 'LONG', 'FLOAT', 'DOUBLE', 'CHAR',
+        'UNSIGNED', 'CONST', 'VOID', "STATIC"
         'ENUM', 'STRUCT', 'UNION', 'IF', 'ELSE',
-        'SWITCH', 'CASE', 'DO', 'WHILE', 'FOR',
-        'CONTINUE', 'BREAK', 'RETURN', 'DEFAULT',
-        'TYPEDEF', 'STATIC',
+        'WHILE', 'FOR', 'CONTINUE', 'BREAK', 'RETURN'
     )
     keyword_map = {}
     for keyword in keywords:
         keyword_map[keyword.lower()] = keyword
 
     # to be modified from here.....
-    
+
     # All the tokens recognized by the lexer
     tokens = keywords + (
         # Identifiers
         'ID',
 
-        # Type identifiers (identifiers previously defined as
-        # types with typedef)
-        'TYPEID',
-
         # constants
-        'INT_CONST_DEC', 'INT_CONST_OCT', 'INT_CONST_HEX', 'INT_CONST_BIN', 'INT_CONST_CHAR',
-        'FLOAT_CONST', 'HEX_FLOAT_CONST',
+        'INT_CONST_DEC',
+        'FLOAT_CONST',
         'CHAR_CONST',
-        'WCHAR_CONST',
 
         # String literals
         'STRING_LITERAL',
-        'WSTRING_LITERAL',
 
         # Operators
         'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MOD',
@@ -121,7 +115,7 @@ class Lexer():
         # Assignment
         'EQUALS', 'TIMESEQUAL', 'DIVEQUAL', 'MODEQUAL',
         'PLUSEQUAL', 'MINUSEQUAL',
-        'LSHIFTEQUAL','RSHIFTEQUAL', 'ANDEQUAL', 'XOREQUAL',
+        'LSHIFTEQUAL', 'RSHIFTEQUAL', 'ANDEQUAL', 'XOREQUAL',
         'OREQUAL',
 
         # Increment/decrement
@@ -140,25 +134,13 @@ class Lexer():
         'COMMA', 'PERIOD',          # . ,
         'SEMI', 'COLON',            # ; :
     )
-    
+
     # valid C identifiers (K&R2: A.2.3), plus '$' (supported by some compilers)
     # reference(K&R):
     # The C Programming Language (book), a book written by Brian Kernighan and Dennis Ritchie
     identifier = r'[a-zA-Z_$][0-9a-zA-Z_$]*'
-    
-    hex_prefix = '0[xX]'
-    hex_digits = '[0-9a-fA-F]+'
-    bin_prefix = '0[bB]'
-    bin_digits = '[01]+'
 
-    # integer constants (K&R2: A.2.5.1)
-    integer_suffix_opt = r'(([uU]ll)|([uU]LL)|(ll[uU]?)|(LL[uU]?)|([uU][lL])|([lL][uU]?)|[uU])?'
-    decimal_constant = '(0'+integer_suffix_opt+')|([1-9][0-9]*'+integer_suffix_opt+')'
-    octal_constant = '0[0-7]*'+integer_suffix_opt
-    hex_constant = hex_prefix+hex_digits+integer_suffix_opt
-    bin_constant = bin_prefix+bin_digits+integer_suffix_opt
-
-    bad_octal_constant = '0[0-7]*[89]'
+    decimal_constant = '(0+)|[1-9][0-9]*'
 
     # character constants (K&R2: A.2.5.2)
     # Note: a-zA-Z and '.-~^_!=&;,' are allowed as escape chars to support #line
@@ -200,7 +182,6 @@ class Lexer():
 
     cconst_char = r"""([^'\\\n]|"""+escape_sequence+')'
     char_const = "'"+cconst_char+"'"
-    wchar_const = 'L'+char_const
     multicharacter_constant = "'"+cconst_char+"{2,4}'"
     unmatched_quote = "('"+cconst_char+"*\\n)|('"+cconst_char+"*$)"
     bad_char_const = r"""('"""+cconst_char+"""[^'\n]+')|('')|('"""+bad_escape+r"""[^'\n]*')"""
@@ -208,78 +189,74 @@ class Lexer():
     # string literals (K&R2: A.2.6)
     string_char = r"""([^"\\\n]|"""+escape_sequence_start_in_string+')'
     string_literal = '"'+string_char+'*"'
-    wstring_literal = 'L'+string_literal
     bad_string_literal = '"'+string_char+'*'+bad_escape+string_char+'*"'
 
     # floating constants (K&R2: A.2.5.3)
     exponent_part = r"""([eE][-+]?[0-9]+)"""
     fractional_constant = r"""([0-9]*\.[0-9]+)|([0-9]+\.)"""
     floating_constant = '(((('+fractional_constant+')'+exponent_part+'?)|([0-9]+'+exponent_part+'))[FfLl]?)'
-    binary_exponent_part = r'''([pP][+-]?[0-9]+)'''
-    hex_fractional_constant = '((('+hex_digits+r""")?\."""+hex_digits+')|('+hex_digits+r"""\.))"""
-    hex_floating_constant = '('+hex_prefix+'('+hex_digits+'|'+hex_fractional_constant+')'+binary_exponent_part+'[FfLl]?)'
-    
+
     t_ignore = ' \t'
-    
+
     # Define a rule so we can track line numbers
     def t_NEWLINE(self, t):
         r'\n+'
         t.lexer.lineno += t.value.count("\n")
-    
+
     # Operators
-    t_PLUS              = r'\+'
-    t_MINUS             = r'-'
-    t_TIMES             = r'\*'
-    t_DIVIDE            = r'/'
-    t_MOD               = r'%'
-    t_OR                = r'\|'
-    t_AND               = r'&'
-    t_NOT               = r'~'
-    t_XOR               = r'\^'
-    t_LSHIFT            = r'<<'
-    t_RSHIFT            = r'>>'
-    t_LOR               = r'\|\|'
-    t_LAND              = r'&&'
-    t_LNOT              = r'!'
-    t_LT                = r'<'
-    t_GT                = r'>'
-    t_LE                = r'<='
-    t_GE                = r'>='
-    t_EQ                = r'=='
-    t_NE                = r'!='
-    
+    t_PLUS = r'\+'
+    t_MINUS = r'-'
+    t_TIMES = r'\*'
+    t_DIVIDE = r'/'
+    t_MOD = r'%'
+    t_OR = r'\|'
+    t_AND = r'&'
+    t_NOT = r'~'
+    t_XOR = r'\^'
+    t_LSHIFT = r'<<'
+    t_RSHIFT = r'>>'
+    t_LOR = r'\|\|'
+    t_LAND = r'&&'
+    t_LNOT = r'!'
+    t_LT = r'<'
+    t_GT = r'>'
+    t_LE = r'<='
+    t_GE = r'>='
+    t_EQ = r'=='
+    t_NE = r'!='
+
     # Assignment operators
-    t_EQUALS            = r'='
-    t_TIMESEQUAL        = r'\*='
-    t_DIVEQUAL          = r'/='
-    t_MODEQUAL          = r'%='
-    t_PLUSEQUAL         = r'\+='
-    t_MINUSEQUAL        = r'-='
-    t_LSHIFTEQUAL       = r'<<='
-    t_RSHIFTEQUAL       = r'>>='
-    t_ANDEQUAL          = r'&='
-    t_OREQUAL           = r'\|='
-    t_XOREQUAL          = r'\^='
+    t_EQUALS = r'='
+    t_TIMESEQUAL = r'\*='
+    t_DIVEQUAL = r'/='
+    t_MODEQUAL = r'%='
+    t_PLUSEQUAL = r'\+='
+    t_MINUSEQUAL = r'-='
+    t_LSHIFTEQUAL = r'<<='
+    t_RSHIFTEQUAL = r'>>='
+    t_ANDEQUAL = r'&='
+    t_OREQUAL = r'\|='
+    t_XOREQUAL = r'\^='
 
     # Increment/decrement
-    t_PLUSPLUS          = r'\+\+'
-    t_MINUSMINUS        = r'--'
+    t_PLUSPLUS = r'\+\+'
+    t_MINUSMINUS = r'--'
 
     # ->
-    t_ARROW             = r'->'
+    t_ARROW = r'->'
 
     # ?
-    t_CONDOP            = r'\?'
+    t_CONDOP = r'\?'
 
     # Delimeters
-    t_LPAREN            = r'\('
-    t_RPAREN            = r'\)'
-    t_LBRACKET          = r'\['
-    t_RBRACKET          = r'\]'
-    t_COMMA             = r','
-    t_PERIOD            = r'\.'
-    t_SEMI              = r';'
-    t_COLON             = r':'
+    t_LPAREN = r'\('
+    t_RPAREN = r'\)'
+    t_LBRACKET = r'\['
+    t_RBRACKET = r'\]'
+    t_COMMA = r','
+    t_PERIOD = r'\.'
+    t_SEMI = r';'
+    t_COLON = r':'
     # t_ELLIPSIS          = r'\.\.\.'
 
     # Scope delimiters
@@ -298,14 +275,15 @@ class Lexer():
         if self.on_lbrace_func:
             self.on_lbrace_func()
         return t
+
     @lex.TOKEN(r'\}')
     def t_RBRACE(self, t):
         if self.on_rbrace_func:
             self.on_rbrace_func()
         return t
-    
+
     t_STRING_LITERAL = string_literal
-    
+
     # The following floating and integer constants are defined as
     # functions to impose a strict order (otherwise, decimal
     # is placed before the others because its regex is longer,
@@ -315,25 +293,8 @@ class Lexer():
     def t_FLOAT_CONST(self, t):
         return t
 
-    @lex.TOKEN(hex_floating_constant)
-    def t_HEX_FLOAT_CONST(self, t):
-        return t
-
-    @lex.TOKEN(hex_constant)
-    def t_INT_CONST_HEX(self, t):
-        return t
-
-    @lex.TOKEN(bin_constant)
-    def t_INT_CONST_BIN(self, t):
-        return t
-
-    @lex.TOKEN(bad_octal_constant)
-    def t_BAD_CONST_OCT(self, t):
-        msg = "Invalid octal constant"
-        self._error(msg, t)
-
-    @lex.TOKEN(octal_constant)
-    def t_INT_CONST_OCT(self, t):
+    @lex.TOKEN(decimal_constant)
+    def t_INT_CONST_DEC(self, t):
         return t
 
     # Must come before bad_char_const, to prevent it from
@@ -346,10 +307,6 @@ class Lexer():
     def t_CHAR_CONST(self, t):
         return t
 
-    @lex.TOKEN(wchar_const)
-    def t_WCHAR_CONST(self, t):
-        return t
-
     @lex.TOKEN(unmatched_quote)
     def t_UNMATCHED_QUOTE(self, t):
         msg = "Unmatched '"
@@ -360,10 +317,6 @@ class Lexer():
         msg = "Invalid char constant %s" % t.value
         if self._error:
             self._error(msg, t)
-
-    @lex.TOKEN(wstring_literal)
-    def t_WSTRING_LITERAL(self, t):
-        return t
 
     # unmatched string literals are caught by the preprocessor
     @lex.TOKEN(bad_string_literal)
@@ -384,6 +337,7 @@ class Lexer():
         if self._error:
             self._error(msg, t)
 
+
 if __name__ == '__main__':
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         content = f.read()
@@ -393,6 +347,6 @@ if __name__ == '__main__':
         # Tokenize
         while True:
             tok = lexer.token()
-            if not tok: 
+            if not tok:
                 break      # No more input
             print(tok)
