@@ -1,47 +1,27 @@
 import re
 import sys
 from ply import lex
+from termcolor import colored
 
 
 class Lexer():
-    """ A lexer for the C language. After building it, set the
+    """ A lexer for the Nano C language. After building it, set the
         input text with input(), and call token() to get new
         tokens.
     """
 
-    def __init__(self,
-                 error_func=None,
-                 on_lbrace_func=None,
-                 on_rbrace_func=None,
-                 type_lookup_func=None,):
+    def __init__(self, **kwargs):
         """ Create a new Lexer
-            error_func:
-                An error function. Will be called with an error
-                message, line and column as arguments, in case of
-                an error during lexing.
-            on_lbrace_func, on_rbrace_func:
-                Called when an LBRACE or RBRACE is encountered
-                (likely to push/pop type_lookup_func's scope)
-            type_lookup_func:
-                A type lookup function. Given a string, it must
-                return True IFF this string is a name of a type
-                that was defined with a typedef earlier.
-        """
-        self.error_func = error_func
-        self.on_lbrace_func = on_lbrace_func
-        self.on_rbrace_func = on_rbrace_func
-        self.type_lookup_func = type_lookup_func
-        # Keeps track of the last token returned from self.token()
-        self.last_token = None
 
-    def build(self, **kwargs):
-        """ Builds the lexer from the specification. Must be
+            Builds the lexer from the specification. Must be
             called after the lexer object is created.
             This method exists separately, because the PLY
             manual warns against calling lex.lex inside
             __init__
         """
+        # Keeps track of the last token returned from self.token()
         self.lexer = lex.lex(object=self, **kwargs)
+        self.last_token = None
 
     def reset_lineno(self):
         """ Resets the internal line number counter of the lexer.
@@ -71,8 +51,7 @@ class Lexer():
     # Internal auxiliary methods
     def _error(self, msg, token):
         location = self._make_tok_location(token)
-        if self.error_func:
-            self.error_func(msg, location[0], location[1])
+        print(f"{colored('Fatal: ', 'red')}{msg} at {colored(f'{location}', 'magenta')}")
         self.lexer.skip(1)
 
     def _make_tok_location(self, token):
@@ -168,28 +147,17 @@ class Lexer():
     # Without this change, python's `re` module would recursively try parsing each ambiguous escape sequence in multiple ways.
     # e.g. `\123` could be parsed as `\1`+`23`, `\12`+`3`, and `\123`.
 
-    simple_escape = r"""([a-wyzA-Z._~!=&\^\-\\?'"]|x(?![0-9a-fA-F]))"""
-    decimal_escape = r"""(\d+)(?!\d)"""
-    hex_escape = r"""(x[0-9a-fA-F]+)(?![0-9a-fA-F])"""
-    bad_escape = r"""([\\][^a-zA-Z._~^!=&\^\-\\?'"x0-9])"""
-
-    escape_sequence = r"""(\\("""+simple_escape+'|'+decimal_escape+'|'+hex_escape+'))'
-
     # This complicated regex with lookahead might be slow for strings, so because all of the valid escapes (including \x) allowed
     # 0 or more non-escaped characters after the first character, simple_escape+decimal_escape+hex_escape got simplified to
 
-    escape_sequence_start_in_string = r"""(\\[0-9a-zA-Z._~!=&\^\-\\?'"])"""
-
-    cconst_char = r"""([^'\\\n]|"""+escape_sequence+')'
+    cconst_char = r"""[^'\\\n]"""
     char_const = "'"+cconst_char+"'"
     multicharacter_constant = "'"+cconst_char+"{2,4}'"
     unmatched_quote = "('"+cconst_char+"*\\n)|('"+cconst_char+"*$)"
-    bad_char_const = r"""('"""+cconst_char+"""[^'\n]+')|('')|('"""+bad_escape+r"""[^'\n]*')"""
 
     # string literals (K&R2: A.2.6)
-    string_char = r"""([^"\\\n]|"""+escape_sequence_start_in_string+')'
+    string_char = r"""[^"\\\n]"""
     string_literal = '"'+string_char+'*"'
-    bad_string_literal = '"'+string_char+'*'+bad_escape+string_char+'*"'
 
     # floating constants (K&R2: A.2.5.3)
     exponent_part = r"""([eE][-+]?[0-9]+)"""
@@ -257,29 +225,13 @@ class Lexer():
     t_PERIOD = r'\.'
     t_SEMI = r';'
     t_COLON = r':'
-    # t_ELLIPSIS          = r'\.\.\.'
 
-    # Scope delimiters
-    # To see why on_lbrace_func is needed, consider:
-    #   typedef char TT;
-    #   void foo(int TT) { TT = 10; }
-    #   TT x = 5;
-    # Outside the function, TT is a typedef, but inside (starting and ending
-    # with the braces) it's a parameter.  The trouble begins with yacc's
-    # lookahead token.  If we open a new scope in brace_open, then TT has
-    # already been read and incorrectly interpreted as TYPEID.  So, we need
-    # to open and close scopes from within the lexer.
-    # Similar for the TT immediately outside the end of the function.
     @lex.TOKEN(r'\{')
     def t_LBRACE(self, t):
-        if self.on_lbrace_func:
-            self.on_lbrace_func()
         return t
 
     @lex.TOKEN(r'\}')
     def t_RBRACE(self, t):
-        if self.on_rbrace_func:
-            self.on_rbrace_func()
         return t
 
     t_STRING_LITERAL = string_literal
@@ -312,37 +264,20 @@ class Lexer():
         msg = "Unmatched '"
         self._error(msg, t)
 
-    @lex.TOKEN(bad_char_const)
-    def t_BAD_CHAR_CONST(self, t):
-        msg = "Invalid char constant %s" % t.value
-        if self._error:
-            self._error(msg, t)
-
-    # unmatched string literals are caught by the preprocessor
-    @lex.TOKEN(bad_string_literal)
-    def t_BAD_STRING_LITERAL(self, t):
-        msg = "String contains invalid escape code"
-        if self._error:
-            self._error(msg, t)
-
     @lex.TOKEN(identifier)
     def t_ID(self, t):
         t.type = self.keyword_map.get(t.value, "ID")
-        if t.type == 'ID' and self.type_lookup_func and self.type_lookup_func(t.value):
-            t.type = "TYPEID"
         return t
 
     def t_error(self, t):
         msg = 'Illegal character %s' % repr(t.value[0])
-        if self._error:
-            self._error(msg, t)
+        self._error(msg, t)
 
 
 if __name__ == '__main__':
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         content = f.read()
         lexer = Lexer()
-        lexer.build()
         lexer.input(content)
         # Tokenize
         while True:

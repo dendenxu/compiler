@@ -9,6 +9,7 @@ struct Message {
 int main()
 {
     static const unsigned int a = 0;
+    char b = 'a';
     int b, c;
     b = 1;
     c = a + b;
