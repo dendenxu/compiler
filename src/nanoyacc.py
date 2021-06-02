@@ -62,10 +62,13 @@ class NanoParser():
 
     # Error rule for syntax errors
     def p_error(self, p):
-        print(colored("Error: ", "red")+str(p))
+        print(colored("Error: ", "red")+"Syntax error when parsing "+str(p))
 
     def parse(self, input, lexer=None) -> Node:
-        return self.parser.parse(input, lexer)
+        try:
+            return self.parser.parse(input, lexer)
+        except Exception as e:
+            print(colored("Error: ", "red")+f"{e}")
 
     tokens = NanoLexer.tokens
 
@@ -75,7 +78,7 @@ if __name__ == '__main__':
         content = f.read()
         lexer = NanoLexer()
         parser = NanoParser()
-        visitor = NanoVisitor()
+        # visitor = NanoVisitor()
         root = parser.parse(content)
         print(f"Tree: {root}")
         # result = root.accept(visitor)

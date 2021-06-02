@@ -1,1 +1,1 @@
-int main(){return 0;}
+int mian(){return 0;}

@@ -26,6 +26,7 @@ class TypeNode(Node):
 
 class ExpNode(Node):
     def __init__(self, value: int):
+        assert value <= 2**31 - 1 and value >= 0, f"{value} is out of integer range"
         self.value = value
 
     def __str__(self):
@@ -58,6 +59,7 @@ class ProgNode(Node):
     # A simple Abstract Syntax Tree for the whole program
     # currently, the program only supports a function
     def __init__(self, func: FuncNode):
+        assert func.id == "main", "No main function defined for program"
         self.func = func
 
     def __str__(self):
