@@ -12,8 +12,6 @@ program    : function
 function   : type ID LPAREN RPAREN LBRACE statement RBRACE
 type       : INT
 statement  : RETURN expression SEMI
-expression
-    : additive
 
 additive
     : multiplicative
@@ -28,9 +26,29 @@ unary
     | (PLUS|MINUS|NOT|LNOT) unary
 
 primary
-    : Integer
+    : INT_CONST_DEC
     | LPAREN expression RPAREN
+
+equality
+    : relational
+    | equality (EQ|NE) relational
+
+relational
+    : additive
+    | relational (LT|GT|LE|GE) additive
+
+expression
+    : logical_or
+
+logical_or
+    : logical_and
+    | logical_or LOR logical_and
+
+logical_and
+    : equality
+    | logical_and LAND equality
 """
+
 
 
 class TypeNode(Node):
@@ -120,7 +138,7 @@ class UnaryNode(Node):
 
 
 class BinopNode(Node):
-    _legal_ops = {*"+-*/%"}
+    _legal_ops = {*"+-*/%<>", '==', '!=', '<=', '>=', '||', '&&'}
 
     def __init__(self, op: str, left: Node, right: Node):
         assert op in BinopNode._legal_ops

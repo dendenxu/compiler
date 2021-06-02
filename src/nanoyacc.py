@@ -10,8 +10,6 @@ program    : function
 function   : type ID LPAREN RPAREN LBRACE statement RBRACE
 type       : INT
 statement  : RETURN expression SEMI
-expression
-    : additive
 
 additive
     : multiplicative
@@ -28,6 +26,25 @@ unary
 primary
     : INT_CONST_DEC
     | LPAREN expression RPAREN
+
+equality
+    : relational
+    | equality (EQ|NE) relational
+
+relational
+    : additive
+    | relational (LT|GT|LE|GE) additive
+
+expression
+    : logical_or
+
+logical_or
+    : logical_and
+    | logical_or LOR logical_and
+
+logical_and
+    : equality
+    | logical_and LAND equality
 """
 
 
@@ -51,8 +68,16 @@ class NanoParser():
         'statement  : RETURN expression SEMI'
         p[0] = StmtNode(p[2])
 
-    def p_exp_add(self, p):
-        'expression : additive'
+    def p_exp_lor(self, p):
+        'expression : logical_or'
+        p[0] = p[1]
+
+    def p_lor_land(self, p):
+        'logical_or : logical_and'
+        p[0] = p[1]
+
+    def p_land_eq(self, p):
+        'logical_and : equality'
         p[0] = p[1]
 
     def p_add_mult(self, p):
@@ -75,6 +100,14 @@ class NanoParser():
         'primary      : INT_CONST_DEC'
         p[0] = IntNode(int(p[1]))
 
+    def p_eq_relation(self, p):
+        'equality    : relational'
+        p[0] = p[1]
+
+    def p_relation_add(self, p):
+        'relational   : additive'
+        p[0] = p[1]
+
     def p_unary_op(self, p):
         '''unary      : PLUS unary
                       | MINUS unary
@@ -87,7 +120,16 @@ class NanoParser():
         '''additive       : additive PLUS multiplicative
                           | additive MINUS multiplicative
            multiplicative : multiplicative TIMES unary
-                          | multiplicative DIVIDE unary'''
+                          | multiplicative DIVIDE unary
+           equality       : equality EQ relational
+                          | equality NE relational
+           relational     : relational LT additive
+                          | relational GT additive
+                          | relational GE additive
+                          | relational LE additive
+           logical_or     : logical_or LOR logical_and
+           logical_and    : logical_and LAND equality
+        '''
         p[0] = BinopNode(p[2], p[1], p[3])
 
     # Error rule for syntax errors
