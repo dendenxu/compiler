@@ -1,5 +1,5 @@
 ; ModuleID = "program"
-target triple = "x86-64-pc-linux"
+target triple = "x86_64-pc-linux"
 target datalayout = ""
 
 define i32 @"main"() 
