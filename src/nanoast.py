@@ -132,7 +132,6 @@ class IntNode(Node):
     def accept(self, visitor):
         return visitor.visitIntNode(self)
 
-
 class UnaryNode(Node):
     _legal_ops = {*"+-!~"}
 
@@ -167,7 +166,26 @@ class BlockNode(Node):
         self.stmts.append(node)
 
     def __str__(self):
-        return f'{self.__class__.__name__}:\n'+'    '*2+('\n'+2*'    ').join(map(str, self.stmts))
+        return f'({self.__class__.__name__}:\n'+'    '*2+('\n'+2*'    ').join(map(str, self.stmts)) + ')'
+
+
+class AssNode(Node):
+
+    def __init__(self, id: str, exp: ExpNode):
+        self.id, self.exp = id, exp
+
+    def __str__(self):
+        return f"({self.__class__.__name__}: {self.id} = {self.exp})"
+
+
+class DecNode(Node):
+
+    def __init__(self, type: TypeNode, id: str, init: Node):
+        # init might be none
+        self.type, self.id, self.init = type, id, init
+
+    def __str__(self):
+        return f"({self.__class__.__name__}: {self.type} {self.id}" + (f' = {self.init}' if self.init is not None else '') + ")"
 
 
 class Visitor:

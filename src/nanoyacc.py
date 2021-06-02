@@ -9,13 +9,28 @@ import traceback
 program    : function
 function   : type ID LPAREN RPAREN LBRACE block RBRACE
 block      : block statement
-           | empty
+           | 
 type       : INT
 
 statement  : RETURN expression SEMI
            | expression SEMI
            | declaration
            | SEMI
+
+declaration
+    : type ID typeinit_empty SEMI
+
+typeinit_empty : typeinit
+               | 
+
+typeinit : EQUALS expression
+
+expression
+    : assignment
+
+assignment
+    : logical_or
+    | ID EQUALS expression
 
 additive
     : multiplicative
@@ -40,9 +55,6 @@ equality
 relational
     : additive
     | relational (LT|GT|LE|GE) additive
-
-expression
-    : logical_or
 
 logical_or
     : logical_and
@@ -74,41 +86,44 @@ class NanoParser():
         'statement  : RETURN expression SEMI'
         p[0] = RetNode(p[2])
 
-    def p_stmt_exp(self, p):
-        'statement  : expression SEMI'
-        p[0] = p[2]
+    def p_pass_on_first(self, p):
+        '''
+        statement  : expression SEMI
+        expression : assignment
+        assignment : logical_or
+        logical_or : logical_and
+        logical_and : equality
+        additive : multiplicative
+        multiplicative : unary
+        unary : primary
+        equality    : relational
+        relational   : additive
+        statement : declaration
+        typeinit_empty : typeinit
+        '''
+        p[0] = p[1]
 
-    # def p_stmt_dec(self, p):
-    #     'statement : declaration'
-    #     p[0] = p[1]
+    def p_pass_on_second(self, p):
+        '''
+        typeinit : EQUALS expression
+        '''
+        p[0] = p[2]
 
     def p_stmt_semi(self, p):
         'statement : SEMI'
         pass
 
-    def p_exp_lor(self, p):
-        'expression : logical_or'
-        p[0] = p[1]
+    def p_declaration(self, p):
+        '''
+        declaration    : type ID typeinit_empty SEMI
+        '''
+        p[0] = DecNode(p[1], p[2], p[3])
 
-    def p_lor_land(self, p):
-        'logical_or : logical_and'
-        p[0] = p[1]
-
-    def p_land_eq(self, p):
-        'logical_and : equality'
-        p[0] = p[1]
-
-    def p_add_mult(self, p):
-        'additive : multiplicative'
-        p[0] = p[1]
-
-    def p_mult_unary(self, p):
-        'multiplicative : unary'
-        p[0] = p[1]
-
-    def p_unary_prim(self, p):
-        'unary : primary'
-        p[0] = p[1]
+    def p_assignment(self, p):
+        '''
+        assignment : ID EQUALS expression
+        '''
+        p[0] = AssNode(p[1], p[3])
 
     def p_prim_exp(self, p):
         'primary : LPAREN expression RPAREN'
@@ -117,14 +132,6 @@ class NanoParser():
     def p_primary_int(self, p):
         'primary      : INT_CONST_DEC'
         p[0] = IntNode(int(p[1]))
-
-    def p_eq_relation(self, p):
-        'equality    : relational'
-        p[0] = p[1]
-
-    def p_relation_add(self, p):
-        'relational   : additive'
-        p[0] = p[1]
 
     def p_unary_op(self, p):
         '''unary      : PLUS unary
@@ -153,6 +160,7 @@ class NanoParser():
     def p_empty(self, p):
         '''
         block : 
+        typeinit_empty :
         '''
         p[0] = None
 
@@ -164,7 +172,6 @@ class NanoParser():
             p[1] = BlockNode()
         p[1].append(p[2])
         p[0] = p[1]
-
 
     # Error rule for syntax errors
 
