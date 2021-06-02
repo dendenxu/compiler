@@ -6,64 +6,39 @@ from termcolor import colored
 import traceback
 
 """
-program    : function
-function   : type ID LPAREN RPAREN LBRACE block RBRACE
-block      : block statement
-           | 
-type       : INT
-
-statement  : RETURN expression SEMI
-           | expression SEMI
-           | declaration
-           | SEMI
-
-declaration
-    : type declist SEMI
-
-declist     : declist COMMA ID typeinit
-            | ID typeinit
-
-typeinit : EQUALS expression
-         | 
-
-expression
-    : assignment
-
-assignment
-    : logical_or
-    | ID EQUALS expression
-
-additive
-    : multiplicative
-    | additive (PLUS|MINUS) multiplicative
-
-multiplicative
-    : unary
-    | multiplicative (TIMES|DEVIDE|MOD) unary
-
-unary
-    : primary
-    | (PLUS|MINUS|NOT|LNOT) unary
-
-primary
-    : INT_CONST_DEC
-    | LPAREN expression RPAREN
-
-equality
-    : relational
-    | equality (EQ|NE) relational
-
-relational
-    : additive
-    | relational (LT|GT|LE|GE) additive
-
-logical_or
-    : logical_and
-    | logical_or LOR logical_and
-
-logical_and
-    : equality
-    | logical_and LAND equality
+program             : function
+function            : type ID LPAREN RPAREN LBRACE block RBRACE
+block               : block statement
+                    | 
+type                : INT
+statement           : RETURN expression SEMI
+                    | expression SEMI
+                    | declaration
+                    | SEMI
+declaration         : type declist SEMI
+declist             : declist COMMA ID typeinit
+                    | ID typeinit
+typeinit            : EQUALS expression
+                    | 
+expression          : assignment
+assignment          : logical_or
+                    | ID EQUALS expression
+additive            : multiplicative
+                    | additive (PLUS|MINUS) multiplicative
+multiplicative      : unary
+                    | multiplicative (TIMES|DEVIDE|MOD) unary
+unary               : primary
+                    | (PLUS|MINUS|NOT|LNOT) unary
+primary             : INT_CONST_DEC
+                    | LPAREN expression RPAREN
+equality            : relational
+                    | equality (EQ|NE) relational
+relational          : additive
+                    | relational (LT|GT|LE|GE) additive
+logical_or          : logical_and
+                    | logical_or LOR logical_and
+logical_and         : equality
+                    | logical_and LAND equality
 """
 
 
