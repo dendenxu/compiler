@@ -38,16 +38,8 @@ class RetNode(Node):
         return f"({self.__class__.__name__}: RETURN {self.exp};)"
 
 
-class StmtNode(Node):
-    def __init__(self, exp: ExpNode):
-        self.exp = exp
-
-    def __str__(self):
-        return f"({self.__class__.__name__}: RETURN {self.exp};)"
-
-
 class FuncNode(Node):
-    def __init__(self, type: TypeNode, id: str, stmt: StmtNode):
+    def __init__(self, type: TypeNode, id: str, stmt: Node):
         self.type, self.id, self.stmt = type, id, stmt
 
     def __str__(self):
@@ -116,25 +108,21 @@ class BinopNode(Node):
 class BlockNode(Node):
 
     def __init__(self):
+        self.decs = []
         self.stmts = []
 
-    def append(self, node: StmtNode):
-        self.stmts.append(node)
+    def append(self, node: Node):
+        if isinstance(node, DecListNode):
+            for dec in node.declist:
+                self.decs.append(dec)
+        elif isinstance(node, DecNode):
+            self.decs.append(node)
+        else:
+            self.stmts.append(node)
 
     def __str__(self):
-        return f'({self.__class__.__name__}:\n'+'    '*2+('\n'+2*'    ').join(map(str, self.stmts)) + ')'
-
-
-class DecListNode(Node):
-
-    def __init__(self):
-        self.declist = []
-
-    def append(self, node: StmtNode):
-        self.declist.append(node)
-
-    def __str__(self):
-        return f'({self.__class__.__name__}:\n'+'    '*3+('\n'+3*'    ').join(map(str, self.declist)) + ')'
+        return f'({self.__class__.__name__}:\n'+'    '*2+ \
+            ('\n'+2*'    ').join(list(map(str, self.decs)) + list(map(str, self.stmts))) + ')'
 
 
 class AssNode(Node):
@@ -154,6 +142,18 @@ class DecNode(Node):
 
     def __str__(self):
         return f"({self.__class__.__name__}: {self.type} {self.id}" + (f' = {self.init}' if self.init is not None else '') + ")"
+
+
+class DecListNode(Node):
+
+    def __init__(self):
+        self.declist = []
+
+    def append(self, node: DecNode):
+        self.declist.append(node)
+
+    def __str__(self):
+        return f'({self.__class__.__name__}:\n'+'    '*3+('\n'+3*'    ').join(map(str, self.declist)) + ')'
 
 
 class Visitor:
