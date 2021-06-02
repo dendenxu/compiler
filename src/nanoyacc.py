@@ -9,7 +9,9 @@ program    : function
 function   : type ID LPAREN RPAREN LBRACE statement RBRACE
 type       : INT
 statement  : RETURN expression SEMI
-expression : INT_CONST_DEC
+expression : unary
+unary      : INT_CONST_DEC
+           | (MINUS|PLUS|NOT|LNOT) unary
 """
 
 
@@ -33,9 +35,22 @@ class NanoParser():
         'statement  : RETURN expression SEMI'
         p[0] = StmtNode(p[2])
 
-    def p_exp_int(self, p):
-        'expression : INT_CONST_DEC'
-        p[0] = ExpNode(int(p[1]))
+    def p_exp_unary(self, p):
+        'expression : unary'
+        p[0] = ExpNode(p[1])
+
+    def p_unary_int(self, p):
+        'unary      : INT_CONST_DEC'
+        p[1] = IntNode(int(p[1]))
+        p[0] = UnaryNode('+', p[1])
+
+    def p_unary_op(self, p):
+        '''unary      : PLUS unary
+                      | MINUS unary
+                      | NOT unary
+                      | LNOT unary
+        '''
+        p[0] = UnaryNode(p[1], p[2])
 
     # def p_binary_operators(self, p):
     #     '''expression : expression PLUS term
@@ -61,6 +76,7 @@ class NanoParser():
     #     p[0] = p[2]
 
     # Error rule for syntax errors
+
     def p_error(self, p):
         print(colored("Error: ", "red")+"Syntax error when parsing "+str(p))
 

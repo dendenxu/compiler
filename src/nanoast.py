@@ -12,7 +12,9 @@ program    : function
 function   : type ID LPAREN RPAREN LBRACE statement RBRACE
 type       : INT
 statement  : RETURN expression SEMI
-expression : INT_CONST_DEC
+expression : unary
+unary      : INT_CONST_DEC
+           | (MINUS|PLUS|NOT|LNOT) unary
 """
 
 
@@ -25,12 +27,11 @@ class TypeNode(Node):
 
 
 class ExpNode(Node):
-    def __init__(self, value: int):
-        assert value <= 2**31 - 1 and value >= 0, f"{value} is out of integer range"
-        self.value = value
+    def __init__(self, node: Node):
+        self.node = node
 
     def __str__(self):
-        return f"({self.__class__.__name__}: {self.value})"
+        return f"({self.__class__.__name__}: {self.node})"
 
 
 class StmtNode(Node):
@@ -74,6 +75,7 @@ class ProgNode(Node):
 
 class IntNode(Node):
     def __init__(self, value: int):
+        assert value <= 2**31 - 1 and value >= 0, f"{value} is out of integer range"
         self.value = value
 
     def __str__(self):
@@ -81,6 +83,17 @@ class IntNode(Node):
 
     def accept(self, visitor):
         return visitor.visitIntNode(self)
+
+
+class UnaryNode(Node):
+    _legal_ops = {*"+-!~"}
+
+    def __init__(self, op: str, node: Node):
+        assert op in UnaryNode._legal_ops
+        self.op, self.node = op, node
+
+    def __str__(self):
+        return f"({self.__class__.__name__}: {self.op}{self.node})"
 
 
 class BinopNode(Node):
