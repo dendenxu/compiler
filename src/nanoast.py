@@ -1,42 +1,73 @@
 from typing import List
 
+
 class Node(object):
     # A simple Abstract Syntax Tree node
     def accept(self, visitor):
         pass
 
 
-# class ProgramNode(Node):
-#     def __init__(self, left: Node, right: Node):
-#         self.left, self.right = left, right
+"""
+program    : function
+function   : type ID LPAREN RPAREN LBRACE statement RBRACE
+type       : INT
+statement  : RETURN expression SEMI
+expression : INT_CONST_DEC
+"""
 
-# class TypeNode(Node):
-#     def __init__(self, type, literal: str, typetype):
-#         self.type, self.literal, self.typetype = type, literal, typetype
 
-# class TypeIDNode(Node):
-#     def __init__(self, type: TypeNode, id: str):
-#         self.type, self.id = type, id
+class TypeNode(Node):
+    def __init__(self, typestr: str):
+        self.typestr = typestr
 
-# class ParamListNode(Node):
-#     def __init__(self, typeids: List(TypeIDNode)):
-#         self.typeids = typeids
+    def __str__(self):
+        return f"({self.__class__.__name__}: {self.typestr})"
 
-# class BlockNode(Node):
-#     pass
 
-# class DecNode(BlockNode):
-#     def __init__(self):
-#         pass
+class ExpNode(Node):
+    def __init__(self, value: int):
+        self.value = value
 
-# class StmtNode(Node):
-#     def __init__(self):
-#         pass
+    def __str__(self):
+        return f"({self.__class__.__name__}: {self.value})"
 
-# class FunctionNode(Node):
-#     def __init__(self, type: TypeNode, id: str, params: ParamListNode, blocks: List(BlockNode)):
-#         self.type, self.id, self.params, self.blocks = type, id, params, blocks
 
+class StmtNode(Node):
+    def __init__(self, exp: ExpNode):
+        self.exp = exp
+
+    def __str__(self):
+        return f"({self.__class__.__name__}: RETURN {self.exp};)"
+
+
+class FuncNode(Node):
+    def __init__(self, type: TypeNode, id: str, stmt: StmtNode):
+        self.type, self.id, self.stmt = type, id, stmt
+
+    def __str__(self):
+        return f"""({self.__class__.__name__}: {self.type} {self.id}()
+""" + "    {" + f"""
+    {self.stmt}
+""" + "    })"
+
+    def accept(self, visitor):
+        return visitor.visitFunction(self)
+
+
+class ProgNode(Node):
+    # A simple Abstract Syntax Tree for the whole program
+    # currently, the program only supports a function
+    def __init__(self, func: FuncNode):
+        self.func = func
+
+    def __str__(self):
+        return f"""
+    ({self.__class__.__name__}:
+    {self.func})
+"""
+
+    def accept(self, visitor):
+        return visitor.visitProgram(self)
 
 
 class IntNode(Node):
