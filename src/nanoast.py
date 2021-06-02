@@ -12,9 +12,24 @@ program    : function
 function   : type ID LPAREN RPAREN LBRACE statement RBRACE
 type       : INT
 statement  : RETURN expression SEMI
-expression : unary
-unary      : INT_CONST_DEC
-           | (MINUS|PLUS|NOT|LNOT) unary
+expression
+    : additive
+
+additive
+    : multiplicative
+    | additive (PLUS|MINUS) multiplicative
+
+multiplicative
+    : unary
+    | multiplicative (TIMES|DEVIDE|MOD) unary
+
+unary
+    : primary
+    | (PLUS|MINUS|NOT|LNOT) unary
+
+primary
+    : Integer
+    | LPAREN expression RPAREN
 """
 
 
@@ -32,6 +47,14 @@ class ExpNode(Node):
 
     def __str__(self):
         return f"({self.__class__.__name__}: {self.node})"
+
+
+class PrimNode(Node):
+    def __init__(self, node: Node):
+        self.node = node
+
+    def __str__(self):
+        return f"({self.__class__.__name__}: {self.node}"
 
 
 class StmtNode(Node):
@@ -79,7 +102,7 @@ class IntNode(Node):
         self.value = value
 
     def __str__(self):
-        return f"({self.value})"
+        return f"({self.__class__.__name__}: {self.value})"
 
     def accept(self, visitor):
         return visitor.visitIntNode(self)
@@ -104,7 +127,7 @@ class BinopNode(Node):
         self.op, self.left, self.right = op, left, right
 
     def __str__(self):
-        return f"({self.left} {self.op} {self.right})"
+        return f"({self.__class__.__name__}: {self.left} {self.op} {self.right})"
 
     def accept(self, visitor):
         return visitor.visitBinopNode(self)

@@ -3,15 +3,31 @@ from nanolex import NanoLexer
 from nanoast import *
 import sys
 from termcolor import colored
+import traceback
 
 """
 program    : function
 function   : type ID LPAREN RPAREN LBRACE statement RBRACE
 type       : INT
 statement  : RETURN expression SEMI
-expression : unary
-unary      : INT_CONST_DEC
-           | (MINUS|PLUS|NOT|LNOT) unary
+expression
+    : additive
+
+additive
+    : multiplicative
+    | additive (PLUS|MINUS) multiplicative
+
+multiplicative
+    : unary
+    | multiplicative (TIMES|DEVIDE|MOD) unary
+
+unary
+    : primary
+    | (PLUS|MINUS|NOT|LNOT) unary
+
+primary
+    : INT_CONST_DEC
+    | LPAREN expression RPAREN
 """
 
 
@@ -35,14 +51,29 @@ class NanoParser():
         'statement  : RETURN expression SEMI'
         p[0] = StmtNode(p[2])
 
-    def p_exp_unary(self, p):
-        'expression : unary'
-        p[0] = ExpNode(p[1])
+    def p_exp_add(self, p):
+        'expression : additive'
+        p[0] = p[1]
 
-    def p_unary_int(self, p):
-        'unary      : INT_CONST_DEC'
-        p[1] = IntNode(int(p[1]))
-        p[0] = UnaryNode('+', p[1])
+    def p_add_mult(self, p):
+        'additive : multiplicative'
+        p[0] = p[1]
+
+    def p_mult_unary(self, p):
+        'multiplicative : unary'
+        p[0] = p[1]
+
+    def p_unary_prim(self, p):
+        'unary : primary'
+        p[0] = p[1]
+
+    def p_prim_exp(self, p):
+        'primary : LPAREN expression RPAREN'
+        p[0] = p[2]
+
+    def p_primary_int(self, p):
+        'primary      : INT_CONST_DEC'
+        p[0] = IntNode(int(p[1]))
 
     def p_unary_op(self, p):
         '''unary      : PLUS unary
@@ -52,28 +83,12 @@ class NanoParser():
         '''
         p[0] = UnaryNode(p[1], p[2])
 
-    # def p_binary_operators(self, p):
-    #     '''expression : expression PLUS term
-    #                 | expression MINUS term
-    #        term       : term TIMES factor
-    #                 | term DIVIDE factor'''
-    #     p[0] = BinopNode(p[2], p[1], p[3])
-
-    # def p_expression_term(self, p):
-    #     'expression : term'
-    #     p[0] = p[1]
-
-    # def p_term_factor(self, p):
-    #     'term : factor'
-    #     p[0] = p[1]
-
-    # def p_factor_num(self, p):
-    #     'factor : INT_CONST_DEC'
-    #     p[0] = IntNode(int(p[1]))
-
-    # def p_factor_expr(self, p):
-    #     'factor : LPAREN expression RPAREN'
-    #     p[0] = p[2]
+    def p_binary_operators(self, p):
+        '''additive       : additive PLUS multiplicative
+                          | additive MINUS multiplicative
+           multiplicative : multiplicative TIMES unary
+                          | multiplicative DIVIDE unary'''
+        p[0] = BinopNode(p[2], p[1], p[3])
 
     # Error rule for syntax errors
 
@@ -84,6 +99,7 @@ class NanoParser():
         try:
             return self.parser.parse(input, lexer)
         except Exception as e:
+            traceback.print_exc()
             print(colored("Error: ", "red")+f"{e}")
 
     tokens = NanoLexer.tokens
