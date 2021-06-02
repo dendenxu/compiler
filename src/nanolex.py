@@ -4,7 +4,7 @@ from ply import lex
 from termcolor import colored
 
 
-class Lexer():
+class NanoLexer():
     """ A lexer for the Nano C language. After building it, set the
         input text with input(), and call token() to get new
         tokens.
@@ -20,7 +20,7 @@ class Lexer():
             __init__
         """
         # Keeps track of the last token returned from self.token()
-        self.lexer = lex.lex(object=self, **kwargs)
+        self.lexer = lex.lex(module=self, **kwargs)
         self.last_token = None
 
     def reset_lineno(self):
@@ -277,7 +277,7 @@ class Lexer():
 if __name__ == '__main__':
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         content = f.read()
-        lexer = Lexer()
+        lexer = NanoLexer()
         lexer.input(content)
         # Tokenize
         while True:
