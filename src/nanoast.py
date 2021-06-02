@@ -50,7 +50,6 @@ logical_and
 """
 
 
-
 class TypeNode(Node):
     def __init__(self, typestr: str):
         self.typestr = typestr
@@ -73,6 +72,14 @@ class PrimNode(Node):
 
     def __str__(self):
         return f"({self.__class__.__name__}: {self.node}"
+
+
+class RetNode(Node):
+    def __init__(self, exp: ExpNode):
+        self.exp = exp
+
+    def __str__(self):
+        return f"({self.__class__.__name__}: RETURN {self.exp};)"
 
 
 class StmtNode(Node):
@@ -149,6 +156,18 @@ class BinopNode(Node):
 
     def accept(self, visitor):
         return visitor.visitBinopNode(self)
+
+
+class BlockNode(Node):
+
+    def __init__(self):
+        self.stmts = []
+
+    def append(self, node: StmtNode):
+        self.stmts.append(node)
+
+    def __str__(self):
+        return f'{self.__class__.__name__}:\n'+'    '*2+('\n'+2*'    ').join(map(str, self.stmts))
 
 
 class Visitor:

@@ -7,9 +7,15 @@ import traceback
 
 """
 program    : function
-function   : type ID LPAREN RPAREN LBRACE statement RBRACE
+function   : type ID LPAREN RPAREN LBRACE block RBRACE
+block      : block statement
+           | empty
 type       : INT
+
 statement  : RETURN expression SEMI
+           | expression SEMI
+           | declaration
+           | SEMI
 
 additive
     : multiplicative
@@ -57,16 +63,28 @@ class NanoParser():
         p[0] = ProgNode(p[1])
 
     def p_func_def(self, p):
-        'function   : type ID LPAREN RPAREN LBRACE statement RBRACE'
+        'function   : type ID LPAREN RPAREN LBRACE block RBRACE'
         p[0] = FuncNode(p[1], p[2], p[6])
 
     def p_type_def(self, p):
         'type       : INT'
         p[0] = TypeNode(p[1])
 
-    def p_stmt_exp(self, p):
+    def p_stmt_ret_exp(self, p):
         'statement  : RETURN expression SEMI'
-        p[0] = StmtNode(p[2])
+        p[0] = RetNode(p[2])
+
+    def p_stmt_exp(self, p):
+        'statement  : expression SEMI'
+        p[0] = p[2]
+
+    # def p_stmt_dec(self, p):
+    #     'statement : declaration'
+    #     p[0] = p[1]
+
+    def p_stmt_semi(self, p):
+        'statement : SEMI'
+        pass
 
     def p_exp_lor(self, p):
         'expression : logical_or'
@@ -131,6 +149,22 @@ class NanoParser():
            logical_and    : logical_and LAND equality
         '''
         p[0] = BinopNode(p[2], p[1], p[3])
+
+    def p_empty(self, p):
+        '''
+        block : 
+        '''
+        p[0] = None
+
+    def p_block_stmt(self, p):
+        '''
+        block : block statement
+        '''
+        if p[1] is None:
+            p[1] = BlockNode()
+        p[1].append(p[2])
+        p[0] = p[1]
+
 
     # Error rule for syntax errors
 
