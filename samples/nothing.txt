@@ -1,8 +1,9 @@
 int main() {
     int a;
     int a = 3;
+    int a = 1, b = 2, c, d = 4;
+
     a = 100;
     return 1 || 0 && 2;
-    return 1 || 0 && 2;
-    return 1 || 0 && 2;
+    1 || 0 && 4 == 3 >= 2 - 1 * -1;
 }

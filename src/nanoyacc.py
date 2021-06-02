@@ -18,12 +18,13 @@ statement  : RETURN expression SEMI
            | SEMI
 
 declaration
-    : type ID typeinit_empty SEMI
+    : type declist SEMI
 
-typeinit_empty : typeinit
-               | 
+declist     : declist COMMA ID typeinit
+            | ID typeinit
 
 typeinit : EQUALS expression
+         | 
 
 expression
     : assignment
@@ -115,9 +116,14 @@ class NanoParser():
 
     def p_declaration(self, p):
         '''
-        declaration    : type ID typeinit_empty SEMI
+        declaration    : type declist SEMI
         '''
-        p[0] = DecNode(p[1], p[2], p[3])
+        if isinstance(p[2], DecListNode):
+            for dec in p[2].declist:
+                dec.type = p[1]
+        else:
+            p[2].type = p[1]
+        p[0] = p[2]
 
     def p_assignment(self, p):
         '''
@@ -160,7 +166,7 @@ class NanoParser():
     def p_empty(self, p):
         '''
         block : 
-        typeinit_empty :
+        typeinit : 
         '''
         p[0] = None
 
@@ -172,6 +178,23 @@ class NanoParser():
             p[1] = BlockNode()
         p[1].append(p[2])
         p[0] = p[1]
+
+    def p_dec_list(self, p):
+        '''
+        declist     : declist COMMA ID typeinit
+        '''
+        if isinstance(p[1], DecNode):
+            dec = p[1]
+            p[1] = DecListNode()
+            p[1].append(dec)
+        p[1].append(DecNode(None, p[3], p[4]))
+        p[0] = p[1]
+    
+    def p_dec_init(self, p):
+        '''
+        declist     : ID typeinit
+        '''
+        p[0] = DecNode(None, p[1], p[2])
 
     # Error rule for syntax errors
 

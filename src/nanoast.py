@@ -169,6 +169,18 @@ class BlockNode(Node):
         return f'({self.__class__.__name__}:\n'+'    '*2+('\n'+2*'    ').join(map(str, self.stmts)) + ')'
 
 
+class DecListNode(Node):
+
+    def __init__(self):
+        self.declist = []
+
+    def append(self, node: StmtNode):
+        self.declist.append(node)
+
+    def __str__(self):
+        return f'({self.__class__.__name__}:\n'+'    '*3+('\n'+3*'    ').join(map(str, self.declist)) + ')'
+
+
 class AssNode(Node):
 
     def __init__(self, id: str, exp: ExpNode):
