@@ -6,50 +6,6 @@ class Node(object):
     def accept(self, visitor):
         pass
 
-
-"""
-program    : function
-function   : type ID LPAREN RPAREN LBRACE statement RBRACE
-type       : INT
-statement  : RETURN expression SEMI
-
-additive
-    : multiplicative
-    | additive (PLUS|MINUS) multiplicative
-
-multiplicative
-    : unary
-    | multiplicative (TIMES|DEVIDE|MOD) unary
-
-unary
-    : primary
-    | (PLUS|MINUS|NOT|LNOT) unary
-
-primary
-    : INT_CONST_DEC
-    | LPAREN expression RPAREN
-
-equality
-    : relational
-    | equality (EQ|NE) relational
-
-relational
-    : additive
-    | relational (LT|GT|LE|GE) additive
-
-expression
-    : logical_or
-
-logical_or
-    : logical_and
-    | logical_or LOR logical_and
-
-logical_and
-    : equality
-    | logical_and LAND equality
-"""
-
-
 class TypeNode(Node):
     def __init__(self, typestr: str):
         self.typestr = typestr
