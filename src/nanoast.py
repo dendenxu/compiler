@@ -39,17 +39,17 @@ class RetNode(Node):
 
 
 class FuncNode(Node):
-    def __init__(self, type: TypeNode, id: str, stmt: Node):
-        self.type, self.id, self.stmt = type, id, stmt
+    def __init__(self, type: TypeNode, id: str, block: Node):
+        self.type, self.id, self.block = type, id, block
 
     def __str__(self):
         return f"""({self.__class__.__name__}: {self.type} {self.id}()
 """ + "    {" + f"""
-    {self.stmt}
+    {self.block}
 """ + "    })"
 
     def accept(self, visitor):
-        return visitor.visitFunction(self)
+        return visitor.visitFuncNode(self)
 
 
 class ProgNode(Node):

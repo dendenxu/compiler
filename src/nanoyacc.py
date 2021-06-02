@@ -108,7 +108,7 @@ class NanoParser():
 
     def p_prim_exp(self, p):
         'primary : LPAREN expression RPAREN'
-        p[0] = p[2]
+        p[0] = PrimNode(p[2])
 
     def p_primary_int(self, p):
         'primary      : INT_CONST_DEC'
