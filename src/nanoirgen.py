@@ -14,60 +14,75 @@ class Visitor:
 class NanoVisitor(Visitor):
     def __init__(self):
         self.result_dict = {}  # Node -> int
+        self.ll_module = None
+        self.ll_cur_func = []
+        self.ll_cur_block_builder = []
         
     def cache_result(visit):  # decorator
-        def wrapped(self, node, father=None):
+        def wrapped(self, node):
             if node in self.result_dict:
                 return self.result_dict[node]
-            value = visit(self, node, father)
+            value = visit(self, node)
             # print(f"Getting: {value}({type(value)})")
             self.result_dict[node] = value
             return value
         return wrapped
     
     @cache_result
-    def visitProgNode(self, node: ProgNode, father=None):
+    def visitProgNode(self, node: ProgNode):
         node.ll_module = ir.Module(name='program')
-        node.func.accept(self, node)
+        self.ll_module = node.ll_module
+        node.func.accept(self)
         
     @cache_result
-    def visitFuncNode(self, node: FuncNode, father=None):
-        node.type.accept(self, node)
-        node.ll_type = ir.FunctionType(node.type.ll_type, ())
-        node.ll_func = ir.Function(father.ll_module, node.ll_type, name=node.id)
-        node.block.accept(self, node)
+    def visitFuncNode(self, node: FuncNode):
+        node.type.accept(self)
+        node.ll_func_type = ir.FunctionType(node.type.ll_type, ())
+        node.ll_func = ir.Function(self.ll_module, node.ll_func_type, name=node.id)
+        self.ll_cur_func.append(node.ll_func)
+        node.block.accept(self)
+        self.ll_cur_func.pop()
         
     @cache_result
-    def visitTypeNode(self, node: TypeNode, father=None):
+    def visitTypeNode(self, node: TypeNode):
         node.ll_type = ir.IntType(32)
         
     @cache_result
-    def visitBlockNode(self, node: BlockNode, father=None):
-        node.ll_type = father.ll_type
-        node.ll_func = father.ll_func
+    def visitBlockNode(self, node: BlockNode):
         for stmt in node.stmts:
-            stmt.accept(self, node)
+            stmt.accept(self)
             
     @cache_result
-    def visitRetNode(self, node: RetNode, father=None):
-        node.ll_block = father.ll_func.append_basic_block()
+    def visitRetNode(self, node: RetNode):
+        node.ll_block = self.ll_cur_func[-1].append_basic_block()
         node.ll_builder = ir.IRBuilder(node.ll_block)
-        node.exp.accept(self, node)
+        self.ll_cur_block_builder.append(node.ll_builder)
+        node.exp.accept(self)
         node.ll_builder.ret(node.exp.ll_value)
+        self.ll_cur_block_builder.pop()
         
     @cache_result
-    def visitIntNode(self, node: IntNode, father=None):
+    def visitIntNode(self, node: IntNode):
         int32 = ir.IntType(32)
         node.ll_value = int32(node.value)
         
     @cache_result
-    def visitBinopNode(self, node: BinopNode, father=None):
+    def visitBinopNode(self, node: BinopNode):
+        node.left.accept(self)
+        node.right.accept(self)
         if node.op is '+':
-            node.left.accept(self, node)
-            node.right.accept(self, node)
-            node.ll_value = father.ll_builder.add(
+            node.ll_value = self.ll_cur_block_builder[-1].add(
                                 node.left.ll_value,
                                 node.right.ll_value)
+        elif node.op is '-':
+            node.ll_value = self.ll_cur_block_builder[-1].sub(
+                                node.left.ll_value,
+                                node.right.ll_value)
+    
+    @cache_result
+    def visitPrimNode(self, node: BinopNode):
+        node.node.accept(self)
+        node.ll_value = node.node.ll_value
     
 
 
