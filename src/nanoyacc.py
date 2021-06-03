@@ -10,9 +10,11 @@ Productions used in the parser:
 
 program             : program function
                     |
-function            : type ID LPAREN RPAREN curl_block
-block               : block statement
-                    | block curl_block
+function            : type ID LPAREN parameters RPAREN curl_block
+parameters          : type ID
+                    | paramters COMMA type ID
+                    |
+block               : block stmt_or_block
                     | 
 type                : INT
                     | VOID
@@ -23,11 +25,11 @@ type                : INT
 statement           : RETURN expression SEMI
                     | expression SEMI
                     | declaration
-                    | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
-                    | IF LPAREN expression RPAREN ctrl_block
-                    | FOR LPAREN for_init RPAREN ctrl_block
-                    | WHILE LPAREN expression RPAREN ctrl_block
-                    | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
+                    | IF LPAREN expression RPAREN stmt_or_block ELSE stmt_or_block
+                    | IF LPAREN expression RPAREN stmt_or_block
+                    | FOR LPAREN for_init RPAREN stmt_or_block
+                    | WHILE LPAREN expression RPAREN stmt_or_block
+                    | DO stmt_or_block WHILE LPAREN expression RPAREN SEMI
                     | BREAK SEMI
                     | CONTINUE SEMI
                     | SEMI
@@ -35,7 +37,7 @@ for_init            : e_expression SEMI e_expression SEMI e_expression
                     | declaration e_expression SEMI e_expression
 e_expression        : expression
                     | 
-ctrl_block          : curl_block
+stmt_or_block       : curl_block
                     | statement
 curl_block          : LBRACE block RBRACE
 declaration         : type declist SEMI
@@ -86,8 +88,18 @@ class NanoParser():
         p[0] = p[1]
 
     def p_func_def(self, p):
-        'function   : type ID LPAREN RPAREN curl_block'
-        p[0] = FuncNode(p[1], IDNode(p[2]), p[5])
+        'function   : type ID LPAREN parameters RPAREN curl_block'
+        p[0] = FuncNode(p[1], IDNode(p[2]), p[4], p[6])
+
+    def p_param(self, p):
+        'parameters : type ID'
+        p[0] = ParamListNode(ParamNode(p[1], IDNode(p[2])))
+
+    def p_params(self, p):
+        'parameters : parameters COMMA type ID'
+        param = ParamNode(p[3], IDNode(p[4]))
+        p[1].append(param)
+        p[0] = p[1]
 
     def p_type_def(self, p):
         '''
@@ -108,7 +120,7 @@ class NanoParser():
         '''
         statement       : expression SEMI
         e_expression    : expression
-        ctrl_block      : curl_block
+        stmt_or_block   : curl_block
         expression      : assignment
         assignment      : conditional
         conditional     : logical_or
@@ -123,8 +135,8 @@ class NanoParser():
         '''
         p[0] = p[1]
 
-    def p_ctrl_block_wrap(self, p):
-        'ctrl_block     : statement'
+    def p_stmt_or_block_wrap(self, p):
+        'stmt_or_block     : statement'
         # control block should wrap up the single statment as a block
         # for scope construction
         p[0] = BlockNode(p[1])
@@ -136,6 +148,10 @@ class NanoParser():
         '''
         p[0] = p[2]
 
+    def p_params_empty(self, p):
+        'parameters   :'
+        p[0] = ParamListNode()
+
     def p_break(self, p):
         'statement : BREAK SEMI'
         p[0] = BreakNode()
@@ -144,7 +160,7 @@ class NanoParser():
         'statement : CONTINUE SEMI'
         p[0] = ContinueNode()
 
-    def p_stmt_semi(self, p):
+    def p_stmt_empty(self, p):
         '''
         statement : SEMI
         e_expression :
@@ -152,8 +168,8 @@ class NanoParser():
         p[0] = StmtNode()  # empty statment node
 
     def p_if_stmt(self, p):
-        '''statement : IF LPAREN expression RPAREN ctrl_block
-                     | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
+        '''statement : IF LPAREN expression RPAREN stmt_or_block
+                     | IF LPAREN expression RPAREN stmt_or_block ELSE stmt_or_block
         '''
         # ! Dangling ELSE problem exists, but doesn't affect the grammar
         # ! relying on the generated parser feature of preferring shift over reduce whenever there is a conflict.
@@ -163,16 +179,16 @@ class NanoParser():
             p[0] = IfStmtNode(p[3], p[5], StmtNode())  # no else statement
 
     def p_while_stmt(self, p):
-        'statement : WHILE LPAREN expression RPAREN ctrl_block'
+        'statement : WHILE LPAREN expression RPAREN stmt_or_block'
         p[0] = LoopNode(StmtNode(), p[3], p[5], StmtNode())  # simple while loop
 
     def p_do_while_stmt(self, p):
-        'statement : DO ctrl_block WHILE LPAREN expression RPAREN SEMI'
+        'statement : DO stmt_or_block WHILE LPAREN expression RPAREN SEMI'
         p[0] = LoopNode(p[3], p[3], p[5], StmtNode())  # simple do-while loop
 
     def p_for_stmt(self, p):
         '''
-        statement : FOR LPAREN for_init RPAREN ctrl_block
+        statement : FOR LPAREN for_init RPAREN stmt_or_block
         '''
         # assuming a BlockNode from for_init
         init = p[3].stmts
@@ -272,12 +288,15 @@ class NanoParser():
 
     def p_block_stmt(self, p):
         '''
-        block : block statement
-              | block curl_block
+        block : block stmt_or_block
         '''
         if p[1] is None:
             p[1] = BlockNode()
-        p[1].append(p[2])
+        if isinstance(p[2], DecListNode):
+            for dec in p[2].declist:
+                p[1].append(dec)
+        else:
+            p[1].append(p[2])
         p[0] = p[1]
 
     def p_dec_list(self, p):

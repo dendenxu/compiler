@@ -79,13 +79,31 @@ class TypeNode(Node):
 #############################################################
 #                    Program/Function                       #
 #############################################################
-
-class FuncNode(Node):
-    def __init__(self, type: TypeNode, id: IDNode, block: Node):
-        self.type, self.id, self.block = type, id, block
+class ParamNode(Node):
+    def __init__(self, type: TypeNode, id: IDNode):
+        self.type, self.id = type, id
 
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.type} {self.id}()" + \
+        return f"{self.__class__.__name__}({self.type} {self.id})"
+
+
+class ParamListNode(Node):
+    def __init__(self, *args):
+        self.params = [*args]
+
+    def append(self, param: ParamNode):
+        self.params.append(param)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({', '.join(list(map(str, self.params)))})"
+
+
+class FuncNode(Node):
+    def __init__(self, type: TypeNode, id: IDNode, params: ParamListNode, block: Node):
+        self.type, self.id, self.params, self.block = type, id, params, block
+
+    def __str__(self):
+        return f"{self.__class__.__name__}( {self.type} {self.id}( {', '.join(list(map(str, self.params.params)))} )" + \
             " {" + f"\n    {self.block}\n" + "    } )EndFunc\n"
 
     def accept(self, visitor):
@@ -248,7 +266,7 @@ class LoopNode(StmtNode):
         self.pre, self.cond, self.body, self.post = pre, cond, body, post
 
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.body}\b{self.post} }} )"
+        return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.body}\n{self.post} }} )"
 
     def accept(self, visitor):
         return visitor.visitLoopNode(self)
