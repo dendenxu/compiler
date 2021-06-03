@@ -53,7 +53,8 @@ class NanoVisitor(Visitor):
         self._push_scope()
         node.ll_module = ir.Module(name='program')
         self.ll_module = node.ll_module
-        node.func.accept(self)
+        for func in node.funcs:
+            func.accept(self)
         self._pop_scope()
         
     def visitFuncNode(self, node: FuncNode):
