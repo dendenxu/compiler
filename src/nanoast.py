@@ -136,11 +136,27 @@ class ProgNode(Node):
 #############################################################
 
 class ExpNode(Node):
-    def __init__(self, node: Node):
-        self.node = node
+    def __init__(self):
+        pass
+
+
+class ExpListNode(Node):
+    def __init__(self, *args):
+        self.exps = [*args]
+
+    def append(self, exp: ExpNode):
+        self.exps.append(exp)
 
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.node} )"
+        return f"{self.__class__.__name__}({', '.join(map(str, self.exps))})"
+
+
+class CallNode(ExpNode):
+    def __init__(self, id: IDNode, params: ExpListNode):
+        self.id, self.params = id, params
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.id}({self.params}))"
 
 
 class UnaryNode(ExpNode):

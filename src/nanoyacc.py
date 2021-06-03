@@ -11,10 +11,12 @@ Productions used in the parser:
 program             : program function
                     |
 function            : type ID LPAREN parameters RPAREN curl_block
-parameters          : type ID
-                    | paramters COMMA type ID
+parameters          : type ID comma_paramters
                     |
-block               : block stmt_or_block
+comma_parameters    : comma_parameters COMMA type ID
+                    |
+block               : block curl_block
+                    | block statement
                     | 
 type                : INT
                     | VOID
@@ -25,19 +27,23 @@ type                : INT
 statement           : RETURN expression SEMI
                     | expression SEMI
                     | declaration
-                    | IF LPAREN expression RPAREN stmt_or_block ELSE stmt_or_block
-                    | IF LPAREN expression RPAREN stmt_or_block
-                    | FOR LPAREN for_init RPAREN stmt_or_block
-                    | WHILE LPAREN expression RPAREN stmt_or_block
-                    | DO stmt_or_block WHILE LPAREN expression RPAREN SEMI
+                    | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
+                    | IF LPAREN expression RPAREN ctrl_block
+                    | FOR LPAREN for_init RPAREN ctrl_block
+                    | WHILE LPAREN expression RPAREN ctrl_block
+                    | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
                     | BREAK SEMI
                     | CONTINUE SEMI
                     | SEMI
 for_init            : e_expression SEMI e_expression SEMI e_expression
                     | declaration e_expression SEMI e_expression
+expression_list     : expression comma_expressions
+                    |
+comma_expressions   : comma_expressions COMMA expression
+                    |
 e_expression        : expression
                     | 
-stmt_or_block       : curl_block
+ctrl_block          : curl_block
                     | statement
 curl_block          : LBRACE block RBRACE
 declaration         : type declist SEMI
@@ -54,8 +60,10 @@ additive            : multiplicative
                     | additive (PLUS|MINUS) multiplicative
 multiplicative      : unary
                     | multiplicative (TIMES|DEVIDE|MOD) unary
-unary               : primary
+unary               : postfix
                     | (PLUS|MINUS|NOT|LNOT) unary
+postfix             : primary
+                    | ID LPAREN expression_list RPAREN
 primary             : INT_CONST_DEC
                     | FLOAT_CONST
                     | CHAR_CONST
@@ -91,14 +99,34 @@ class NanoParser():
         'function   : type ID LPAREN parameters RPAREN curl_block'
         p[0] = FuncNode(p[1], IDNode(p[2]), p[4], p[6])
 
-    def p_param(self, p):
-        'parameters : type ID'
-        p[0] = ParamListNode(ParamNode(p[1], IDNode(p[2])))
-
     def p_params(self, p):
-        'parameters : parameters COMMA type ID'
+        'parameters : type ID comma_parameters'
+        param = ParamNode(p[1], IDNode(p[2]))
+        if p[3] is None:
+            p[3] = ParamListNode()
+        p[3].append(param)
+        p[0] = p[3]
+
+    def p_comma_params(self, p):
+        'comma_parameters : comma_parameters COMMA type ID'
         param = ParamNode(p[3], IDNode(p[4]))
+        if p[1] is None:
+            p[1] = ParamListNode()
         p[1].append(param)
+        p[0] = p[1]
+
+    def p_expression_list(self, p):
+        'expression_list : expression comma_expressions'
+        if p[2] is None:
+            p[2] = ExpListNode()
+        p[2].append(p[1])
+        p[0] = p[2]
+
+    def p_comma_expression_list(self, p):
+        'comma_expressions : comma_expressions COMMA expression'
+        if p[1] is None:
+            p[1] = ExpListNode()
+        p[1].append(p[3])
         p[0] = p[1]
 
     def p_type_def(self, p):
@@ -120,7 +148,7 @@ class NanoParser():
         '''
         statement       : expression SEMI
         e_expression    : expression
-        stmt_or_block   : curl_block
+        ctrl_block      : curl_block
         expression      : assignment
         assignment      : conditional
         conditional     : logical_or
@@ -128,15 +156,16 @@ class NanoParser():
         logical_and     : equality
         additive        : multiplicative
         multiplicative  : unary
-        unary           : primary
+        unary           : postfix
+        postfix         : primary
         equality        : relational
         relational      : additive
         statement       : declaration
         '''
         p[0] = p[1]
 
-    def p_stmt_or_block_wrap(self, p):
-        'stmt_or_block     : statement'
+    def p_ctrl_block_wrap(self, p):
+        'ctrl_block     : statement'
         # control block should wrap up the single statment as a block
         # for scope construction
         p[0] = BlockNode(p[1])
@@ -147,6 +176,10 @@ class NanoParser():
         curl_block      : LBRACE block RBRACE
         '''
         p[0] = p[2]
+
+    def p_exps_empty(self, p):
+        'expression_list   :'
+        p[0] = ExpListNode()
 
     def p_params_empty(self, p):
         'parameters   :'
@@ -163,13 +196,24 @@ class NanoParser():
     def p_stmt_empty(self, p):
         '''
         statement : SEMI
-        e_expression :
         '''
         p[0] = StmtNode()  # empty statment node
 
+    def p_exp_empty(self, p):
+        '''
+        e_expression : 
+        '''
+        p[0] = ExpNode()  # empty statment node
+
+    def p_postfix(self, p):
+        '''
+        postfix : ID LPAREN expression_list RPAREN
+        '''
+        p[0] = CallNode(IDNode(p[1]), p[3])
+
     def p_if_stmt(self, p):
-        '''statement : IF LPAREN expression RPAREN stmt_or_block
-                     | IF LPAREN expression RPAREN stmt_or_block ELSE stmt_or_block
+        '''statement : IF LPAREN expression RPAREN ctrl_block
+                     | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
         '''
         # ! Dangling ELSE problem exists, but doesn't affect the grammar
         # ! relying on the generated parser feature of preferring shift over reduce whenever there is a conflict.
@@ -179,16 +223,16 @@ class NanoParser():
             p[0] = IfStmtNode(p[3], p[5], StmtNode())  # no else statement
 
     def p_while_stmt(self, p):
-        'statement : WHILE LPAREN expression RPAREN stmt_or_block'
+        'statement : WHILE LPAREN expression RPAREN ctrl_block'
         p[0] = LoopNode(StmtNode(), p[3], p[5], StmtNode())  # simple while loop
 
     def p_do_while_stmt(self, p):
-        'statement : DO stmt_or_block WHILE LPAREN expression RPAREN SEMI'
-        p[0] = LoopNode(p[3], p[3], p[5], StmtNode())  # simple do-while loop
+        'statement : DO ctrl_block WHILE LPAREN expression RPAREN SEMI'
+        p[0] = LoopNode(p[2], p[3], p[5], StmtNode())  # simple do-while loop
 
     def p_for_stmt(self, p):
         '''
-        statement : FOR LPAREN for_init RPAREN stmt_or_block
+        statement : FOR LPAREN for_init RPAREN ctrl_block
         '''
         # assuming a BlockNode from for_init
         init = p[3].stmts
@@ -280,15 +324,18 @@ class NanoParser():
 
     def p_empty(self, p):
         '''
-        block        :
-        typeinit     :
-        program      :
+        block               :
+        typeinit            :
+        program             :
+        comma_parameters    : 
+        comma_expressions   :
         '''
         p[0] = None
 
     def p_block_stmt(self, p):
         '''
-        block : block stmt_or_block
+        block       : block curl_block
+                    | block statement
         '''
         if p[1] is None:
             p[1] = BlockNode()

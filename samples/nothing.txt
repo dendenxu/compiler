@@ -48,6 +48,14 @@ int main() {
     a = 100 + 30 / 4;
     return 1 || 0 && 2;
     1 || 0 && 4 == 3 >= 2 - 1 * -1;
+
+
+    nothing();
+    nothing(1,2,3);
+    nothing(nothing(), nothing());
+    if (nothing()) while (nothing()) {;}
+    return nothing("123", pi, nothing("123"));
+
 }
 
 void nothing(int a, int b, int c) {
