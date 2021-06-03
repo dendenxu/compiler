@@ -22,8 +22,8 @@ statement           : RETURN expression SEMI
                     | FOR LPAREN for_init RPAREN ctrl_block
                     # | WHILE LPAREN expression RPAREN ctrl_block
                     # | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
-                    # | BREAK SEMI
-                    # | CONTINUE SEMI
+                    | BREAK SEMI
+                    | CONTINUE SEMI
                     | SEMI
 for_init            : e_expression SEMI e_expression SEMI e_expression
                     | declaration e_expression SEMI e_expression
@@ -121,7 +121,10 @@ class NanoParser():
         p[0] = p[2]
 
     def p_stmt_semi(self, p):
-        'statement : SEMI'
+        '''
+        statement : SEMI
+        e_expression :
+        '''
         p[0] = StmtNode() # empty statment node
 
     def p_if_stmt(self, p):
@@ -133,7 +136,7 @@ class NanoParser():
         if len(p) > 6:
             p[0] = IfStmtNode(p[3], p[5], p[7])  # with else statement
         else:
-            p[0] = IfStmtNode(p[3], p[5], None)  # no else statement
+            p[0] = IfStmtNode(p[3], p[5], StmtNode())  # no else statement
 
     def p_for_stmt(self, p):
         '''
@@ -232,7 +235,6 @@ class NanoParser():
         '''
         block        :
         typeinit     :
-        e_expression :
         '''
         p[0] = None
 
