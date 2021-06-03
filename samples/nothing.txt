@@ -9,7 +9,7 @@ int main() {
     } else if (1 || 0 && 4 == 3 >= 2 - 1 * -1) {
         c = 100;
         int i = 1, b = 2, d = 3;
-        if (0) if (1) if (3) wow = 123; else a = 1; else b = 2; else c = 3;
+        if (0) if (1) if (3) wow = 123; else a = 1; else b = 2;
     }
 
     a = 100 + 30 / 4;

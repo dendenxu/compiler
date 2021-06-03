@@ -108,6 +108,8 @@ class NanoParser():
         '''statement : IF LPAREN expression RPAREN ctrl_block
                      | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
         '''
+        # ! Dangling ELSE problem exists, but doesn't affect the grammar
+        # ! relying on the generated parser feature of preferring shift over reduce whenever there is a conflict.
         if len(p) > 6:
             p[0] = IfStmtNode(p[3], p[5], p[7])  # with else statement
         else:
@@ -213,7 +215,7 @@ class NanoParser():
 
     tokens = NanoLexer.tokens
     precidence = {
-        
+
     }
 
 
