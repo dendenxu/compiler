@@ -7,6 +7,7 @@ from nanotype import *
 import sys
 from termcolor import colored
 from llvmlite import ir, binding
+import copy
 
 class Visitor:
     pass
@@ -18,6 +19,26 @@ class NanoVisitor(Visitor):
         self.ll_module = None
         self.ll_cur_func = []
         self.ll_cur_block_builder = []
+        self.scope_stack = []
+    
+    def _push_scope(self):
+        if len(self.scope_stack) == 0:
+            self.scope_stack.append(dict())
+        else:
+            dic = copy.deepcopy(self.scope_stack[-1])
+            self.scope_stack.append(dic)
+
+    def _pop_scope(self):
+        self.scope_stack.pop()
+    def _add_identifier(self, name, item):
+        if name in self.scope_stack[-1].keys():
+            raise RuntimeError("{name} alredy declared")
+        self.scope_stack[-1][name] = item
+    def _lookup_identifier(self, name):
+        if name in self.scope_stack[-1].keys():
+            return self.scope_stack[-1][name]
+        else:
+            return None
         
     def cache_result(visit):  # decorator
         def wrapped(self, node):
@@ -30,9 +51,11 @@ class NanoVisitor(Visitor):
         return wrapped
     
     def visitProgNode(self, node: ProgNode):
+        self._push_scope()
         node.ll_module = ir.Module(name='program')
         self.ll_module = node.ll_module
         node.func.accept(self)
+        self._pop_scope()
         
     def visitFuncNode(self, node: FuncNode):
         node.type.accept(self)
@@ -66,9 +89,21 @@ class NanoVisitor(Visitor):
     
     def visitDecNode(self, node: DecNode):
         node.item = self.ll_cur_block_builder[-1].alloca(int32, name=node.id)
+        if node.init is not None:
+            node.init.accept(self)
+            self.ll_cur_block_builder[-1].store(node.init.ll_value, node.item)
+        self._add_identifier(node.id, node.item)
+
+    def visitDecListNode(self, node: DecListNode):
+        for dec in node.declist:
+            dec.accept(self)
         
     def visitAssNode(self, node: AssNode):
-        pass
+        item = self._lookup_identifier(node.id)
+        if item is None:
+            raise RuntimeError("{name} not declared")
+        node.exp.accept(self)
+        self.ll_cur_block_builder[-1].store(node.exp.ll_value, item)
 
     def visitBinopNode(self, node: BinopNode):
         node.left.accept(self)
