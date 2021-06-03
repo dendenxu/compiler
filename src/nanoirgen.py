@@ -1,4 +1,5 @@
 from llvmlite.ir import builder
+from llvmlite.ir.instructions import ICMPInstr
 from ply import yacc
 from nanoast import *
 from nanolex import NanoLexer
@@ -116,7 +117,50 @@ class NanoVisitor(Visitor):
             raise RuntimeError(node.id.name, "not declared")
         node.exp.accept(self)
         self.cur_ll_block_builders[-1].store(node.exp.ll_value, item)
+    
+    def visitIfStmtNode(self, node: IfStmtNode):
+        pred = self.cur_ll_block_builders[-1].icmp_signed('!=', self.cond.ll_value, int32(0))
+        with self.cur_ll_block_builders[-1].if_else(pred) as (then, otherwise):
+            with then:
+                self._push_scope()
+                cur_ll_func = self.defined_funcs[self.cur_func_name]
+                ll_block = cur_ll_func.append_basic_block()
+                ll_builder = ir.IRBuilder(ll_block)
+                self.cur_ll_block_builders.append(ll_builder)
+                node.ifbody.accept(self)
+                self._pop_scope()
+            with otherwise:
+                if type(node.elsebody) != StmtNode:
+                    self._push_scope()
+                    cur_ll_func = self.defined_funcs[self.cur_func_name]
+                    ll_block = cur_ll_func.append_basic_block()
+                    ll_builder = ir.IRBuilder(ll_block)
+                    self.cur_ll_block_builders.append(ll_builder)
+                    node.elsebody.accept(self)
+                    self._pop_scope()
+    
+    def visitLoopNode(self, node: LoopNode):
+        """
+                ...scope_original...
+        /======================scope_new_0===/
+        /  pre -> cond <----|                /
+        /  /=========|======|==scope_new_1===/
+        /  /        body    |                /
+        /  /=========|======|==scope_new_2===/
+        /           post----|                /
+        /====================================/
+        """
+        # 
+        self._push_scope()
+        cur_ll_func = self.defined_funcs[self.cur_func_name]
+        ll_block = cur_ll_func.append_basic_block()
+        ll_builder = ir.IRBuilder(ll_block)
+        self.cur_ll_block_builders.append(ll_builder)
 
+        
+
+        self._pop_scope()
+    
     def visitBinopNode(self, node: BinopNode):
         node.left.accept(self)
         node.right.accept(self)
