@@ -193,8 +193,5 @@ if __name__ == '__main__':
         content = f.read()
         lexer = NanoLexer()
         parser = NanoParser()
-        # visitor = NanoVisitor()
         root = parser.parse(content)
         print(colored("Tree:", 'yellow', attrs=['bold']) + str(root))
-        # result = root.accept(visitor)
-        # print(f"Result: {result}")
