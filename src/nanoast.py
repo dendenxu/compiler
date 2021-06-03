@@ -121,13 +121,7 @@ class BlockNode(Node):
         self.stmts = []
 
     def append(self, node: Node):
-        if isinstance(node, DecListNode):
-            for dec in node.declist:
-                self.decs.append(dec)
-        elif isinstance(node, DecNode):
-            self.decs.append(node)
-        else:
-            self.stmts.append(node)
+        self.stmts.append(node)
 
     def __str__(self):
         return f'{self.__class__.__name__}(\n' + 2*'    ' + \
@@ -146,6 +140,8 @@ class AssNode(Node):
     def __str__(self):
         return f"{self.__class__.__name__}( {self.id} = {self.exp} )"
 
+    def accept(self, visitor):
+        return visitor.visitAssNode(self)
 
 class DecNode(Node):
 
@@ -155,6 +151,9 @@ class DecNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}( {self.type} {self.id}" + (f' = {self.init}' if self.init is not None else '') + ' )'
+
+    def accept(self, visitor):
+        return visitor.visitDecNode(self)
 
 
 class DecListNode(Node):
