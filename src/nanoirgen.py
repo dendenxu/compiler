@@ -28,14 +28,14 @@ class NanoVisitor(Visitor):
     @cache_result
     def visitProgNode(self, node: ProgNode, father=None):
         node.ll_module = ir.Module(name='program')
-        self.visitFuncNode(node.func, node)
+        node.func.accept(self, node)
         
     @cache_result
     def visitFuncNode(self, node: FuncNode, father=None):
-        self.visitTypeNode(node.type)
+        node.type.accept(self, node)
         node.ll_type = ir.FunctionType(node.type.ll_type, ())
         node.ll_func = ir.Function(father.ll_module, node.ll_type, name=node.id)
-        self.visitBlockNode(node.block, node)
+        node.block.accept(self, node)
         
     @cache_result
     def visitTypeNode(self, node: TypeNode, father=None):
@@ -43,17 +43,16 @@ class NanoVisitor(Visitor):
         
     @cache_result
     def visitBlockNode(self, node: BlockNode, father=None):
+        node.ll_type = father.ll_type
+        node.ll_func = father.ll_func
         for stmt in node.stmts:
-            self.visitRetNode(stmt, father)
+            stmt.accept(self, node)
             
     @cache_result
     def visitRetNode(self, node: RetNode, father=None):
         node.ll_block = father.ll_func.append_basic_block()
         node.ll_builder = ir.IRBuilder(node.ll_block)
-        if isinstance(node.exp, IntNode):
-            self.visitIntNode(node.exp, node)
-        elif isinstance(node.exp, BinopNode):
-            self.visitBinopNode(node.exp, node)
+        node.exp.accept(self, node)
         node.ll_builder.ret(node.exp.ll_value)
         
     @cache_result
@@ -64,8 +63,8 @@ class NanoVisitor(Visitor):
     @cache_result
     def visitBinopNode(self, node: BinopNode, father=None):
         if node.op is '+':
-            self.visitIntNode(node.left)
-            self.visitIntNode(node.right)
+            node.left.accept(self, node)
+            node.right.accept(self, node)
             node.ll_value = father.ll_builder.add(
                                 node.left.ll_value,
                                 node.right.ll_value)
