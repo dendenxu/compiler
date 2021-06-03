@@ -20,8 +20,8 @@ statement           : RETURN expression SEMI
                     | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
                     | IF LPAREN expression RPAREN ctrl_block
                     | FOR LPAREN for_init RPAREN ctrl_block
-                    # | WHILE LPAREN expression RPAREN ctrl_block
-                    # | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
+                    | WHILE LPAREN expression RPAREN ctrl_block
+                    | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
                     | BREAK SEMI
                     | CONTINUE SEMI
                     | SEMI
@@ -120,12 +120,20 @@ class NanoParser():
         '''
         p[0] = p[2]
 
+    def p_break(self, p):
+        'statement : BREAK SEMI'
+        p[0] = BreakNode()
+
+    def p_continue(self, p):
+        'statement : CONTINUE SEMI'
+        p[0] = ContinueNode()
+
     def p_stmt_semi(self, p):
         '''
         statement : SEMI
         e_expression :
         '''
-        p[0] = StmtNode() # empty statment node
+        p[0] = StmtNode()  # empty statment node
 
     def p_if_stmt(self, p):
         '''statement : IF LPAREN expression RPAREN ctrl_block
@@ -137,6 +145,14 @@ class NanoParser():
             p[0] = IfStmtNode(p[3], p[5], p[7])  # with else statement
         else:
             p[0] = IfStmtNode(p[3], p[5], StmtNode())  # no else statement
+
+    def p_while_stmt(self, p):
+        'statement : WHILE LPAREN expression RPAREN ctrl_block'
+        p[0] = LoopNode(StmtNode(), p[3], p[5], StmtNode())  # simple while loop
+
+    def p_do_while_stmt(self, p):
+        'statement : DO ctrl_block WHILE LPAREN expression RPAREN SEMI'
+        p[0] = LoopNode(p[3], p[3], p[5], StmtNode())  # simple do-while loop
 
     def p_for_stmt(self, p):
         '''
@@ -152,15 +168,14 @@ class NanoParser():
                    | declaration e_expression SEMI e_expression
         '''
         p[0] = BlockNode()
-        if len(p) == 6: # with e_expression
-            p[0].append(p[1]) # initialization
-            p[0].append(p[3]) # break condition
-            p[0].append(p[5]) # operation at loopend
-        else: # with declaration
-            p[0].append(p[1]) # initialization
-            p[0].append(p[2]) # break condition
-            p[0].append(p[4]) # operation at loopend
-
+        if len(p) == 6:  # with e_expression
+            p[0].append(p[1])  # initialization
+            p[0].append(p[3])  # break condition
+            p[0].append(p[5])  # operation at loopend
+        else:  # with declaration
+            p[0].append(p[1])  # initialization
+            p[0].append(p[2])  # break condition
+            p[0].append(p[4])  # operation at loopend
 
     def p_cond_exp(self, p):
         'conditional : logical_or CONDOP expression COLON conditional'

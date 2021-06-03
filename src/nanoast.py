@@ -246,3 +246,10 @@ class LoopNode(StmtNode):
 
     def accept(self, visitor):
         return visitor.visitLoopNode(self)
+
+
+class BreakNode(StmtNode):
+    pass
+
+class ContinueNode(StmtNode):
+    pass
