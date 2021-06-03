@@ -3,7 +3,7 @@ from typing import List
 
 class Node(object):
     # A simple Abstract Syntax Tree node
-    def accept(self, visitor):
+    def accept(self, visitor, father=None):
         pass
 
 class TypeNode(Node):
@@ -12,6 +12,9 @@ class TypeNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.typestr})"
+    
+    def accept(self, visitor, father=None):
+        return visitor.visitTypeNode(self, father)
 
 
 class ExpNode(Node):
@@ -36,6 +39,9 @@ class RetNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}( RETURN {self.exp}; )"
+    
+    def accept(self, visitor, father=None):
+        return visitor.visitRetNode(self, father)
 
 
 class FuncNode(Node):
@@ -46,8 +52,8 @@ class FuncNode(Node):
         return f"{self.__class__.__name__}( {self.type} {self.id}()" + \
             " {" + f"\n    {self.block}\n" + "    } )EndFunc\n"
 
-    def accept(self, visitor):
-        return visitor.visitFuncNode(self)
+    def accept(self, visitor, father=None):
+        return visitor.visitFuncNode(self, father)
 
 
 class ProgNode(Node):
@@ -64,8 +70,8 @@ class ProgNode(Node):
 )EndProg
 """
 
-    def accept(self, visitor):
-        return visitor.visitProgram(self)
+    def accept(self, visitor, father=None):
+        return visitor.visitProgNode(self, father)
 
 
 class IntNode(Node):
@@ -77,8 +83,8 @@ class IntNode(Node):
     def __str__(self):
         return f"{self.__class__.__name__}({self.value})"
 
-    def accept(self, visitor):
-        return visitor.visitIntNode(self)
+    def accept(self, visitor, father=None):
+        return visitor.visitIntNode(self, father)
 
 class UnaryNode(Node):
     _legal_ops = {*"+-!~"}
@@ -101,8 +107,8 @@ class BinopNode(Node):
     def __str__(self):
         return f"{self.__class__.__name__}( {self.left} {self.op} {self.right} )"
 
-    def accept(self, visitor):
-        return visitor.visitBinopNode(self)
+    def accept(self, visitor, father=None):
+        return visitor.visitBinopNode(self, father)
 
 
 class BlockNode(Node):
@@ -124,6 +130,9 @@ class BlockNode(Node):
         return f'{self.__class__.__name__}(\n' + 2*'    ' + \
             ('\n' + 2*'    ').join(list(map(str, self.decs)) + list(map(str, self.stmts))) + \
             '\n    )EndBlock'
+    
+    def accept(self, visitor, father=None):
+        return visitor.visitBlockNode(self, father)
 
 
 class AssNode(Node):
