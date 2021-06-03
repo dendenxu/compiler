@@ -10,14 +10,15 @@ Productions used in the parser:
 
 program             : program function
                     |
-function            : type ID LPAREN parameters RPAREN curl_block
-parameters          : type ID comma_paramters
+function            : type id LPAREN parameters RPAREN curl_block
+parameters          : type id comma_paramters
                     |
-comma_parameters    : comma_parameters COMMA type ID
+comma_parameters    : comma_parameters COMMA type id
                     |
 block               : block curl_block
                     | block statement
                     | 
+id                  : ID
 type                : INT
                     | VOID
                     | LONG
@@ -35,25 +36,25 @@ statement           : RETURN expression SEMI
                     | BREAK SEMI
                     | CONTINUE SEMI
                     | SEMI
-for_init            : e_expression SEMI e_expression SEMI e_expression
-                    | declaration e_expression SEMI e_expression
+for_init            : for_expression SEMI for_expression SEMI for_expression
+                    | declaration for_expression SEMI for_expression
 expression_list     : expression comma_expressions
                     |
 comma_expressions   : comma_expressions COMMA expression
                     |
-e_expression        : expression
+for_expression      : expression
                     | 
 ctrl_block          : curl_block
                     | statement
 curl_block          : LBRACE block RBRACE
 declaration         : type declist SEMI
-declist             : declist COMMA ID typeinit
-                    | ID typeinit
+declist             : declist COMMA id typeinit
+                    | id typeinit
 typeinit            : EQUALS expression
                     | 
 expression          : assignment
 assignment          : conditional
-                    | ID EQUALS expression
+                    | id EQUALS expression
 conditional         : logical_or
                     | logical_or CONDOP expression COLON conditional
 additive            : multiplicative
@@ -63,12 +64,12 @@ multiplicative      : unary
 unary               : postfix
                     | (PLUS|MINUS|NOT|LNOT) unary
 postfix             : primary
-                    | ID LPAREN expression_list RPAREN
+                    | id LPAREN expression_list RPAREN
 primary             : INT_CONST_DEC
                     | FLOAT_CONST
                     | CHAR_CONST
                     | STRING_LITERAL
-                    | ID
+                    | id
                     | LPAREN expression RPAREN
 equality            : relational
                     | equality (EQ|NE) relational
@@ -96,20 +97,20 @@ class NanoParser():
         p[0] = p[1]
 
     def p_func_def(self, p):
-        'function   : type ID LPAREN parameters RPAREN curl_block'
-        p[0] = FuncNode(p[1], IDNode(p[2]), p[4], p[6])
+        'function   : type id LPAREN parameters RPAREN curl_block'
+        p[0] = FuncNode(p[1], p[2], p[4], p[6])
 
     def p_params(self, p):
-        'parameters : type ID comma_parameters'
-        param = ParamNode(p[1], IDNode(p[2]))
+        'parameters : type id comma_parameters'
+        param = ParamNode(p[1], p[2])
         if p[3] is None:
             p[3] = ParamListNode()
         p[3].append(param)
         p[0] = p[3]
 
     def p_comma_params(self, p):
-        'comma_parameters : comma_parameters COMMA type ID'
-        param = ParamNode(p[3], IDNode(p[4]))
+        'comma_parameters : comma_parameters COMMA type id'
+        param = ParamNode(p[3], p[4])
         if p[1] is None:
             p[1] = ParamListNode()
         p[1].append(param)
@@ -147,7 +148,7 @@ class NanoParser():
     def p_pass_on_first(self, p):
         '''
         statement       : expression SEMI
-        e_expression    : expression
+        for_expression    : expression
         ctrl_block      : curl_block
         expression      : assignment
         assignment      : conditional
@@ -161,6 +162,7 @@ class NanoParser():
         equality        : relational
         relational      : additive
         statement       : declaration
+        primary         : id
         '''
         p[0] = p[1]
 
@@ -201,15 +203,15 @@ class NanoParser():
 
     def p_exp_empty(self, p):
         '''
-        e_expression : 
+        for_expression : 
         '''
         p[0] = ExpNode()  # empty statment node
 
     def p_postfix(self, p):
         '''
-        postfix : ID LPAREN expression_list RPAREN
+        postfix : id LPAREN expression_list RPAREN
         '''
-        p[0] = CallNode(IDNode(p[1]), p[3])
+        p[0] = CallNode(p[1], p[3])
 
     def p_if_stmt(self, p):
         '''statement : IF LPAREN expression RPAREN ctrl_block
@@ -240,11 +242,11 @@ class NanoParser():
 
     def p_for_init(self, p):
         '''
-        for_init   : e_expression SEMI e_expression SEMI e_expression
-                   | declaration e_expression SEMI e_expression
+        for_init   : for_expression SEMI for_expression SEMI for_expression
+                   | declaration for_expression SEMI for_expression
         '''
         p[0] = BlockNode()
-        if len(p) == 6:  # with e_expression
+        if len(p) == 6:  # with for_expression
             p[0].append(p[1])  # initialization
             p[0].append(p[3])  # break condition
             p[0].append(p[5])  # operation at loopend
@@ -270,9 +272,9 @@ class NanoParser():
 
     def p_assignment(self, p):
         '''
-        assignment : ID EQUALS expression
+        assignment : id EQUALS expression
         '''
-        p[0] = AssNode(IDNode(p[1]), p[3])
+        p[0] = AssNode(p[1], p[3])
 
     def p_prim_exp(self, p):
         'primary : LPAREN expression RPAREN'
@@ -294,8 +296,8 @@ class NanoParser():
         'primary      : STRING_LITERAL'
         p[0] = StringNode(str(p[1]))
 
-    def p_prim_id(self, p):
-        'primary : ID'
+    def p_id(self, p):
+        "id : ID"
         p[0] = IDNode(p[1])
 
     def p_unary_op(self, p):
@@ -348,20 +350,20 @@ class NanoParser():
 
     def p_dec_list(self, p):
         '''
-        declist     : declist COMMA ID typeinit
+        declist     : declist COMMA id typeinit
         '''
         if isinstance(p[1], DecNode):
             dec = p[1]
             p[1] = DecListNode()
             p[1].append(dec)
-        p[1].append(DecNode(None, IDNode(p[3]), p[4]))
+        p[1].append(DecNode(None, p[3], p[4]))
         p[0] = p[1]
 
     def p_dec_init(self, p):
         '''
-        declist     : ID typeinit
+        declist     : id typeinit
         '''
-        p[0] = DecNode(None, IDNode(p[1]), p[2])
+        p[0] = DecNode(None, p[1], p[2])
 
     # Error rule for syntax errors
 
