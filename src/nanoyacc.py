@@ -85,11 +85,15 @@ Productions used in the parser:
 
 
 class NanoParser():
-    def __init__(self):
-        pass
+    ########################################################
+    ###                                                  ###
+    ###                      PROGRAM                     ###
+    ###                                                  ###
+    ########################################################
 
-    def build(self, **kwargs):
-        self.parser = yacc.yacc(module=self, **kwargs)
+    #############################################################
+    #                The Whole C File (Functions)               #
+    #############################################################
 
     def p_prog_func(self, p):
         # program can have multiple functions
@@ -99,22 +103,15 @@ class NanoParser():
         p[1].append(p[2])  # init to a function
         p[0] = p[1]
 
+    #############################################################
+    #                     Function Definition                   #
+    #############################################################
+
     def p_func_def(self, p):
         '''
         function            : type id LPAREN param_list RPAREN curl_block
         '''
         p[0] = FuncNode(p[1], p[2], p[4], p[6])
-
-    def p_type_def(self, p):
-        '''
-        type                : INT
-                            | VOID
-                            | LONG
-                            | FLOAT
-                            | DOUBLE
-                            | CHAR
-        '''
-        p[0] = TypeNode(p[1])
 
     def p_params(self, p):
         '''
@@ -135,6 +132,42 @@ class NanoParser():
             p[1] = []
         p[1].append(param)
         p[0] = p[1]
+
+    ########################################################
+    ###                                                  ###
+    ###                     STATEMENT                    ###
+    ###                                                  ###
+    ########################################################
+
+    #############################################################
+    #                      Scope Resolution                     #
+    #############################################################
+
+    def p_ctrl_block_wrap(self, p):
+        '''
+        ctrl_block          : statement
+        '''
+        # control block should wrap up the single statment as a block
+        # for scope construction
+        p[0] = BlockNode(p[1])
+
+    def p_block_stmt(self, p):
+        '''
+        block               : block curl_block
+                            | block statement
+        '''
+        if p[1] is None:
+            p[1] = BlockNode()
+        if isinstance(p[2], list):
+            for dec in p[2]:
+                p[1].append(dec)
+        else:
+            p[1].append(p[2])
+        p[0] = p[1]
+
+    #############################################################
+    #                    Variable Declaration                   #
+    #############################################################
 
     def p_declaration(self, p):
         '''
@@ -164,27 +197,9 @@ class NanoParser():
         '''
         p[0] = DecNode(None, p[1], p[2])
 
-    def p_ctrl_block_wrap(self, p):
-        '''
-        ctrl_block          : statement
-        '''
-        # control block should wrap up the single statment as a block
-        # for scope construction
-        p[0] = BlockNode(p[1])
-
-    def p_block_stmt(self, p):
-        '''
-        block               : block curl_block
-                            | block statement
-        '''
-        if p[1] is None:
-            p[1] = BlockNode()
-        if isinstance(p[2], list):
-            for dec in p[2]:
-                p[1].append(dec)
-        else:
-            p[1].append(p[2])
-        p[0] = p[1]
+    #############################################################
+    #                      Single Statements                    #
+    #############################################################
 
     def p_stmt_ret_exp(self, p):
         '''
@@ -210,35 +225,9 @@ class NanoParser():
         '''
         p[0] = StmtNode()  # empty statment node
 
-    def p_exp_empty(self, p):
-        '''
-        for_exp             : 
-        '''
-        p[0] = ExpNode()  # empty expression node
-
-    def p_call_func(self, p):
-        '''
-        postfix             : id LPAREN exp_list RPAREN
-        '''
-        p[0] = CallNode(p[1], p[3])
-
-    def p_exp_list(self, p):
-        '''
-        exp_list            : expression comma_exps
-        '''
-        if p[2] is None:
-            p[2] = []
-        p[2].append(p[1])
-        p[0] = p[2]
-
-    def p_comma_exp_list(self, p):
-        '''
-        comma_exps          : comma_exps COMMA expression
-        '''
-        if p[1] is None:
-            p[1] = []
-        p[1].append(p[3])
-        p[0] = p[1]
+    #############################################################
+    #                         Control Flow                      #
+    #############################################################
 
     def p_if_stmt(self, p):
         '''statement        : IF LPAREN expression RPAREN ctrl_block
@@ -289,17 +278,106 @@ class NanoParser():
                 p[4],  # operation at loopend
             ]
 
+    ########################################################
+    ###                                                  ###
+    ###                     EXPRESSION                   ###
+    ###                                                  ###
+    ########################################################
+
+    #############################################################
+    #                      Single Expression                    #
+    #############################################################
+
+    def p_exp_empty(self, p):
+        '''
+        for_exp             : 
+        '''
+        p[0] = ExpNode()  # empty expression node
+
     def p_cond_exp(self, p):
         '''
         conditional         : logical_or CONDOP expression COLON conditional
         '''
         # TODO: construct conditional node
 
+    #############################################################
+    #                           Assignment                      #
+    #############################################################
+
     def p_assignment(self, p):
         '''
         assignment          : id EQUALS expression
         '''
         p[0] = AssNode(p[1], p[3])
+
+    def p_unary_op(self, p):
+        '''
+        unary               : PLUS unary
+                            | MINUS unary
+                            | NOT unary
+                            | LNOT unary
+        '''
+        p[0] = UnaryNode(p[1], p[2])
+
+    #############################################################
+    #                  Arithmetic/Logical Operations            #
+    #############################################################
+
+    def p_binary_operators(self, p):
+        '''
+        additive            : additive PLUS multiplicative
+                            | additive MINUS multiplicative
+        multiplicative      : multiplicative TIMES unary
+                            | multiplicative DIVIDE unary
+        equality            : equality EQ relational
+                            | equality NE relational
+        relational          : relational LT additive
+                            | relational GT additive
+                            | relational GE additive
+                            | relational LE additive
+        logical_or          : logical_or LOR logical_and
+        logical_and         : logical_and LAND equality
+        '''
+        p[0] = BinopNode(p[2], p[1], p[3])
+
+    #############################################################
+    #                       Function Call                       #
+    #############################################################
+
+    def p_call_func(self, p):
+        '''
+        postfix             : id LPAREN exp_list RPAREN
+        '''
+        p[0] = CallNode(p[1], p[3])
+
+    def p_exp_list(self, p):
+        '''
+        exp_list            : expression comma_exps
+        '''
+        if p[2] is None:
+            p[2] = []
+        p[2].append(p[1])
+        p[0] = p[2]
+
+    def p_comma_exp_list(self, p):
+        '''
+        comma_exps          : comma_exps COMMA expression
+        '''
+        if p[1] is None:
+            p[1] = []
+        p[1].append(p[3])
+        p[0] = p[1]
+
+
+    ########################################################
+    ###                                                  ###
+    ###                     RESOLUTION                   ###
+    ###                                                  ###
+    ########################################################
+
+    #############################################################
+    #                      Constant Resolution                  #
+    #############################################################
 
     def p_prim_int(self, p):
         '''
@@ -325,35 +403,38 @@ class NanoParser():
         '''
         p[0] = StringNode(str(p[1]))
 
+    #############################################################
+    #                        Name Resolution                    #
+    #############################################################
+
     def p_id(self, p):
         "id : ID"
         p[0] = IDNode(p[1])
 
-    def p_unary_op(self, p):
-        '''
-        unary               : PLUS unary
-                            | MINUS unary
-                            | NOT unary
-                            | LNOT unary
-        '''
-        p[0] = UnaryNode(p[1], p[2])
+    #############################################################
+    #                        Type Resolution                    #
+    #############################################################
 
-    def p_binary_operators(self, p):
+    def p_type_resolve(self, p):
         '''
-        additive            : additive PLUS multiplicative
-                            | additive MINUS multiplicative
-        multiplicative      : multiplicative TIMES unary
-                            | multiplicative DIVIDE unary
-        equality            : equality EQ relational
-                            | equality NE relational
-        relational          : relational LT additive
-                            | relational GT additive
-                            | relational GE additive
-                            | relational LE additive
-        logical_or          : logical_or LOR logical_and
-        logical_and         : logical_and LAND equality
+        type                : INT
+                            | VOID
+                            | LONG
+                            | FLOAT
+                            | DOUBLE
+                            | CHAR
         '''
-        p[0] = BinopNode(p[2], p[1], p[3])
+        p[0] = TypeNode(p[1])
+
+    ########################################################
+    ###                                                  ###
+    ###                       PARSING                    ###
+    ###                                                  ###
+    ########################################################
+
+    #############################################################
+    #                Convinient Parsing Utilities               #
+    #############################################################
 
     def p_empty(self, p):
         '''
@@ -401,11 +482,17 @@ class NanoParser():
         '''
         p[0] = p[2]
 
-    # Error rule for syntax errors
+    #############################################################
+    #                      Syntax Error Rules                   #
+    #############################################################
 
     def p_error(self, p):
         # with a syntax error, the token should contain corresponding location
         print(colored("Error: ", "red")+"Syntax error when parsing "+str(p))
+
+    #############################################################
+    #                      External Functions                   #
+    #############################################################
 
     def parse(self, input, **kwargs) -> Node:
         try:
@@ -413,6 +500,9 @@ class NanoParser():
         except Exception as e:
             traceback.print_exc()
             print(colored("Error: ", "red")+f"{e}")
+
+    def build(self, **kwargs):
+        self.parser = yacc.yacc(module=self, **kwargs)
 
     tokens = NanoLexer.tokens
 
