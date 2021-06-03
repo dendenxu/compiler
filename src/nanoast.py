@@ -181,7 +181,7 @@ class IfStmtNode(Node):
         self.elsebody = elsebody  # this can be None if this if stmt is not paired with a else statement
 
     def __str__(self):
-        return f"{self.__class__.__name__}( IF ({self.exp}) {{ {self.ifnode} }} ELSE {{ {self.elsenode} }} )"
+        return f"{self.__class__.__name__}( IF ({self.cond}) {{ {self.ifnode} }} ELSE {{ {self.elsenode} }} )"
     
     def accept(self, visitor):
         return visitor.visitIfStmtNode(self)
