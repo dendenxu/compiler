@@ -14,6 +14,7 @@ class Visitor:
 class NanoVisitor(Visitor):
     def __init__(self):
         self.result_dict = {}  # Node -> int
+        
     def cache_result(visit):  # decorator
         def wrapped(self, node, father=None):
             if node in self.result_dict:
@@ -23,33 +24,52 @@ class NanoVisitor(Visitor):
             self.result_dict[node] = value
             return value
         return wrapped
+    
     @cache_result
     def visitProgNode(self, node: ProgNode, father=None):
         node.ll_module = ir.Module(name='program')
         self.visitFuncNode(node.func, node)
+        
     @cache_result
     def visitFuncNode(self, node: FuncNode, father=None):
         self.visitTypeNode(node.type)
         node.ll_type = ir.FunctionType(node.type.ll_type, ())
         node.ll_func = ir.Function(father.ll_module, node.ll_type, name=node.id)
         self.visitBlockNode(node.block, node)
+        
     @cache_result
     def visitTypeNode(self, node: TypeNode, father=None):
         node.ll_type = ir.IntType(32)
+        
     @cache_result
     def visitBlockNode(self, node: BlockNode, father=None):
         for stmt in node.stmts:
             self.visitRetNode(stmt, father)
+            
     @cache_result
     def visitRetNode(self, node: RetNode, father=None):
-        self.visitIntNode(node.exp)
-        node.ll_block = father.ll_func.append_basic_block(name='entry')
+        node.ll_block = father.ll_func.append_basic_block()
         node.ll_builder = ir.IRBuilder(node.ll_block)
+        if isinstance(node.exp, IntNode):
+            self.visitIntNode(node.exp, node)
+        elif isinstance(node.exp, BinopNode):
+            self.visitBinopNode(node.exp, node)
         node.ll_builder.ret(node.exp.ll_value)
+        
     @cache_result
     def visitIntNode(self, node: IntNode, father=None):
         int32 = ir.IntType(32)
         node.ll_value = int32(node.value)
+        
+    @cache_result
+    def visitBinopNode(self, node: BinopNode, father=None):
+        if node.op is '+':
+            self.visitIntNode(node.left)
+            self.visitIntNode(node.right)
+            node.ll_value = father.ll_builder.add(
+                                node.left.ll_value,
+                                node.right.ll_value)
+    
 
 
 if __name__ == '__main__':
@@ -63,7 +83,7 @@ if __name__ == '__main__':
         visitor = NanoVisitor()
         visitor.visitProgNode(root)
         print(f"Result: {root.ll_module}")
-    with open('../results/irgen.txt', 'w') as I:
+    with open('../results/irgen.ll', 'w') as I:
         I.write(str(root.ll_module))
     
     """

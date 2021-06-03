@@ -1,9 +1,10 @@
 ; ModuleID = "program"
-target triple = "x86_64-pc-linux"
+target triple = "unknown-unknown-unknown"
 target datalayout = ""
 
 define i32 @"main"() 
 {
-entry:
-  ret i32 0
+.2:
+  %".3" = add i32 1, 2
+  ret i32 %".3"
 }
