@@ -11,7 +11,7 @@ class TypeNode(Node):
         self.typestr = typestr
 
     def __str__(self):
-        return f"({self.__class__.__name__}: {self.typestr})"
+        return f"{self.__class__.__name__}({self.typestr})"
 
 
 class ExpNode(Node):
@@ -19,7 +19,7 @@ class ExpNode(Node):
         self.node = node
 
     def __str__(self):
-        return f"({self.__class__.__name__}: {self.node})"
+        return f"{self.__class__.__name__}( {self.node} )"
 
 
 class PrimNode(Node):
@@ -27,7 +27,7 @@ class PrimNode(Node):
         self.node = node
 
     def __str__(self):
-        return f"({self.__class__.__name__}: {self.node}"
+        return f"{self.__class__.__name__}( {self.node} )"
 
 
 class RetNode(Node):
@@ -35,7 +35,7 @@ class RetNode(Node):
         self.exp = exp
 
     def __str__(self):
-        return f"({self.__class__.__name__}: RETURN {self.exp};)"
+        return f"{self.__class__.__name__}( RETURN {self.exp}; )"
 
 
 class FuncNode(Node):
@@ -43,10 +43,8 @@ class FuncNode(Node):
         self.type, self.id, self.block = type, id, block
 
     def __str__(self):
-        return f"""({self.__class__.__name__}: {self.type} {self.id}()
-""" + "    {" + f"""
-    {self.block}
-""" + "    })"
+        return f"{self.__class__.__name__}( {self.type} {self.id}()" + \
+            " {" + f"\n    {self.block}\n" + "    } )EndFunc\n"
 
     def accept(self, visitor):
         return visitor.visitFuncNode(self)
@@ -61,8 +59,9 @@ class ProgNode(Node):
 
     def __str__(self):
         return f"""
-    ({self.__class__.__name__}:
-    {self.func})
+{self.__class__.__name__}(
+    {self.func} 
+)EndProg
 """
 
     def accept(self, visitor):
@@ -71,11 +70,12 @@ class ProgNode(Node):
 
 class IntNode(Node):
     def __init__(self, value: int):
-        assert value <= 2**31 - 1 and value >= 0, f"{value} is out of integer range"
+        assert value <= 2**31 - 1 and value >= 0, \
+            f"{value} is out of integer range"
         self.value = value
 
     def __str__(self):
-        return f"({self.__class__.__name__}: {self.value})"
+        return f"{self.__class__.__name__}({self.value})"
 
     def accept(self, visitor):
         return visitor.visitIntNode(self)
@@ -88,7 +88,7 @@ class UnaryNode(Node):
         self.op, self.node = op, node
 
     def __str__(self):
-        return f"({self.__class__.__name__}: {self.op}{self.node})"
+        return f"{self.__class__.__name__}( {self.op}{self.node} )"
 
 
 class BinopNode(Node):
@@ -99,7 +99,7 @@ class BinopNode(Node):
         self.op, self.left, self.right = op, left, right
 
     def __str__(self):
-        return f"({self.__class__.__name__}: {self.left} {self.op} {self.right})"
+        return f"{self.__class__.__name__}( {self.left} {self.op} {self.right} )"
 
     def accept(self, visitor):
         return visitor.visitBinopNode(self)
@@ -121,8 +121,9 @@ class BlockNode(Node):
             self.stmts.append(node)
 
     def __str__(self):
-        return f'({self.__class__.__name__}:\n'+'    '*2+ \
-            ('\n'+2*'    ').join(list(map(str, self.decs)) + list(map(str, self.stmts))) + ')'
+        return f'{self.__class__.__name__}(\n' + 2*'    ' + \
+            ('\n' + 2*'    ').join(list(map(str, self.decs)) + list(map(str, self.stmts))) + \
+            '\n    )EndBlock'
 
 
 class AssNode(Node):
@@ -131,7 +132,7 @@ class AssNode(Node):
         self.id, self.exp = id, exp
 
     def __str__(self):
-        return f"({self.__class__.__name__}: {self.id} = {self.exp})"
+        return f"{self.__class__.__name__}( {self.id} = {self.exp} )"
 
 
 class DecNode(Node):
@@ -141,7 +142,7 @@ class DecNode(Node):
         self.type, self.id, self.init = type, id, init
 
     def __str__(self):
-        return f"({self.__class__.__name__}: {self.type} {self.id}" + (f' = {self.init}' if self.init is not None else '') + ")"
+        return f"{self.__class__.__name__}( {self.type} {self.id}" + (f' = {self.init}' if self.init is not None else '') + ' )'
 
 
 class DecListNode(Node):
@@ -153,7 +154,8 @@ class DecListNode(Node):
         self.declist.append(node)
 
     def __str__(self):
-        return f'({self.__class__.__name__}:\n'+'    '*3+('\n'+3*'    ').join(map(str, self.declist)) + ')'
+        return f'{self.__class__.__name__}(\n' + '    '*3 + \
+            ('\n'+3*'    ').join(map(str, self.declist)) + ' )'
 
 
 class Visitor:

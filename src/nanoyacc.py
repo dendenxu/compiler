@@ -5,7 +5,9 @@ import sys
 from termcolor import colored
 import traceback
 
-"""
+""" 
+Productions used in the parser:
+
 program             : function
 function            : type ID LPAREN RPAREN LBRACE block RBRACE
 block               : block statement
@@ -193,6 +195,6 @@ if __name__ == '__main__':
         parser = NanoParser()
         # visitor = NanoVisitor()
         root = parser.parse(content)
-        print(f"Tree: {root}")
+        print(colored("Tree:", 'yellow', attrs=['bold']) + str(root))
         # result = root.accept(visitor)
         # print(f"Result: {result}")
