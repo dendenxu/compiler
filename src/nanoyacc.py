@@ -8,22 +8,28 @@ import traceback
 """ 
 Productions used in the parser:
 
-program             : function
+program             : program function
+                    |
 function            : type ID LPAREN RPAREN curl_block
 block               : block statement
                     | block curl_block
                     | 
 type                : INT
+                    | VOID
+                    | LONG
+                    | FLOAT
+                    | DOUBLE
+                    | CHAR
 statement           : RETURN expression SEMI
                     | expression SEMI
                     | declaration
                     | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
                     | IF LPAREN expression RPAREN ctrl_block
                     | FOR LPAREN for_init RPAREN ctrl_block
-                    # | WHILE LPAREN expression RPAREN ctrl_block
-                    # | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
-                    # | BREAK SEMI
-                    # | CONTINUE SEMI
+                    | WHILE LPAREN expression RPAREN ctrl_block
+                    | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
+                    | BREAK SEMI
+                    | CONTINUE SEMI
                     | SEMI
 for_init            : e_expression SEMI e_expression SEMI e_expression
                     | declaration e_expression SEMI e_expression
@@ -73,15 +79,25 @@ class NanoParser():
         self.parser = yacc.yacc(module=self, **kwargs)
 
     def p_prog_func(self, p):
-        'program    : function'
-        p[0] = ProgNode(p[1])
+        'program    : program function'
+        if p[1] is None:
+            p[1] = ProgNode()
+        p[1].append(p[2])  # init to a function
+        p[0] = p[1]
 
     def p_func_def(self, p):
         'function   : type ID LPAREN RPAREN curl_block'
         p[0] = FuncNode(p[1], IDNode(p[2]), p[5])
 
     def p_type_def(self, p):
-        'type       : INT'
+        '''
+        type    : INT
+                | VOID
+                | LONG
+                | FLOAT
+                | DOUBLE
+                | CHAR
+        '''
         p[0] = TypeNode(p[1])
 
     def p_stmt_ret_exp(self, p):
@@ -120,9 +136,20 @@ class NanoParser():
         '''
         p[0] = p[2]
 
+    def p_break(self, p):
+        'statement : BREAK SEMI'
+        p[0] = BreakNode()
+
+    def p_continue(self, p):
+        'statement : CONTINUE SEMI'
+        p[0] = ContinueNode()
+
     def p_stmt_semi(self, p):
-        'statement : SEMI'
-        p[0] = StmtNode() # empty statment node
+        '''
+        statement : SEMI
+        e_expression :
+        '''
+        p[0] = StmtNode()  # empty statment node
 
     def p_if_stmt(self, p):
         '''statement : IF LPAREN expression RPAREN ctrl_block
@@ -133,7 +160,15 @@ class NanoParser():
         if len(p) > 6:
             p[0] = IfStmtNode(p[3], p[5], p[7])  # with else statement
         else:
-            p[0] = IfStmtNode(p[3], p[5], None)  # no else statement
+            p[0] = IfStmtNode(p[3], p[5], StmtNode())  # no else statement
+
+    def p_while_stmt(self, p):
+        'statement : WHILE LPAREN expression RPAREN ctrl_block'
+        p[0] = LoopNode(StmtNode(), p[3], p[5], StmtNode())  # simple while loop
+
+    def p_do_while_stmt(self, p):
+        'statement : DO ctrl_block WHILE LPAREN expression RPAREN SEMI'
+        p[0] = LoopNode(p[3], p[3], p[5], StmtNode())  # simple do-while loop
 
     def p_for_stmt(self, p):
         '''
@@ -149,15 +184,14 @@ class NanoParser():
                    | declaration e_expression SEMI e_expression
         '''
         p[0] = BlockNode()
-        if len(p) == 6: # with e_expression
-            p[0].append(p[1]) # initialization
-            p[0].append(p[3]) # break condition
-            p[0].append(p[5]) # operation at loopend
-        else: # with declaration
-            p[0].append(p[1]) # initialization
-            p[0].append(p[2]) # break condition
-            p[0].append(p[4]) # operation at loopend
-
+        if len(p) == 6:  # with e_expression
+            p[0].append(p[1])  # initialization
+            p[0].append(p[3])  # break condition
+            p[0].append(p[5])  # operation at loopend
+        else:  # with declaration
+            p[0].append(p[1])  # initialization
+            p[0].append(p[2])  # break condition
+            p[0].append(p[4])  # operation at loopend
 
     def p_cond_exp(self, p):
         'conditional : logical_or CONDOP expression COLON conditional'
@@ -232,7 +266,7 @@ class NanoParser():
         '''
         block        :
         typeinit     :
-        e_expression :
+        program      :
         '''
         p[0] = None
 

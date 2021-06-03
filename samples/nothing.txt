@@ -41,7 +41,16 @@ int main() {
         }
     }
 
+    for (;;) { abc = "abc"; }
+
+    while (1) while(0)while(controller) do p = "inside while loop"; while ( condition == "OK" );
+
     a = 100 + 30 / 4;
     return 1 || 0 && 2;
     1 || 0 && 4 == 3 >= 2 - 1 * -1;
+}
+
+void nothing() {
+    "This function does nothing.";
+    if (check_more) "It's sole purpose is to check whether the parser can recognize what's going on here with multiple function declarations";
 }

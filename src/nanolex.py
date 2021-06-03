@@ -66,7 +66,7 @@ class NanoLexer():
         'INT', 'LONG', 'FLOAT', 'DOUBLE', 'CHAR',
         'UNSIGNED', 'CONST', 'VOID', "STATIC"
         'ENUM', 'STRUCT', 'UNION', 'IF', 'ELSE',
-        'WHILE', 'FOR', 'CONTINUE', 'BREAK', 'RETURN'
+        'DO', 'WHILE', 'FOR', 'CONTINUE', 'BREAK', 'RETURN'
     )
     keyword_map = {}
     for keyword in keywords:
