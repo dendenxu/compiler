@@ -8,12 +8,18 @@ import traceback
 """ 
 Productions used in the parser:
 
-program             : function
+program             : program function
+                    |
 function            : type ID LPAREN RPAREN curl_block
 block               : block statement
                     | block curl_block
                     | 
 type                : INT
+                    | VOID
+                    | LONG
+                    | FLOAT
+                    | DOUBLE
+                    | CHAR
 statement           : RETURN expression SEMI
                     | expression SEMI
                     | declaration
@@ -73,15 +79,25 @@ class NanoParser():
         self.parser = yacc.yacc(module=self, **kwargs)
 
     def p_prog_func(self, p):
-        'program    : function'
-        p[0] = ProgNode(p[1])
+        'program    : program function'
+        if p[1] is None:
+            p[1] = ProgNode()
+        p[1].append(p[2])  # init to a function
+        p[0] = p[1]
 
     def p_func_def(self, p):
         'function   : type ID LPAREN RPAREN curl_block'
         p[0] = FuncNode(p[1], IDNode(p[2]), p[5])
 
     def p_type_def(self, p):
-        'type       : INT'
+        '''
+        type    : INT
+                | VOID
+                | LONG
+                | FLOAT
+                | DOUBLE
+                | CHAR
+        '''
         p[0] = TypeNode(p[1])
 
     def p_stmt_ret_exp(self, p):
@@ -250,6 +266,7 @@ class NanoParser():
         '''
         block        :
         typeinit     :
+        program      :
         '''
         p[0] = None
 

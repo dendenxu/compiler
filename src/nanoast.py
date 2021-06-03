@@ -92,15 +92,18 @@ class FuncNode(Node):
 class ProgNode(Node):
     # A simple Abstract Syntax Tree for the whole program
     # currently, the program only supports a function
-    def __init__(self, func: FuncNode):
-        assert func.id.name == "main", "No main function defined for program"
-        self.func = func
+    def __init__(self, *args):
+        # assert func.id.name == "main", "No main function defined for program"
+        self.funcs = [*args]
+
+    def append(self, func: FuncNode):
+        self.funcs.append(func)
 
     def __str__(self):
         return f"""
-{self.__class__.__name__}(
-    {self.func} 
-)EndProg
+{self.__class__.__name__}(""" + \
+            '\n'.join(list(map(str, self.funcs))) + \
+            """)EndProg
 """
 
     def accept(self, visitor):
@@ -250,6 +253,7 @@ class LoopNode(StmtNode):
 
 class BreakNode(StmtNode):
     pass
+
 
 class ContinueNode(StmtNode):
     pass
