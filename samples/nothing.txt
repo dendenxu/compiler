@@ -60,5 +60,9 @@ int main() {
 
 void nothing(int a, int b, int c) {
     "This function does nothing.";
-    if (check_more) "It's sole purpose is to check whether the parser can recognize what's going on here with multiple function declarations";
+    if (check_more) 
+    "It's sole purpose is to check whether the parser can recognize what's going on here with multiple function declarations";
+
+    if (expr) a=4;
+    if (expr) ;
 }

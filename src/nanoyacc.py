@@ -97,11 +97,15 @@ class NanoParser():
         p[0] = p[1]
 
     def p_func_def(self, p):
-        'function   : type id LPAREN param_list RPAREN curl_block'
+        '''
+        function   : type id LPAREN param_list RPAREN curl_block
+        '''
         p[0] = FuncNode(p[1], p[2], p[4], p[6])
 
     def p_params(self, p):
-        'param_list : type id comma_params'
+        '''
+        param_list : type id comma_params
+        '''
         param = ParamNode(p[1], p[2])
         if p[3] is None:
             p[3] = []
@@ -109,7 +113,9 @@ class NanoParser():
         p[0] = p[3]
 
     def p_comma_params(self, p):
-        'comma_params : comma_params COMMA type id'
+        '''
+        comma_params : comma_params COMMA type id
+        '''
         param = ParamNode(p[3], p[4])
         if p[1] is None:
             p[1] = []
@@ -117,14 +123,18 @@ class NanoParser():
         p[0] = p[1]
 
     def p_exp_list(self, p):
-        'exp_list : expression comma_exps'
+        '''
+        exp_list : expression comma_exps
+        '''
         if p[2] is None:
             p[2] = []
         p[2].append(p[1])
         p[0] = p[2]
 
     def p_comma_exp_list(self, p):
-        'comma_exps : comma_exps COMMA expression'
+        '''
+        comma_exps : comma_exps COMMA expression
+        '''
         if p[1] is None:
             p[1] = []
         p[1].append(p[3])
@@ -142,7 +152,9 @@ class NanoParser():
         p[0] = TypeNode(p[1])
 
     def p_stmt_ret_exp(self, p):
-        'statement  : RETURN expression SEMI'
+        '''
+        statement  : RETURN expression SEMI
+        '''
         p[0] = RetNode(p[2])
 
     def p_pass_on_first(self, p):
@@ -166,12 +178,6 @@ class NanoParser():
         '''
         p[0] = p[1]
 
-    def p_ctrl_block_wrap(self, p):
-        'ctrl_block     : statement'
-        # control block should wrap up the single statment as a block
-        # for scope construction
-        p[0] = BlockNode(p[1])
-
     def p_pass_on_second(self, p):
         '''
         typeinit        : EQUALS expression
@@ -180,12 +186,24 @@ class NanoParser():
         '''
         p[0] = p[2]
 
+    def p_ctrl_block_wrap(self, p):
+        '''
+        ctrl_block     : statement
+        '''
+        # control block should wrap up the single statment as a block
+        # for scope construction
+        p[0] = BlockNode(p[1])
+
     def p_break_stmt(self, p):
-        'statement : BREAK SEMI'
+        '''
+        statement : BREAK SEMI
+        '''
         p[0] = BreakNode()
 
     def p_continue_stmt(self, p):
-        'statement : CONTINUE SEMI'
+        '''
+        statement : CONTINUE SEMI
+        '''
         p[0] = ContinueNode()
 
     def p_stmt_empty(self, p):
@@ -218,11 +236,15 @@ class NanoParser():
             p[0] = IfStmtNode(p[3], p[5], StmtNode())  # no else statement
 
     def p_while_stmt(self, p):
-        'statement : WHILE LPAREN expression RPAREN ctrl_block'
+        '''
+        statement : WHILE LPAREN expression RPAREN ctrl_block
+        '''
         p[0] = LoopNode(StmtNode(), p[3], p[5], StmtNode())  # simple while loop
 
     def p_do_while_stmt(self, p):
-        'statement : DO ctrl_block WHILE LPAREN expression RPAREN SEMI'
+        '''
+        statement : DO ctrl_block WHILE LPAREN expression RPAREN SEMI
+        '''
         p[0] = LoopNode(p[2], p[3], p[5], StmtNode())  # simple do-while loop
 
     def p_for_stmt(self, p):
@@ -249,7 +271,9 @@ class NanoParser():
             p[0].append(p[4])  # operation at loopend
 
     def p_cond_exp(self, p):
-        'conditional : logical_or CONDOP expression COLON conditional'
+        '''
+        conditional : logical_or CONDOP expression COLON conditional
+        '''
         # TODO: construct conditional node
 
     def p_declaration(self, p):
@@ -270,19 +294,27 @@ class NanoParser():
         p[0] = AssNode(p[1], p[3])
 
     def p_prim_int(self, p):
-        'primary      : INT_CONST_DEC'
+        '''
+        primary      : INT_CONST_DEC
+        '''
         p[0] = IntNode(int(p[1]))
 
     def p_prim_float(self, p):
-        'primary      : FLOAT_CONST'
+        '''
+        primary      : FLOAT_CONST
+        '''
         p[0] = FloatNode(float(p[1]))
 
     def p_prim_char(self, p):
-        'primary      : CHAR_CONST'
+        '''
+        primary      : CHAR_CONST
+        '''
         p[0] = CharNode(p[1])
 
     def p_prim_string(self, p):
-        'primary      : STRING_LITERAL'
+        '''
+        primary      : STRING_LITERAL
+        '''
         p[0] = StringNode(str(p[1]))
 
     def p_id(self, p):
