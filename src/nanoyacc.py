@@ -16,9 +16,18 @@ type                : INT
 statement           : RETURN expression SEMI
                     | expression SEMI
                     | declaration
-                    | SEMI
                     | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
                     | IF LPAREN expression RPAREN ctrl_block
+                    | FOR LPAREN for_init RPAREN ctrl_block
+                    # | WHILE LPAREN expression RPAREN ctrl_block
+                    # | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
+                    # | BREAK SEMI
+                    # | CONTINUE SEMI
+                    | SEMI
+for_init            : e_expression SEMI e_expression SEMI e_expression
+                    | declaration e_expression SEMI e_expression
+e_expression        : expression
+                    | 
 ctrl_block          : curl_block
                     | statement
 curl_block          : LBRACE block RBRACE
@@ -77,8 +86,8 @@ class NanoParser():
     def p_pass_on_first(self, p):
         '''
         statement       : expression SEMI
+        e_expression    : expression
         ctrl_block      : curl_block
-        ctrl_block      : statement
         expression      : assignment
         assignment      : conditional
         conditional     : logical_or
@@ -92,6 +101,12 @@ class NanoParser():
         statement       : declaration
         '''
         p[0] = p[1]
+
+    def p_ctrl_block_wrap(self, p):
+        'ctrl_block     : statement'
+        # control block should wrap up the single statment as a block
+        # for scope construction
+        p[0] = BlockNode(p[1])
 
     def p_pass_on_second(self, p):
         '''
@@ -114,6 +129,30 @@ class NanoParser():
             p[0] = IfStmtNode(p[3], p[5], p[7])  # with else statement
         else:
             p[0] = IfStmtNode(p[3], p[5], None)  # no else statement
+
+    def p_for_stmt(self, p):
+        '''
+        statement : FOR LPAREN for_init RPAREN ctrl_block
+        '''
+        # assuming a BlockNode from for_init
+        init = p[3].stmts
+        p[0] = LoopNode(init[0], init[1], p[5], init[2])
+
+    def p_for_init(self, p):
+        '''
+        for_init   : e_expression SEMI e_expression SEMI e_expression
+                   | declaration e_expression SEMI e_expression
+        '''
+        p[0] = BlockNode()
+        if len(p) == 6: # with e_expression
+            p[0].append(p[1]) # initialization
+            p[0].append(p[3]) # break condition
+            p[0].append(p[5]) # operation at loopend
+        else: # with declaration
+            p[0].append(p[1]) # initialization
+            p[0].append(p[2]) # break condition
+            p[0].append(p[4]) # operation at loopend
+
 
     def p_cond_exp(self, p):
         'conditional : logical_or CONDOP expression COLON conditional'
@@ -172,6 +211,7 @@ class NanoParser():
         '''
         block        :
         typeinit     :
+        e_expression :
         '''
         p[0] = None
 

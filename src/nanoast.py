@@ -118,16 +118,15 @@ class BinopNode(Node):
 
 class BlockNode(Node):
 
-    def __init__(self):
-        self.decs = []
-        self.stmts = []
+    def __init__(self, *args):
+        self.stmts = [*args]
 
     def append(self, node: Node):
         self.stmts.append(node)
 
     def __str__(self):
         return f'{self.__class__.__name__}(\n' + 2*'    ' + \
-            ('\n' + 2*'    ').join(list(map(str, self.decs)) + list(map(str, self.stmts))) + \
+            ('\n' + 2*'    ').join(list(map(str, self.stmts))) + \
             '\n    )EndBlock'
 
     def accept(self, visitor):
@@ -182,5 +181,12 @@ class IfStmtNode(Node):
         self.elsenode = elsenode  # this can be None if this if stmt is not paired with a else statement
 
     def __str__(self):
-        return f"{self.__class__.__name__}( if ({self.exp}) {{ {self.ifnode} }} else {{ {self.elsenode} }} )"
+        return f"{self.__class__.__name__}( IF ({self.exp}) {{ {self.ifnode} }} ELSE {{ {self.elsenode} }} )"
+
+class LoopNode(Node):
+
+    def __init__(self, pre: BlockNode, cond: ExpNode, body: BlockNode, post: BlockNode):
+        self.pre, self.cond, self.body, self.post = pre, cond, body, post
     
+    def __str__(self):
+        return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.cond}\b{self.post} }} )"
