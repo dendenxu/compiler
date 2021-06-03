@@ -1,3 +1,6 @@
+from typing import List
+
+
 class Node(object):
     # A simple Abstract Syntax Tree node
     def accept(self, visitor):
@@ -14,7 +17,7 @@ class IDNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.name})"
-    
+
     def accept(self, visitor):
         return visitor.visitIDNode(self)
 
@@ -87,23 +90,12 @@ class ParamNode(Node):
         return f"{self.__class__.__name__}({self.type} {self.id})"
 
 
-class ParamListNode(Node):
-    def __init__(self, *args):
-        self.params = [*args]
-
-    def append(self, param: ParamNode):
-        self.params.append(param)
-
-    def __str__(self):
-        return f"{self.__class__.__name__}({', '.join(list(map(str, self.params)))})"
-
-
 class FuncNode(Node):
-    def __init__(self, type: TypeNode, id: IDNode, params: ParamListNode, block: Node):
+    def __init__(self, type: TypeNode, id: IDNode, params: List[ParamNode], block: Node):
         self.type, self.id, self.params, self.block = type, id, params, block
 
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.type} {self.id}( {', '.join(list(map(str, self.params.params)))} )" + \
+        return f"{self.__class__.__name__}( {self.type} {self.id}( {', '.join(list(map(str, self.params)))} )" + \
             " {" + f"\n    {self.block}\n" + "    } )EndFunc\n"
 
     def accept(self, visitor):
@@ -140,23 +132,12 @@ class ExpNode(Node):
         pass
 
 
-class ExpListNode(Node):
-    def __init__(self, *args):
-        self.exps = [*args]
-
-    def append(self, exp: ExpNode):
-        self.exps.append(exp)
-
-    def __str__(self):
-        return f"{self.__class__.__name__}({', '.join(map(str, self.exps))})"
-
-
 class CallNode(ExpNode):
-    def __init__(self, id: IDNode, params: ExpListNode):
+    def __init__(self, id: IDNode, params: List[ExpNode]):
         self.id, self.params = id, params
 
     def __str__(self):
-        return f"{self.__class__.__name__}({self.id}({self.params}))"
+        return f"{self.__class__.__name__}({self.id}({', '.join(map(str, self.params))}))"
 
 
 class UnaryNode(ExpNode):

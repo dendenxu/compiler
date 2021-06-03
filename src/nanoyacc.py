@@ -104,7 +104,7 @@ class NanoParser():
         'parameters : type id comma_parameters'
         param = ParamNode(p[1], p[2])
         if p[3] is None:
-            p[3] = ParamListNode()
+            p[3] = []
         p[3].append(param)
         p[0] = p[3]
 
@@ -112,21 +112,21 @@ class NanoParser():
         'comma_parameters : comma_parameters COMMA type id'
         param = ParamNode(p[3], p[4])
         if p[1] is None:
-            p[1] = ParamListNode()
+            p[1] = []
         p[1].append(param)
         p[0] = p[1]
 
     def p_expression_list(self, p):
         'expression_list : expression comma_expressions'
         if p[2] is None:
-            p[2] = ExpListNode()
+            p[2] = []
         p[2].append(p[1])
         p[0] = p[2]
 
     def p_comma_expression_list(self, p):
         'comma_expressions : comma_expressions COMMA expression'
         if p[1] is None:
-            p[1] = ExpListNode()
+            p[1] = []
         p[1].append(p[3])
         p[0] = p[1]
 
@@ -181,11 +181,11 @@ class NanoParser():
 
     def p_exps_empty(self, p):
         'expression_list   :'
-        p[0] = ExpListNode()
+        p[0] = []
 
     def p_params_empty(self, p):
         'parameters   :'
-        p[0] = ParamListNode()
+        p[0] = []
 
     def p_break(self, p):
         'statement : BREAK SEMI'
