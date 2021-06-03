@@ -49,6 +49,10 @@ multiplicative      : unary
 unary               : primary
                     | (PLUS|MINUS|NOT|LNOT) unary
 primary             : INT_CONST_DEC
+                    | FLOAT_CONST
+                    | CHAR_CONST
+                    | STRING_LITERAL
+                    | ID
                     | LPAREN expression RPAREN
 equality            : relational
                     | equality (EQ|NE) relational
@@ -74,7 +78,7 @@ class NanoParser():
 
     def p_func_def(self, p):
         'function   : type ID LPAREN RPAREN curl_block'
-        p[0] = FuncNode(p[1], p[2], p[5])
+        p[0] = FuncNode(p[1], IDNode(p[2]), p[5])
 
     def p_type_def(self, p):
         'type       : INT'
@@ -118,7 +122,7 @@ class NanoParser():
 
     def p_stmt_semi(self, p):
         'statement : SEMI'
-        pass
+        p[0] = StmtNode() # empty statment node
 
     def p_if_stmt(self, p):
         '''statement : IF LPAREN expression RPAREN ctrl_block
@@ -174,15 +178,31 @@ class NanoParser():
         '''
         assignment : ID EQUALS expression
         '''
-        p[0] = AssNode(p[1], p[3])
+        p[0] = AssNode(IDNode(p[1]), p[3])
 
     def p_prim_exp(self, p):
         'primary : LPAREN expression RPAREN'
-        p[0] = PrimNode(p[2])
+        p[0] = p[2]
 
-    def p_primary_int(self, p):
+    def p_prim_int(self, p):
         'primary      : INT_CONST_DEC'
         p[0] = IntNode(int(p[1]))
+
+    def p_prim_float(self, p):
+        'primary      : FLOAT_CONST'
+        p[0] = FloatNode(float(p[1]))
+
+    def p_prim_char(self, p):
+        'primary      : CHAR_CONST'
+        p[0] = CharNode(p[1])
+
+    def p_prim_string(self, p):
+        'primary      : STRING_LITERAL'
+        p[0] = StringNode(str(p[1]))
+
+    def p_prim_id(self, p):
+        'primary : ID'
+        p[0] = IDNode(p[1])
 
     def p_unary_op(self, p):
         '''unary      : PLUS unary
@@ -234,14 +254,14 @@ class NanoParser():
             dec = p[1]
             p[1] = DecListNode()
             p[1].append(dec)
-        p[1].append(DecNode(None, p[3], p[4]))
+        p[1].append(DecNode(None, IDNode(p[3]), p[4]))
         p[0] = p[1]
 
     def p_dec_init(self, p):
         '''
         declist     : ID typeinit
         '''
-        p[0] = DecNode(None, p[1], p[2])
+        p[0] = DecNode(None, IDNode(p[1]), p[2])
 
     # Error rule for syntax errors
 

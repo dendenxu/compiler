@@ -7,6 +7,52 @@ class Node(object):
         pass
 
 
+class IDNode(Node):
+    def __init__(self, name: str):
+        self.name = name
+    
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.name})"
+
+class LiteralNode(Node):
+    pass
+
+
+class IntNode(LiteralNode):
+    def __init__(self, value: int):
+        assert value <= 2**31 - 1 and value >= 0, \
+            f"{value} is out of integer range"
+        self.value = value
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.value})"
+
+    def accept(self, visitor):
+        return visitor.visitIntNode(self)
+
+class FloatNode(LiteralNode):
+    def __init__(self, value: float):
+        self.value = value
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.value})"
+
+class CharNode(LiteralNode):
+    def __init__(self, value: str):
+        assert len(value) == 1, "Char literal should only have a length of 1"
+        self.value = value
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.value})"
+
+class StringNode(LiteralNode):
+    def __init__(self, value: int):
+        self.value = value
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.value})"
+
+
 class TypeNode(Node):
     def __init__(self, typestr: str):
         self.typestr = typestr
@@ -26,30 +72,8 @@ class ExpNode(Node):
         return f"{self.__class__.__name__}( {self.node} )"
 
 
-class PrimNode(Node):
-    def __init__(self, node: Node):
-        self.node = node
-
-    def __str__(self):
-        return f"{self.__class__.__name__}( {self.node} )"
-
-    def accept(self, visitor):
-        return visitor.visitPrimNode(self)
-
-
-class RetNode(Node):
-    def __init__(self, exp: ExpNode):
-        self.exp = exp
-
-    def __str__(self):
-        return f"{self.__class__.__name__}( RETURN {self.exp}; )"
-
-    def accept(self, visitor):
-        return visitor.visitRetNode(self)
-
-
 class FuncNode(Node):
-    def __init__(self, type: TypeNode, id: str, block: Node):
+    def __init__(self, type: TypeNode, id: IDNode, block: Node):
         self.type, self.id, self.block = type, id, block
 
     def __str__(self):
@@ -64,7 +88,7 @@ class ProgNode(Node):
     # A simple Abstract Syntax Tree for the whole program
     # currently, the program only supports a function
     def __init__(self, func: FuncNode):
-        assert func.id == "main", "No main function defined for program"
+        assert func.id.name == "main", "No main function defined for program"
         self.func = func
 
     def __str__(self):
@@ -78,20 +102,7 @@ class ProgNode(Node):
         return visitor.visitProgNode(self)
 
 
-class IntNode(Node):
-    def __init__(self, value: int):
-        assert value <= 2**31 - 1 and value >= 0, \
-            f"{value} is out of integer range"
-        self.value = value
-
-    def __str__(self):
-        return f"{self.__class__.__name__}({self.value})"
-
-    def accept(self, visitor):
-        return visitor.visitIntNode(self)
-
-
-class UnaryNode(Node):
+class UnaryNode(ExpNode):
     _legal_ops = {*"+-!~"}
 
     def __init__(self, op: str, node: Node):
@@ -102,7 +113,7 @@ class UnaryNode(Node):
         return f"{self.__class__.__name__}( {self.op}{self.node} )"
 
 
-class BinopNode(Node):
+class BinopNode(ExpNode):
     _legal_ops = {*"+-*/%<>", '==', '!=', '<=', '>=', '||', '&&'}
 
     def __init__(self, op: str, left: Node, right: Node):
@@ -132,10 +143,13 @@ class BlockNode(Node):
     def accept(self, visitor):
         return visitor.visitBlockNode(self)
 
+class StmtNode(Node):
+    def __str__(self):
+        return f"{self.__class__.__name__}()"
 
-class AssNode(Node):
+class AssNode(StmtNode):
 
-    def __init__(self, id: str, exp: ExpNode):
+    def __init__(self, id: IDNode, exp: ExpNode):
         self.id, self.exp = id, exp
 
     def __str__(self):
@@ -144,9 +158,10 @@ class AssNode(Node):
     def accept(self, visitor):
         return visitor.visitAssNode(self)
 
-class DecNode(Node):
 
-    def __init__(self, type: TypeNode, id: str, init: Node):
+class DecNode(StmtNode):
+
+    def __init__(self, type: TypeNode, id: IDNode, init: Node):
         # init might be none
         self.type, self.id, self.init = type, id, init
 
@@ -156,8 +171,17 @@ class DecNode(Node):
     def accept(self, visitor):
         return visitor.visitDecNode(self)
 
+class RetNode(StmtNode):
+    def __init__(self, exp: ExpNode):
+        self.exp = exp
 
-class DecListNode(Node):
+    def __str__(self):
+        return f"{self.__class__.__name__}( RETURN {self.exp}; )"
+
+    def accept(self, visitor):
+        return visitor.visitRetNode(self)
+
+class DecListNode(StmtNode):
 
     def __init__(self):
         self.declist = []
@@ -183,10 +207,11 @@ class IfStmtNode(Node):
     def __str__(self):
         return f"{self.__class__.__name__}( IF ({self.cond}) {{ {self.ifbody} }} ELSE {{ {self.elsebody} }} )"
 
+
 class LoopNode(Node):
 
     def __init__(self, pre: BlockNode, cond: ExpNode, body: BlockNode, post: BlockNode):
         self.pre, self.cond, self.body, self.post = pre, cond, body, post
-    
+
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.cond}\b{self.post} }} )"
+        return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.body}\b{self.post} }} )"

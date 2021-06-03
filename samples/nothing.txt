@@ -23,6 +23,24 @@ int main() {
         if (1) a = 1; else int a = 3;
     }
 
+    ;;;;;;;
+
+    return a;
+    return b;
+    if (a) {return 1||(1-b);}
+
+    123;
+    abc;
+    "Hello, world";
+
+    for (int i = 0 ;i < "Hello" ;i = i + 1) {        
+        for (int i = 0 ;i < "Hello" ;i = i + 1) {
+            for (int i = 0 ;i < "Hello" ;i = i + 1) {
+                pi = 3.1415926535897932384626;
+            }
+        }
+    }
+
     a = 100 + 30 / 4;
     return 1 || 0 && 2;
     1 || 0 && 4 == 3 >= 2 - 1 * -1;
