@@ -65,25 +65,87 @@ class NanoVisitor(Visitor):
     def visitIntNode(self, node: IntNode):
         int32 = ir.IntType(32)
         node.ll_value = int32(node.value)
-        
-    @cache_result
-    def visitBinopNode(self, node: BinopNode):
-        node.left.accept(self)
-        node.right.accept(self)
-        if node.op is '+':
-            node.ll_value = self.ll_cur_block_builder[-1].add(
-                                node.left.ll_value,
-                                node.right.ll_value)
-        elif node.op is '-':
-            node.ll_value = self.ll_cur_block_builder[-1].sub(
-                                node.left.ll_value,
-                                node.right.ll_value)
-    
+
     @cache_result
     def visitPrimNode(self, node: BinopNode):
         node.node.accept(self)
         node.ll_value = node.node.ll_value
-    
+
+    @cache_result
+    def visitBinopNode(self, node: BinopNode):
+        node.left.accept(self)
+        node.right.accept(self)
+        if node.op == '+':
+            node.ll_value = self.ll_cur_block_builder[-1].add(
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '-':
+            node.ll_value = self.ll_cur_block_builder[-1].sub(
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '*':
+            node.ll_value = self.ll_cur_block_builder[-1].mul(
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '/':
+            node.ll_value = self.ll_cur_block_builder[-1].sdiv(
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '%':
+            node.ll_value = self.ll_cur_block_builder[-1].srem(
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '<':
+            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+                                '<',
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '>':
+            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+                                '<',
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '==':
+            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+                                '==',
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '!=':
+            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+                                '!=',
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '<=':
+            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+                                '<=',
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '>=':
+            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+                                '>=',
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '>':
+            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+                                '>',
+                                node.left.ll_value,
+                                node.right.ll_value)
+        elif node.op == '||':
+            explicit_value = self.ll_cur_block_builder[-1].or_(
+                                node.left.ll_value,
+                                node.right.ll_value)
+            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+                                '!=',
+                                explicit_value,
+                                ir.IntType(32)(0))
+        elif node.op == '&&':
+            explicit_value = self.ll_cur_block_builder[-1].and_(
+                                node.left.ll_value,
+                                node.right.ll_value)
+            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+                                '!=',
+                                explicit_value,
+                                ir.IntType(32)(0))
 
 
 if __name__ == '__main__':
