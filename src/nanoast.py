@@ -227,22 +227,6 @@ class RetNode(StmtNode):
         return visitor.visitRetNode(self)
 
 
-class DecListNode(StmtNode):
-
-    def __init__(self):
-        self.declist = []
-
-    def append(self, node: DecNode):
-        self.declist.append(node)
-
-    def __str__(self):
-        return f'{self.__class__.__name__}(\n' + '    '*3 + \
-            ('\n'+3*'    ').join(map(str, self.declist)) + ' )'
-
-    def accept(self, visitor):
-        return visitor.visitDecListNode(self)
-
-
 class IfStmtNode(StmtNode):
 
     def __init__(self, cond: ExpNode, ifbody: BlockNode, elsebody: BlockNode = None):

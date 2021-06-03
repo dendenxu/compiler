@@ -10,10 +10,10 @@ Productions used in the parser:
 
 program             : program function
                     |
-function            : type id LPAREN parameters RPAREN curl_block
-parameters          : type id comma_paramters
+function            : type id LPAREN param_list RPAREN curl_block
+param_list              : type id comma_paramters
                     |
-comma_parameters    : comma_parameters COMMA type id
+comma_params        : comma_params COMMA type id
                     |
 block               : block curl_block
                     | block statement
@@ -38,9 +38,9 @@ statement           : RETURN expression SEMI
                     | SEMI
 for_init            : for_expression SEMI for_expression SEMI for_expression
                     | declaration for_expression SEMI for_expression
-expression_list     : expression comma_expressions
+exp_list            : expression comma_exps
                     |
-comma_expressions   : comma_expressions COMMA expression
+comma_exps          : comma_exps COMMA expression
                     |
 for_expression      : expression
                     | 
@@ -64,7 +64,7 @@ multiplicative      : unary
 unary               : postfix
                     | (PLUS|MINUS|NOT|LNOT) unary
 postfix             : primary
-                    | id LPAREN expression_list RPAREN
+                    | id LPAREN exp_list RPAREN
 primary             : INT_CONST_DEC
                     | FLOAT_CONST
                     | CHAR_CONST
@@ -97,11 +97,11 @@ class NanoParser():
         p[0] = p[1]
 
     def p_func_def(self, p):
-        'function   : type id LPAREN parameters RPAREN curl_block'
+        'function   : type id LPAREN param_list RPAREN curl_block'
         p[0] = FuncNode(p[1], p[2], p[4], p[6])
 
     def p_params(self, p):
-        'parameters : type id comma_parameters'
+        'param_list : type id comma_params'
         param = ParamNode(p[1], p[2])
         if p[3] is None:
             p[3] = []
@@ -109,22 +109,22 @@ class NanoParser():
         p[0] = p[3]
 
     def p_comma_params(self, p):
-        'comma_parameters : comma_parameters COMMA type id'
+        'comma_params : comma_params COMMA type id'
         param = ParamNode(p[3], p[4])
         if p[1] is None:
             p[1] = []
         p[1].append(param)
         p[0] = p[1]
 
-    def p_expression_list(self, p):
-        'expression_list : expression comma_expressions'
+    def p_exp_list(self, p):
+        'exp_list : expression comma_exps'
         if p[2] is None:
             p[2] = []
         p[2].append(p[1])
         p[0] = p[2]
 
-    def p_comma_expression_list(self, p):
-        'comma_expressions : comma_expressions COMMA expression'
+    def p_comma_exp_list(self, p):
+        'comma_exps : comma_exps COMMA expression'
         if p[1] is None:
             p[1] = []
         p[1].append(p[3])
@@ -176,22 +176,15 @@ class NanoParser():
         '''
         typeinit        : EQUALS expression
         curl_block      : LBRACE block RBRACE
+        primary : LPAREN expression RPAREN
         '''
         p[0] = p[2]
 
-    def p_exps_empty(self, p):
-        'expression_list   :'
-        p[0] = []
-
-    def p_params_empty(self, p):
-        'parameters   :'
-        p[0] = []
-
-    def p_break(self, p):
+    def p_break_stmt(self, p):
         'statement : BREAK SEMI'
         p[0] = BreakNode()
 
-    def p_continue(self, p):
+    def p_continue_stmt(self, p):
         'statement : CONTINUE SEMI'
         p[0] = ContinueNode()
 
@@ -205,11 +198,11 @@ class NanoParser():
         '''
         for_expression : 
         '''
-        p[0] = ExpNode()  # empty statment node
+        p[0] = ExpNode()  # empty expression node
 
-    def p_postfix(self, p):
+    def p_call_func(self, p):
         '''
-        postfix : id LPAREN expression_list RPAREN
+        postfix : id LPAREN exp_list RPAREN
         '''
         p[0] = CallNode(p[1], p[3])
 
@@ -263,8 +256,8 @@ class NanoParser():
         '''
         declaration    : type declist SEMI
         '''
-        if isinstance(p[2], DecListNode):
-            for dec in p[2].declist:
+        if isinstance(p[2], list):
+            for dec in p[2]:
                 dec.type = p[1]
         else:
             p[2].type = p[1]
@@ -275,10 +268,6 @@ class NanoParser():
         assignment : id EQUALS expression
         '''
         p[0] = AssNode(p[1], p[3])
-
-    def p_prim_exp(self, p):
-        'primary : LPAREN expression RPAREN'
-        p[0] = p[2]
 
     def p_prim_int(self, p):
         'primary      : INT_CONST_DEC'
@@ -329,10 +318,17 @@ class NanoParser():
         block               :
         typeinit            :
         program             :
-        comma_parameters    : 
-        comma_expressions   :
+        comma_params        : 
+        comma_exps          :
         '''
         p[0] = None
+
+    def p_empty_list(self, p):
+        '''
+        exp_list      :
+        param_list        :
+        '''
+        p[0] = []
 
     def p_block_stmt(self, p):
         '''
@@ -341,8 +337,8 @@ class NanoParser():
         '''
         if p[1] is None:
             p[1] = BlockNode()
-        if isinstance(p[2], DecListNode):
-            for dec in p[2].declist:
+        if isinstance(p[2], list):
+            for dec in p[2]:
                 p[1].append(dec)
         else:
             p[1].append(p[2])
@@ -354,7 +350,7 @@ class NanoParser():
         '''
         if isinstance(p[1], DecNode):
             dec = p[1]
-            p[1] = DecListNode()
+            p[1] = []
             p[1].append(dec)
         p[1].append(DecNode(None, p[3], p[4]))
         p[0] = p[1]
