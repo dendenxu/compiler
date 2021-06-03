@@ -10,7 +10,10 @@ Productions used in the parser:
 
 program             : program function
                     |
-function            : type ID LPAREN RPAREN curl_block
+function            : type ID LPAREN parameters RPAREN curl_block
+parameters          : type ID
+                    | paramters COMMA type ID
+                    |
 block               : block stmt_or_block
                     | 
 type                : INT
@@ -85,8 +88,18 @@ class NanoParser():
         p[0] = p[1]
 
     def p_func_def(self, p):
-        'function   : type ID LPAREN RPAREN curl_block'
-        p[0] = FuncNode(p[1], IDNode(p[2]), p[5])
+        'function   : type ID LPAREN parameters RPAREN curl_block'
+        p[0] = FuncNode(p[1], IDNode(p[2]), p[4], p[6])
+
+    def p_param(self, p):
+        'parameters : type ID'
+        p[0] = ParamListNode(ParamNode(p[1], IDNode(p[2])))
+
+    def p_params(self, p):
+        'parameters : parameters COMMA type ID'
+        param = ParamNode(p[3], IDNode(p[4]))
+        p[1].append(param)
+        p[0] = p[1]
 
     def p_type_def(self, p):
         '''
@@ -135,6 +148,10 @@ class NanoParser():
         '''
         p[0] = p[2]
 
+    def p_params_empty(self, p):
+        'parameters   :'
+        p[0] = ParamListNode()
+
     def p_break(self, p):
         'statement : BREAK SEMI'
         p[0] = BreakNode()
@@ -143,7 +160,7 @@ class NanoParser():
         'statement : CONTINUE SEMI'
         p[0] = ContinueNode()
 
-    def p_stmt_semi(self, p):
+    def p_stmt_empty(self, p):
         '''
         statement : SEMI
         e_expression :
@@ -275,7 +292,11 @@ class NanoParser():
         '''
         if p[1] is None:
             p[1] = BlockNode()
-        p[1].append(p[2])
+        if isinstance(p[2], DecListNode):
+            for dec in p[2].declist:
+                p[1].append(dec)
+        else:
+            p[1].append(p[2])
         p[0] = p[1]
 
     def p_dec_list(self, p):
