@@ -6,13 +6,14 @@ class Node(object):
     def accept(self, visitor):
         pass
 
+
 class TypeNode(Node):
     def __init__(self, typestr: str):
         self.typestr = typestr
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.typestr})"
-    
+
     def accept(self, visitor):
         return visitor.visitTypeNode(self)
 
@@ -31,7 +32,7 @@ class PrimNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}( {self.node} )"
-    
+
     def accept(self, visitor):
         return visitor.visitPrimNode(self)
 
@@ -42,7 +43,7 @@ class RetNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}( RETURN {self.exp}; )"
-    
+
     def accept(self, visitor):
         return visitor.visitRetNode(self)
 
@@ -89,6 +90,7 @@ class IntNode(Node):
     def accept(self, visitor):
         return visitor.visitIntNode(self)
 
+
 class UnaryNode(Node):
     _legal_ops = {*"+-!~"}
 
@@ -133,7 +135,7 @@ class BlockNode(Node):
         return f'{self.__class__.__name__}(\n' + 2*'    ' + \
             ('\n' + 2*'    ').join(list(map(str, self.decs)) + list(map(str, self.stmts))) + \
             '\n    )EndBlock'
-    
+
     def accept(self, visitor):
         return visitor.visitBlockNode(self)
 
@@ -168,3 +170,14 @@ class DecListNode(Node):
     def __str__(self):
         return f'{self.__class__.__name__}(\n' + '    '*3 + \
             ('\n'+3*'    ').join(map(str, self.declist)) + ' )'
+
+
+class IfStmtNode(Node):
+
+    def __init__(self, exp: ExpNode, ifnode: BlockNode, elsenode: BlockNode = None):
+        self.exp = exp
+        self.ifnode = ifnode
+        self.elsenode = elsenode  # this can be None if this if stmt is not paired with a else statement
+
+    def __str__(self):
+        return f"{self.__class__.__name__}( if ({self.exp}) {{ {self.ifnode} }} else {{ {self.elsenode} }} )"

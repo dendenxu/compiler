@@ -10,7 +10,7 @@ class NanoLexer():
         tokens.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         """ Create a new Lexer
 
             Builds the lexer from the specification. Must be
@@ -20,8 +20,10 @@ class NanoLexer():
             __init__
         """
         # Keeps track of the last token returned from self.token()
-        self.lexer = lex.lex(module=self, **kwargs)
         self.last_token = None
+
+    def build(self, **kwargs):
+        self.lexer = lex.lex(module=self, **kwargs)
 
     def reset_lineno(self):
         """ Resets the internal line number counter of the lexer.
@@ -278,6 +280,7 @@ if __name__ == '__main__':
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         content = f.read()
         lexer = NanoLexer()
+        lexer.build()
         lexer.input(content)
         # Tokenize
         while True:

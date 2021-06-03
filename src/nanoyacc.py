@@ -9,7 +9,7 @@ import traceback
 Productions used in the parser:
 
 program             : function
-function            : type ID LPAREN RPAREN LBRACE block RBRACE
+function            : type ID LPAREN RPAREN curl_block
 block               : block statement
                     | 
 type                : INT
@@ -17,14 +17,21 @@ statement           : RETURN expression SEMI
                     | expression SEMI
                     | declaration
                     | SEMI
+                    | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
+                    | IF LPAREN expression RPAREN ctrl_block
+ctrl_block          : curl_block
+                    | statement
+curl_block          : LBRACE block RBRACE
 declaration         : type declist SEMI
 declist             : declist COMMA ID typeinit
                     | ID typeinit
 typeinit            : EQUALS expression
                     | 
 expression          : assignment
-assignment          : logical_or
+assignment          : conditional
                     | ID EQUALS expression
+conditional         : logical_or
+                    | logical_or CONDOP expression COLON conditional
 additive            : multiplicative
                     | additive (PLUS|MINUS) multiplicative
 multiplicative      : unary
@@ -46,15 +53,18 @@ logical_and         : equality
 
 class NanoParser():
     def __init__(self):
-        self.parser = yacc.yacc(module=self)
+        pass
+
+    def build(self, **kwargs):
+        self.parser = yacc.yacc(module=self, **kwargs)
 
     def p_prog_func(self, p):
         'program    : function'
         p[0] = ProgNode(p[1])
 
     def p_func_def(self, p):
-        'function   : type ID LPAREN RPAREN LBRACE block RBRACE'
-        p[0] = FuncNode(p[1], p[2], p[6])
+        'function   : type ID LPAREN RPAREN curl_block'
+        p[0] = FuncNode(p[1], p[2], p[5])
 
     def p_type_def(self, p):
         'type       : INT'
@@ -66,30 +76,46 @@ class NanoParser():
 
     def p_pass_on_first(self, p):
         '''
-        statement  : expression SEMI
-        expression : assignment
-        assignment : logical_or
-        logical_or : logical_and
-        logical_and : equality
-        additive : multiplicative
-        multiplicative : unary
-        unary : primary
-        equality    : relational
-        relational   : additive
-        statement : declaration
-        typeinit_empty : typeinit
+        statement       : expression SEMI
+        ctrl_block      : curl_block
+        ctrl_block      : statement
+        expression      : assignment
+        assignment      : conditional
+        conditional     : logical_or
+        logical_or      : logical_and
+        logical_and     : equality
+        additive        : multiplicative
+        multiplicative  : unary
+        unary           : primary
+        equality        : relational
+        relational      : additive
+        statement       : declaration
         '''
         p[0] = p[1]
 
     def p_pass_on_second(self, p):
         '''
-        typeinit : EQUALS expression
+        typeinit        : EQUALS expression
+        curl_block      : LBRACE block RBRACE
         '''
         p[0] = p[2]
 
     def p_stmt_semi(self, p):
         'statement : SEMI'
         pass
+
+    def p_if_stmt(self, p):
+        '''statement : IF LPAREN expression RPAREN ctrl_block
+                     | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
+        '''
+        if len(p) > 6:
+            p[0] = IfStmtNode(p[3], p[5], p[7])  # with else statement
+        else:
+            p[0] = IfStmtNode(p[3], p[5], None)  # no else statement
+
+    def p_cond_exp(self, p):
+        'conditional : logical_or CONDOP expression COLON conditional'
+        # TODO: construct conditional node
 
     def p_declaration(self, p):
         '''
@@ -142,8 +168,8 @@ class NanoParser():
 
     def p_empty(self, p):
         '''
-        block : 
-        typeinit : 
+        block        :
+        typeinit     :
         '''
         p[0] = None
 
@@ -166,7 +192,7 @@ class NanoParser():
             p[1].append(dec)
         p[1].append(DecNode(None, p[3], p[4]))
         p[0] = p[1]
-    
+
     def p_dec_init(self, p):
         '''
         declist     : ID typeinit
@@ -178,20 +204,25 @@ class NanoParser():
     def p_error(self, p):
         print(colored("Error: ", "red")+"Syntax error when parsing "+str(p))
 
-    def parse(self, input, lexer=None) -> Node:
+    def parse(self, input, **kwargs) -> Node:
         try:
-            return self.parser.parse(input, lexer)
+            return self.parser.parse(input, **kwargs)
         except Exception as e:
             traceback.print_exc()
             print(colored("Error: ", "red")+f"{e}")
 
     tokens = NanoLexer.tokens
+    precidence = {
+        
+    }
 
 
 if __name__ == '__main__':
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         content = f.read()
         lexer = NanoLexer()
+        lexer.build()
         parser = NanoParser()
-        root = parser.parse(content)
-        print(colored("Tree:", 'yellow', attrs=['bold']) + str(root))
+        parser.build()
+        root = parser.parse(content, debug=0)
+        print(colored("Tree: ", 'yellow', attrs=['bold']) + str(root))
