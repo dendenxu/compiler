@@ -175,13 +175,13 @@ class DecListNode(Node):
 
 class IfStmtNode(Node):
 
-    def __init__(self, exp: ExpNode, ifnode: BlockNode, elsenode: BlockNode = None):
-        self.exp = exp
-        self.ifnode = ifnode
-        self.elsenode = elsenode  # this can be None if this if stmt is not paired with a else statement
+    def __init__(self, cond: ExpNode, ifbody: BlockNode, elsebody: BlockNode = None):
+        self.cond = cond
+        self.ifbody = ifbody
+        self.elsebody = elsebody  # this can be None if this if stmt is not paired with a else statement
 
     def __str__(self):
-        return f"{self.__class__.__name__}( IF ({self.exp}) {{ {self.ifnode} }} ELSE {{ {self.elsenode} }} )"
+        return f"{self.__class__.__name__}( IF ({self.cond}) {{ {self.ifbody} }} ELSE {{ {self.elsebody} }} )"
 
 class LoopNode(Node):
 
