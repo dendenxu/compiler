@@ -7,6 +7,7 @@ from nanotype import *
 import sys
 from termcolor import colored
 from llvmlite import ir, binding
+import copy
 
 class Visitor:
     pass
@@ -18,6 +19,26 @@ class NanoVisitor(Visitor):
         self.ll_module = None
         self.ll_cur_func = []
         self.ll_cur_block_builder = []
+        self.scope_stack = []
+    
+    def _push_scope(self):
+        if len(self.scope_stack) == 0:
+            self.scope_stack.append(dict())
+        else:
+            dic = copy.deepcopy(self.scope_stack[-1])
+            self.scope_stack.append(dic)
+
+    def _pop_scope(self):
+        self.scope_stack.pop()
+    def _add_identifier(self, name, item):
+        if name in self.scope_stack[-1].keys():
+            raise RuntimeError("{name} alredy declared")
+        self.scope_stack[-1][name] = item
+    def _lookup_identifier(self, name):
+        if name in self.scope_stack[-1].keys():
+            return self.scope_stack[-1][name]
+        else:
+            return None
         
     def cache_result(visit):  # decorator
         def wrapped(self, node):
@@ -29,13 +50,13 @@ class NanoVisitor(Visitor):
             return value
         return wrapped
     
-    @cache_result
     def visitProgNode(self, node: ProgNode):
+        self._push_scope()
         node.ll_module = ir.Module(name='program')
         self.ll_module = node.ll_module
         node.func.accept(self)
+        self._pop_scope()
         
-    @cache_result
     def visitFuncNode(self, node: FuncNode):
         node.type.accept(self)
         node.ll_func_type = ir.FunctionType(node.type.ll_type, ())
@@ -44,34 +65,46 @@ class NanoVisitor(Visitor):
         node.block.accept(self)
         self.ll_cur_func.pop()
         
-    @cache_result
     def visitTypeNode(self, node: TypeNode):
         node.ll_type = ir.IntType(32)
         
-    @cache_result
     def visitBlockNode(self, node: BlockNode):
         for stmt in node.stmts:
+            ll_block = self.ll_cur_func[-1].append_basic_block()
+            ll_builder = ir.IRBuilder(ll_block)
+            self.ll_cur_block_builder.append(ll_builder)
             stmt.accept(self)
+            self.ll_cur_block_builder.pop()
             
-    @cache_result
     def visitRetNode(self, node: RetNode):
-        node.ll_block = self.ll_cur_func[-1].append_basic_block()
-        node.ll_builder = ir.IRBuilder(node.ll_block)
-        self.ll_cur_block_builder.append(node.ll_builder)
         node.exp.accept(self)
-        node.ll_builder.ret(node.exp.ll_value)
-        self.ll_cur_block_builder.pop()
+        self.ll_cur_block_builder[-1].ret(node.exp.ll_value)
         
-    @cache_result
     def visitIntNode(self, node: IntNode):
         node.ll_value = int32(node.value)
 
-    @cache_result
     def visitPrimNode(self, node: BinopNode):
         node.node.accept(self)
         node.ll_value = node.node.ll_value
+    
+    def visitDecNode(self, node: DecNode):
+        node.item = self.ll_cur_block_builder[-1].alloca(int32, name=node.id)
+        if node.init is not None:
+            node.init.accept(self)
+            self.ll_cur_block_builder[-1].store(node.init.ll_value, node.item)
+        self._add_identifier(node.id, node.item)
 
-    @cache_result
+    def visitDecListNode(self, node: DecListNode):
+        for dec in node.declist:
+            dec.accept(self)
+        
+    def visitAssNode(self, node: AssNode):
+        item = self._lookup_identifier(node.id)
+        if item is None:
+            raise RuntimeError("{name} not declared")
+        node.exp.accept(self)
+        self.ll_cur_block_builder[-1].store(node.exp.ll_value, item)
+
     def visitBinopNode(self, node: BinopNode):
         node.left.accept(self)
         node.right.accept(self)
@@ -161,25 +194,14 @@ if __name__ == '__main__':
         parser = NanoParser()
         visitor = NanoVisitor()
         root = parser.parse(content, lexer=lexer)
-        # print(root)
+        print(root)
         visitor = NanoVisitor()
         visitor.visitProgNode(root)
         ir = str(root.ll_module).replace('unknown-unknown-unknown',
                                          'x86_64-pc-linux')
-        print(f"Result: {ir}")
+        print(f"{ir}")
     with open('../results/irgen.ll', 'w') as I:
         I.write(ir)
-    
-    """
-    type_int = ir.IntType(32)
-    functype__int__void = ir.FunctionType(type_int, ())
-    module = ir.Module(name="for_test")
-    func = ir.Function(module, functype__int__void, name="main")
-    block = func.append_basic_block(name="entry")
-    builder = ir.IRBuilder(block)
-    builder.ret(ir.Constant(type_int, 0))
-    print(module)
-    """
 
 
 
