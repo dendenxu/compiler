@@ -3,6 +3,7 @@ from ply import yacc
 from nanoast import *
 from nanolex import NanoLexer
 from nanoyacc import NanoParser
+from nanotype import *
 import sys
 from termcolor import colored
 from llvmlite import ir, binding
@@ -63,7 +64,6 @@ class NanoVisitor(Visitor):
         
     @cache_result
     def visitIntNode(self, node: IntNode):
-        int32 = ir.IntType(32)
         node.ll_value = int32(node.value)
 
     @cache_result
@@ -134,18 +134,24 @@ class NanoVisitor(Visitor):
             explicit_value = self.ll_cur_block_builder[-1].or_(
                                 node.left.ll_value,
                                 node.right.ll_value)
-            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+            bit_1_value = self.ll_cur_block_builder[-1].icmp_signed(
                                 '!=',
                                 explicit_value,
-                                ir.IntType(32)(0))
+                                int32(0))
+            node.ll_value = self.ll_cur_block_builder[-1].zext(
+                                bit_1_value,
+                                int32)
         elif node.op == '&&':
             explicit_value = self.ll_cur_block_builder[-1].and_(
                                 node.left.ll_value,
                                 node.right.ll_value)
-            node.ll_value = self.ll_cur_block_builder[-1].icmp_signed(
+            bit_1_value = self.ll_cur_block_builder[-1].icmp_signed(
                                 '!=',
                                 explicit_value,
-                                ir.IntType(32)(0))
+                                int32(0))
+            node.ll_value = self.ll_cur_block_builder[-1].zext(
+                                bit_1_value,
+                                int32)
 
 
 if __name__ == '__main__':
@@ -158,9 +164,11 @@ if __name__ == '__main__':
         # print(root)
         visitor = NanoVisitor()
         visitor.visitProgNode(root)
-        print(f"Result: {root.ll_module}")
+        ir = str(root.ll_module).replace('unknown-unknown-unknown',
+                                         'x86_64-pc-linux')
+        print(f"Result: {ir}")
     with open('../results/irgen.ll', 'w') as I:
-        I.write(str(root.ll_module))
+        I.write(ir)
     
     """
     type_int = ir.IntType(32)
