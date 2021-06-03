@@ -182,6 +182,9 @@ class IfStmtNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}( IF ({self.exp}) {{ {self.ifnode} }} ELSE {{ {self.elsenode} }} )"
+    
+    def accept(self, visitor):
+        return visitor.visitIfStmtNode(self)
 
 class LoopNode(Node):
 
@@ -190,3 +193,6 @@ class LoopNode(Node):
     
     def __str__(self):
         return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.cond}\b{self.post} }} )"
+
+    def accept(self, visitor):
+        return visitor.visitLoopNode(self)
