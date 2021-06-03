@@ -11,6 +11,7 @@ Productions used in the parser:
 program             : function
 function            : type ID LPAREN RPAREN curl_block
 block               : block statement
+                    | block curl_block
                     | 
 type                : INT
 statement           : RETURN expression SEMI
@@ -218,6 +219,7 @@ class NanoParser():
     def p_block_stmt(self, p):
         '''
         block : block statement
+              | block curl_block
         '''
         if p[1] is None:
             p[1] = BlockNode()
