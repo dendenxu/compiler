@@ -6,7 +6,9 @@
 main:                                   # @main
 	.cfi_startproc
 # %bb.0:                                # %.2
-	movl	$1, %eax
+	movl	$2, -12(%rsp)
+	movl	$6, -16(%rsp)
+	movl	$6, %eax
 	retq
 .Lfunc_end0:
 	.size	main, .Lfunc_end0-main

@@ -13,6 +13,9 @@ class IDNode(Node):
     
     def __str__(self):
         return f"{self.__class__.__name__}({self.name})"
+    
+    def accept(self, visitor):
+        return visitor.visitIDNode(self)
 
 class LiteralNode(Node):
     pass
