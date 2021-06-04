@@ -23,7 +23,7 @@ class Node(object):
 #############################################################
 
 
-class UnaryNode(Node):
+class IDNode(Node):
     def __init__(self, name: str):
         super().__init__()
         self.name = name
@@ -272,7 +272,7 @@ class AssNode(EmptyStmtNode):
         self.unary, self.exp = unary, exp
 
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.id} = {self.exp} )"
+        return f"{self.__class__.__name__}( {self.unary} = {self.exp} )"
 
     def accept(self, visitor: NanoVisitor):
         return visitor.visitAssNode(self)

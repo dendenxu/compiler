@@ -180,7 +180,7 @@ class NanoVisitor(Visitor):
         self._add_identifier(node.id.name, node.item)
 
     def visitAssNode(self, node: AssNode):
-        item = self._get_identifier(node.id.name)
+        item = self._get_identifier(node.unary.name)
         if item is None:
             raise RuntimeError(node.id.name, "not declared")
         node.exp.accept(self)
