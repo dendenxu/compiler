@@ -95,36 +95,36 @@ class NanoVisitor(Visitor):
             func.accept(self)
 
     def visitFuncNode(self, node: FuncNode):
-        func_param_map = dict()
-        func_param_type_tuple = []
+        self._push_scope()
+    
+        func_param_type_list = []
         for param in node.params:
             param.accept(self)
-            func_param_map.update(param.map)
-            func_param_type_tuple.append(param.map[param.id.name])
-        node.func_params_type = func_param_type_tuple = tuple(func_param_type_tuple)
-                
-        self._push_scope()
+            func_param_type_list.append(param.type.ll_type)
+
         node.type.accept(self)
-        node.ll_func_type = ir.FunctionType(node.type.ll_type, node.func_params_type)
-        node.ll_func = ir.Function(self.ll_module, node.ll_func_type, name=node.id.name)
+        ll_func_type = ir.FunctionType(node.type.ll_type, tuple(func_param_type_list))
+        node.ll_func = ir.Function(self.ll_module, ll_func_type, name=node.id.name)
         self.cur_func_name = node.id.name
         self._add_func(node.id.name, node.ll_func)
 
         self._push_block()
         self._push_builder()
-        for param_name in func_param_map.keys():
-            func_param_map[param_name] = self._get_builder().alloca(func_param_map[param_name], name=param_name)
-            self._add_identifier(param_name, func_param_map[param_name])
-        self.func_params.update({node.id.name: func_param_map})
+        
+        func_args = list(node.ll_func.args)
+        for i in range(len(func_args)):
+            arg_ref = self._get_builder().alloca(func_param_type_list[i])
+            self._add_identifier(node.params[i].id.name, arg_ref)
+            self._get_builder().store(func_args[i], arg_ref)
+        
         node.block.accept(self)
+        
         self._pop_builder()
         self._pop_block()
-
         self._pop_scope()
 
     def visitParamNode(self, node: ParamNode):
         node.type.accept(self)
-        node.map = {node.id.name: node.type.ll_type}
 
     def visitTypeNode(self, node: TypeNode):
         if node.typestr == 'int':
@@ -165,7 +165,7 @@ class NanoVisitor(Visitor):
             node.ll_value = self._get_builder().not_(node.node.ll_value)
 
     def visitDecNode(self, node: DecNode):
-        node.item = self._get_builder().alloca(int32, name=node.id.name)
+        node.item = self._get_builder().alloca(int32)
         if node.init is not None:
             node.init.accept(self)
             self._get_builder().store(node.init.ll_value, node.item)
