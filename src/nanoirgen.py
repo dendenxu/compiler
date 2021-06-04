@@ -199,8 +199,8 @@ class NanoVisitor(Visitor):
         self._add_identifier(node.id.name, node.item)
 
     def visitAssNode(self, node: AssNode):
-        if type(node.id) == IDNode:
-            item = self._get_identifier(node.id.name)
+        if type(node.unary) == IDNode:
+            item = self._get_identifier(node.unary.name)
         else:
             node.id.accept(self)
             item = node.id.ll_value
@@ -263,10 +263,10 @@ class NanoVisitor(Visitor):
             post: EmptyStmtNode()
         """
 
-        print('pre', node.pre)
-        print('cond', node.cond)
-        print('body', node.body)
-        print('post', node.post)
+        # print('pre', node.pre)
+        # print('cond', node.cond)
+        # print('body', node.body)
+        # print('post', node.post)
 
         # do-while
         if node.cond == 'while':
