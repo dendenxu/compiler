@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from nanoirgen import *
 
-
 class Node(object):
     # A simple Abstract Syntax Tree node
     TABSTR = '|   '
@@ -162,7 +161,7 @@ class CallNode(ExpNode):
 
 
 class UnaryNode(ExpNode):
-    _legal_ops = {*"+-!~"}
+    _legal_ops = {*"+-!~*&"}
 
     def __init__(self, op: str, node: Node):
         assert op in UnaryNode._legal_ops

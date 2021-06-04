@@ -29,6 +29,7 @@ Productions used in the parser:
                             | FLOAT
                             | DOUBLE
                             | CHAR
+                            | type TIMES
         statement           : RETURN expression SEMI
                             | expression SEMI
                             | declaration
@@ -58,7 +59,7 @@ Productions used in the parser:
                             | 
         expression          : assignment
         assignment          : conditional
-                            | id EQUALS expression
+                            | unary EQUALS expression
         conditional         : logical_or
                             | logical_or CONDOP expression COLON conditional
         additive            : multiplicative
@@ -66,7 +67,8 @@ Productions used in the parser:
         multiplicative      : unary
                             | multiplicative (TIMES|DEVIDE|MOD) unary
         unary               : postfix
-                            | (PLUS|MINUS|NOT|LNOT) unary
+                            | (PLUS|MINUS|NOT|LNOT|TIMES|AND) unary
+                            | LPAREN type RPAREN unary
         postfix             : primary
                             | id LPAREN exp_list RPAREN
         primary             : INT_CONST_DEC
@@ -316,7 +318,7 @@ class NanoParser():
 
     def p_assignment(self, p):
         '''
-        assignment          : id EQUALS expression
+        assignment          : unary EQUALS expression
         '''
         p[0] = AssNode(p[1], p[3])
 
@@ -326,6 +328,8 @@ class NanoParser():
                             | MINUS unary
                             | NOT unary
                             | LNOT unary
+                            | TIMES unary
+                            | AND unary
         '''
         p[0] = UnaryNode(p[1], p[2])
 
@@ -339,6 +343,7 @@ class NanoParser():
                             | additive MINUS multiplicative
         multiplicative      : multiplicative TIMES unary
                             | multiplicative DIVIDE unary
+                            | multiplicative MOD unary
         equality            : equality EQ relational
                             | equality NE relational
         relational          : relational LT additive
@@ -432,8 +437,9 @@ class NanoParser():
                             | FLOAT
                             | DOUBLE
                             | CHAR
+                            | type TIMES
         '''
-        p[0] = TypeNode(p[1])
+        p[0] = TypeNode(p[1]) # nested type: pointers
 
     ########################################################
     ###                                                  ###

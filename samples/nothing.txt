@@ -3,8 +3,14 @@ float f = 0.03;
 double pi2 = pi * 2;
 char a, b, c='1', d, e;
 
+char * array;
+
 
 int main() {
+
+    *hello = 1090;
+    &hello = *wow + &new - (16384 % 100 + (&NULL || *OK));
+
     int a;
     int a = 1, b = 2, c, d = 4;
 
@@ -71,4 +77,6 @@ void nothing(int a, int b, int c) {
 
     if (expr) a=4;
     if (expr) ;
+
+    do {;} while (0);
 }
