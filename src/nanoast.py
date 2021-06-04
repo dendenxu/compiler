@@ -191,6 +191,8 @@ class BinopNode(ExpNode):
 class StmtNode(Node):
     def __str__(self):
         return f"{self.__class__.__name__}()"
+    def accept(self, visitor):
+        return super().accept(visitor)
 
 
 class BlockNode(Node):

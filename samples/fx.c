@@ -1,6 +1,6 @@
 int main() {
-    int a;
-    int b = 2, c, d = 4;
-    d = 2+d;
-    return d;
+    int a=1+2;
+    if (a==3) a=4;
+    else a=2;
+    return a;
 }

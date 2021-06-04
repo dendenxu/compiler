@@ -84,6 +84,7 @@ class NanoVisitor(Visitor):
         self._pop_scope()
             
     def visitRetNode(self, node: RetNode):
+        print(self.ll_module)
         node.exp.accept(self)
         self.cur_ll_block_builders[-1].ret(node.exp.ll_value)
     
@@ -119,25 +120,28 @@ class NanoVisitor(Visitor):
         self.cur_ll_block_builders[-1].store(node.exp.ll_value, item)
     
     def visitIfStmtNode(self, node: IfStmtNode):
-        pred = self.cur_ll_block_builders[-1].icmp_signed('!=', self.cond.ll_value, int32(0))
-        with self.cur_ll_block_builders[-1].if_else(pred) as (then, otherwise):
-            with then:
-                self._push_scope()
-                cur_ll_func = self.defined_funcs[self.cur_func_name]
-                ll_block = cur_ll_func.append_basic_block()
-                ll_builder = ir.IRBuilder(ll_block)
-                self.cur_ll_block_builders.append(ll_builder)
+        node.cond.accept(self)
+        pred = self.cur_ll_block_builders[-1].icmp_signed('!=', node.cond.ll_value, int32(0))
+        print('here', self.cur_ll_block_builders)
+        if type(node.elsebody) == StmtNode:
+            with self.cur_ll_block_builders[-1].if_then(pred) as then:
+                # self._push_scope()
+                # cur_ll_func = self.defined_funcs[self.cur_func_name]
+                # ll_block = cur_ll_func.append_basic_block()
+                # ll_builder = ir.IRBuilder(ll_block)
+                # self.cur_ll_block_builders.append(ll_builder)
                 node.ifbody.accept(self)
-                self._pop_scope()
-            with otherwise:
-                if type(node.elsebody) != StmtNode:
-                    self._push_scope()
-                    cur_ll_func = self.defined_funcs[self.cur_func_name]
-                    ll_block = cur_ll_func.append_basic_block()
-                    ll_builder = ir.IRBuilder(ll_block)
-                    self.cur_ll_block_builders.append(ll_builder)
-                    node.elsebody.accept(self)
-                    self._pop_scope()
+                # self.cur_ll_block_builders.pop()
+                # self._pop_scope()
+            # with otherwise:
+            #     if type(node.elsebody) != StmtNode:
+            #         self._push_scope()
+            #         cur_ll_func = self.defined_funcs[self.cur_func_name]
+            #         ll_block = cur_ll_func.append_basic_block()
+            #         ll_builder = ir.IRBuilder(ll_block)
+            #         self.cur_ll_block_builders.append(ll_builder)
+            #         node.elsebody.accept(self)
+            #         self._pop_scope()
     
     def visitLoopNode(self, node: LoopNode):
         """
