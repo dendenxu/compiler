@@ -526,7 +526,7 @@ class NanoParser():
         curl_block          : LBRACE block RBRACE
         primary             : LPAREN expression RPAREN
         '''
-        p[0] = p
+        p[0] = p[2]
 
     #############################################################
     #                      Syntax Error Rules                   #

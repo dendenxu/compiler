@@ -27,6 +27,7 @@ class NanoVisitor(Visitor):
         self.scope_stack = []
         self.defined_funcs = dict()
         self.func_params = dict()
+        self.in_global = True
 
     def _push_builder(self, builder=None):
         if builder is not None:
@@ -89,12 +90,15 @@ class NanoVisitor(Visitor):
             return None
 
     def visitProgNode(self, node: ProgNode):
+        self._push_scope()
         node.ll_module = ir.Module(name='program')
         self.ll_module = node.ll_module
         for func in node.funcs:
             func.accept(self)
+        self._pop_scope()
 
     def visitFuncNode(self, node: FuncNode):
+        self.in_global = False
         self._push_scope()
     
         func_param_type_list = []
@@ -122,6 +126,7 @@ class NanoVisitor(Visitor):
         self._pop_builder()
         self._pop_block()
         self._pop_scope()
+        self.in_global = True
 
     def visitCallNode(self, node: CallNode):
         call_func_args = []
@@ -135,7 +140,10 @@ class NanoVisitor(Visitor):
         node.type.accept(self)
 
     def visitTypeNode(self, node: TypeNode):
-        if node.typestr == 'int':
+        if node.is_ptr:
+            node.typestr.accept(self)
+            node.ll_type = make_ptr(node.typestr.ll_type)
+        elif node.typestr == 'int':
             node.ll_type = ir.IntType(32)
 
     def visitBlockNode(self, node: BlockNode):
@@ -155,7 +163,7 @@ class NanoVisitor(Visitor):
         node.ll_value = self._get_builder().load(item)
 
     def visitIntNode(self, node: IntNode):
-        node.ll_value = int32(node.value)
+        node.ll_value = ir.Constant(int32, node.value)
 
     def visitPrimNode(self, node: BinaryNode):
         node.node.accept(self)
@@ -174,17 +182,29 @@ class NanoVisitor(Visitor):
         elif node.op == '*':
             raise NotImplementedError
         elif node.op == '&':
-            raise NotImplementedError
+            node.ll_value = self._get_identifier(node.node.name)
 
     def visitDecNode(self, node: DecNode):
-        node.item = self._get_builder().alloca(int32)
+        node.type.accept(self)
+        if self.in_global:
+            node.item = ir.GlobalVariable(self.ll_module, node.type.ll_type, node.id.name)
+        else:
+            node.item = self._get_builder().alloca(node.type.ll_type)
         if node.init is not None:
             node.init.accept(self)
-            self._get_builder().store(node.init.ll_value, node.item)
+            if self.in_global:
+                node.item.initializer = node.init.ll_value
+            else:
+                self._get_builder().store(node.init.ll_value, node.item)
         self._add_identifier(node.id.name, node.item)
 
     def visitAssNode(self, node: AssNode):
-        item = self._get_identifier(node.id.name)
+        if type(node.id) == IDNode:
+            item = self._get_identifier(node.id.name)
+        else:
+            node.id.accept(self)
+            item = node.id.ll_value
+            raise NotImplementedError
         if item is None:
             raise RuntimeError(node.id.name, "not declared")
         node.exp.accept(self)
