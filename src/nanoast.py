@@ -164,6 +164,9 @@ class UnaryNode(ExpNode):
     def __str__(self):
         return f"{self.__class__.__name__}( {self.op}{self.node} )"
 
+    def accept(self, visitor):
+        return visitor.visitUnaryNode(self)
+
 
 class BinopNode(ExpNode):
     _legal_ops = {*"+-*/%<>", '==', '!=', '<=', '>=', '||', '&&'}
