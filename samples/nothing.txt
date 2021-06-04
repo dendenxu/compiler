@@ -81,8 +81,27 @@ void nothing(int a, int b, int c) {
     if (expr) a=4;
     if (expr) ;
 
-    do {;} while (0);
 
+    // Comment Test
+    // one-line comment 
+    /* multi-line comment */
+
+    do {;} while (0);
+    
+    // comment void if for int a = 100;
+    /*
+     * This is 
+     * multiline
+     * int a = 10; return 2;
+     *     t_ignore = ' \t'
+
+    # Comment
+    t_ignore_SING_COMMENT = r'//.*?\n'
+    t_ignore_MULT_COMMENT = r'/\*(\*(?!\/)|[^*])*\*\/'
+     * 
+     */
+    
+    // Conditional Expressions
     1 ? 1 ? 2 :3 : 4;
     1 ? 2 : 0 ? 3 : 4;
     test = 1 ? 1 ? 0 ? 2 : 3 : 4 : 5;
