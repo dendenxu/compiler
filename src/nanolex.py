@@ -135,6 +135,10 @@ class NanoLexer():
 
     t_ignore = ' \t'
 
+    # Comment
+    t_ignore_SING_COMMENT = r'//.*?\n'
+    t_ignore_MULT_COMMENT = r'/\*(\*(?!\/)|[^*])*\*\/'
+
     # Define a rule so we can track line numbers
     def t_NEWLINE(self, t):
         r'\n+'
