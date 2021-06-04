@@ -318,9 +318,10 @@ class NanoParser():
 
     def p_cond_exp(self, p):
         '''
-        conditional         : logical_or CONDOP expression COLON conditional
+        conditional         : logical_or CONDOP expression COLON expression
         '''
-        # TODO: construct conditional node
+        p[0] = TernaryNode(p[1], p[2], p[3], p[4], p[5])
+        
 
     #############################################################
     #                           Assignment                      #

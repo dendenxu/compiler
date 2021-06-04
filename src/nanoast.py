@@ -87,12 +87,20 @@ class StringNode(EmptyLiteralNode):
 #############################################################
 
 class TypeNode(Node):
+    _primitive_types = [
+        'char',
+        'int',
+        'long',
+        'float',
+        'double',
+    ]
     def __init__(self, typestr: str):
         super().__init__()
+        self.is_ptr = not typestr in TypeNode._primitive_types
         self.typestr = typestr
 
     def __str__(self):
-        return f"{self.__class__.__name__}({self.typestr})"
+        return f"{self.__class__.__name__}" + (f"(PTR)" if self.is_ptr else "") + f"({self.typestr})"
 
     def accept(self, visitor: NanoVisitor):
         return visitor.visitTypeNode(self)
@@ -203,6 +211,20 @@ class BinopNode(EmptyExpNode):
         return visitor.visitBinopNode(self)
 
 
+class TernaryNode(EmptyExpNode):
+    
+    def __init__(self, exp1: EmptyExpNode, op1: str, exp2: EmptyExpNode, op2: str, exp3: EmptyExpNode):
+        super().__init__()
+        self.exp1, self.exp2, self.exp3 = exp1, exp2, exp3
+        self.op1, self.op2 = op1, op2
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}( {self.exp1} {self.op1} {self.exp2} {self.op2} {self.exp3} )"
+
+    def accept(self, visitor: NanoVisitor):
+        pass
+
+
 #############################################################
 #                         Statement                         #
 #############################################################
@@ -215,7 +237,7 @@ class EmptyStmtNode(Node):
         return super().accept(visitor)
 
 
-class BlockNode(Node):
+class BlockNode(EmptyStmtNode):
 
     def __init__(self, *args):
         # self.indentLevel = 2
