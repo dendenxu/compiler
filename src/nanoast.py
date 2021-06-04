@@ -152,6 +152,15 @@ class EmptyExpNode(Node):
     pass
 
 
+class ArrSubNode(Node):
+    def __init__(self, subee: UnaryNode, suber: UnaryNode):
+        super().__init__()
+        self.subee, self.suber = subee, suber
+
+    def __str__(self):
+        return f"{self.__class__.__name__}( {self.subee}[{self.suber}] )"
+
+
 class CallNode(EmptyExpNode):
     def __init__(self, id: IDNode, params: List[EmptyExpNode]):
         super().__init__()

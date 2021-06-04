@@ -199,9 +199,8 @@ class NanoParser():
         '''
         array_list          : array_list LBRACKET INT_CONST_DEC RBRACKET
         '''
-        p[1].append(p[3]) # should always be an array
+        p[1].append(p[3])  # should always be an array
         p[0] = p[1]
-        
 
     def p_dec_list(self, p):
         '''
@@ -369,6 +368,12 @@ class NanoParser():
         logical_and         : logical_and LAND equality
         '''
         p[0] = BinopNode(p[2], p[1], p[3])
+
+    def p_arr_sub(self, p):
+        '''
+        postfix             : postfix LBRACKET expression RBRACKET
+        '''
+        p[0] = ArrSubNode(p[1], p[3])
 
     #############################################################
     #                       Function Call                       #
