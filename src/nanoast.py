@@ -196,11 +196,11 @@ class UnaryNode(EmptyExpNode):
         return visitor.visitUnaryNode(self)
 
 
-class BinopNode(EmptyExpNode):
+class BinaryNode(EmptyExpNode):
     _legal_ops = {*"+-*/%<>", '==', '!=', '<=', '>=', '||', '&&'}
 
     def __init__(self, op: str, left: Node, right: Node):
-        assert op in BinopNode._legal_ops
+        assert op in BinaryNode._legal_ops
         super().__init__()
         self.op, self.left, self.right = op, left, right
 
@@ -208,7 +208,7 @@ class BinopNode(EmptyExpNode):
         return f"{self.__class__.__name__}( {self.left} {self.op} {self.right} )"
 
     def accept(self, visitor: NanoVisitor):
-        return visitor.visitBinopNode(self)
+        return visitor.visitBinaryNode(self)
 
 
 class TernaryNode(EmptyExpNode):

@@ -149,7 +149,7 @@ class NanoVisitor(Visitor):
     def visitIntNode(self, node: IntNode):
         node.ll_value = int32(node.value)
 
-    def visitPrimNode(self, node: BinopNode):
+    def visitPrimNode(self, node: BinaryNode):
         node.node.accept(self)
         node.ll_value = node.node.ll_value
 
@@ -287,7 +287,7 @@ class NanoVisitor(Visitor):
             self._get_builder().position_at_start(post_block)
             self._push_block(post_block)
 
-    def visitBinopNode(self, node: BinopNode):
+    def visitBinaryNode(self, node: BinaryNode):
         node.left.accept(self)
         node.right.accept(self)
         if node.op == '+':
