@@ -1,5 +1,13 @@
+from typing import List
+from termcolor import colored
+
 class Node(object):
     # A simple Abstract Syntax Tree node
+    TABSTR = '|   '
+
+    def __init__(self):
+        self.indentLevel = 0
+
     def accept(self, visitor):
         pass
 
@@ -10,11 +18,12 @@ class Node(object):
 
 class IDNode(Node):
     def __init__(self, name: str):
+        super().__init__()
         self.name = name
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.name})"
-    
+
     def accept(self, visitor):
         return visitor.visitIDNode(self)
 
@@ -27,6 +36,7 @@ class IntNode(LiteralNode):
     def __init__(self, value: int):
         assert value <= 2**31 - 1 and value >= 0, \
             f"{value} is out of integer range"
+        super().__init__()
         self.value = value
 
     def __str__(self):
@@ -38,6 +48,7 @@ class IntNode(LiteralNode):
 
 class FloatNode(LiteralNode):
     def __init__(self, value: float):
+        super().__init__()
         self.value = value
 
     def __str__(self):
@@ -47,6 +58,7 @@ class FloatNode(LiteralNode):
 class CharNode(LiteralNode):
     def __init__(self, value: str):
         assert len(value) == 1, "Char literal should only have a length of 1"
+        super().__init__()
         self.value = value
 
     def __str__(self):
@@ -55,6 +67,7 @@ class CharNode(LiteralNode):
 
 class StringNode(LiteralNode):
     def __init__(self, value: str):
+        super().__init__()
         self.value = value
 
     def __str__(self):
@@ -67,6 +80,7 @@ class StringNode(LiteralNode):
 
 class TypeNode(Node):
     def __init__(self, typestr: str):
+        super().__init__()
         self.typestr = typestr
 
     def __str__(self):
@@ -87,24 +101,16 @@ class ParamNode(Node):
         return f"{self.__class__.__name__}({self.type} {self.id})"
 
 
-class ParamListNode(Node):
-    def __init__(self, *args):
-        self.params = [*args]
-
-    def append(self, param: ParamNode):
-        self.params.append(param)
-
-    def __str__(self):
-        return f"{self.__class__.__name__}({', '.join(list(map(str, self.params)))})"
-
-
 class FuncNode(Node):
-    def __init__(self, type: TypeNode, id: IDNode, params: ParamListNode, block: Node):
+    def __init__(self, type: TypeNode, id: IDNode, params: List[ParamNode], block: Node):
+        super().__init__()
         self.type, self.id, self.params, self.block = type, id, params, block
 
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.type} {self.id}( {', '.join(list(map(str, self.params.params)))} )" + \
-            " {" + f"\n    {self.block}\n" + "    } )EndFunc\n"
+        self.block.indentLevel = self.indentLevel + 1
+        return self.TABSTR * self.indentLevel + colored(f"{self.__class__.__name__}", color='green', attrs=['bold']) + \
+            f"( {self.type} {self.id}( {', '.join(list(map(str, self.params)))} )" + \
+            f" {{ {self.block}\n" + self.TABSTR * self.indentLevel + "} )EndFunc\n" + self.TABSTR
 
     def accept(self, visitor):
         return visitor.visitFuncNode(self)
@@ -115,17 +121,16 @@ class ProgNode(Node):
     # currently, the program only supports a function
     def __init__(self, *args):
         # assert func.id.name == "main", "No main function defined for program"
+        super().__init__()
         self.funcs = [*args]
 
     def append(self, func: FuncNode):
         self.funcs.append(func)
 
     def __str__(self):
-        return f"""
-{self.__class__.__name__}(""" + \
-            '\n'.join(list(map(str, self.funcs))) + \
-            """)EndProg
-"""
+        for f in self.funcs:
+            f.indentLevel = self.indentLevel + 1
+        return f"\n{self.__class__.__name__}(\n" + "\n".join(list(map(str, self.funcs))) + "\n)EndProg"
 
     def accept(self, visitor):
         return visitor.visitProgNode(self)
@@ -136,27 +141,16 @@ class ProgNode(Node):
 #############################################################
 
 class ExpNode(Node):
-    def __init__(self):
-        pass
-
-
-class ExpListNode(Node):
-    def __init__(self, *args):
-        self.exps = [*args]
-
-    def append(self, exp: ExpNode):
-        self.exps.append(exp)
-
-    def __str__(self):
-        return f"{self.__class__.__name__}({', '.join(map(str, self.exps))})"
+    pass
 
 
 class CallNode(ExpNode):
-    def __init__(self, id: IDNode, params: ExpListNode):
+    def __init__(self, id: IDNode, params: List[ExpNode]):
+        super().__init__()
         self.id, self.params = id, params
 
     def __str__(self):
-        return f"{self.__class__.__name__}({self.id}({self.params}))"
+        return f"{self.__class__.__name__}( {self.id}({', '.join(map(str, self.params))}) )"
 
 
 class UnaryNode(ExpNode):
@@ -164,6 +158,7 @@ class UnaryNode(ExpNode):
 
     def __init__(self, op: str, node: Node):
         assert op in UnaryNode._legal_ops
+        super().__init__()
         self.op, self.node = op, node
 
     def __str__(self):
@@ -175,6 +170,7 @@ class BinopNode(ExpNode):
 
     def __init__(self, op: str, left: Node, right: Node):
         assert op in BinopNode._legal_ops
+        super().__init__()
         self.op, self.left, self.right = op, left, right
 
     def __str__(self):
@@ -198,15 +194,20 @@ class StmtNode(Node):
 class BlockNode(Node):
 
     def __init__(self, *args):
+        # self.indentLevel = 2
+        super().__init__()
         self.stmts = [*args]
 
     def append(self, node: StmtNode):
         self.stmts.append(node)
 
     def __str__(self):
-        return f'{self.__class__.__name__}(\n' + 2*'    ' + \
-            ('\n' + 2*'    ').join(list(map(str, self.stmts))) + \
-            '\n    )EndBlock'
+        for item in self.stmts:
+            item.indentLevel = self.indentLevel + 1
+        return colored(f'{self.__class__.__name__}({self.indentLevel}\n', color='cyan', attrs=['bold']) + \
+            self.TABSTR * self.indentLevel + \
+            ('\n' + self.TABSTR * self.indentLevel).join(list(map(str, self.stmts))) + \
+            '\n' + self.TABSTR * (self.indentLevel - 1) + colored(f')EndBlock{self.indentLevel}', color='magenta', attrs=['bold'])
 
     def accept(self, visitor):
         return visitor.visitBlockNode(self)
@@ -215,6 +216,7 @@ class BlockNode(Node):
 class AssNode(StmtNode):
 
     def __init__(self, id: IDNode, exp: ExpNode):
+        super().__init__()
         self.id, self.exp = id, exp
 
     def __str__(self):
@@ -228,6 +230,7 @@ class DecNode(StmtNode):
 
     def __init__(self, type: TypeNode, id: IDNode, init: Node):
         # init might be none
+        super().__init__()
         self.type, self.id, self.init = type, id, init
 
     def __str__(self):
@@ -239,6 +242,7 @@ class DecNode(StmtNode):
 
 class RetNode(StmtNode):
     def __init__(self, exp: ExpNode):
+        super().__init__()
         self.exp = exp
 
     def __str__(self):
@@ -248,30 +252,16 @@ class RetNode(StmtNode):
         return visitor.visitRetNode(self)
 
 
-class DecListNode(StmtNode):
-
-    def __init__(self):
-        self.declist = []
-
-    def append(self, node: DecNode):
-        self.declist.append(node)
-
-    def __str__(self):
-        return f'{self.__class__.__name__}(\n' + '    '*3 + \
-            ('\n'+3*'    ').join(map(str, self.declist)) + ' )'
-
-    def accept(self, visitor):
-        return visitor.visitDecListNode(self)
-
-
 class IfStmtNode(StmtNode):
 
     def __init__(self, cond: ExpNode, ifbody: BlockNode, elsebody: BlockNode = None):
+        super().__init__()
         self.cond = cond
         self.ifbody = ifbody
         self.elsebody = elsebody  # this can be None if this if stmt is not paired with a else statement
 
     def __str__(self):
+        self.ifbody.indentLevel = self.elsebody.indentLevel = self.indentLevel
         return f"{self.__class__.__name__}( IF ({self.cond}) {{ {self.ifbody} }} ELSE {{ {self.elsebody} }} )"
 
     def accept(self, visitor):
@@ -281,10 +271,12 @@ class IfStmtNode(StmtNode):
 class LoopNode(StmtNode):
 
     def __init__(self, pre: BlockNode, cond: ExpNode, body: BlockNode, post: BlockNode):
+        super().__init__()
         self.pre, self.cond, self.body, self.post = pre, cond, body, post
 
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.body}\n{self.post} }} )"
+        self.pre.indentLevel = self.body.indentLevel = self.post.indentLevel = self.indentLevel
+        return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.body}, {self.post} }} )"
 
     def accept(self, visitor):
         return visitor.visitLoopNode(self)
