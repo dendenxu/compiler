@@ -87,12 +87,20 @@ class StringNode(EmptyLiteralNode):
 #############################################################
 
 class TypeNode(Node):
+    _primitive_types = [
+        'char',
+        'int',
+        'long',
+        'float',
+        'double',
+    ]
     def __init__(self, typestr: str):
         super().__init__()
+        self.is_ptr = not typestr in TypeNode._primitive_types
         self.typestr = typestr
 
     def __str__(self):
-        return f"{self.__class__.__name__}({self.typestr})"
+        return f"{self.__class__.__name__}" + (f"(PTR)" if self.is_ptr else "") + f"({self.typestr})"
 
     def accept(self, visitor: NanoVisitor):
         return visitor.visitTypeNode(self)
