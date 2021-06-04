@@ -11,13 +11,14 @@ from llvmlite import ir, binding
 import copy
 
 
+
 class Visitor:
     pass
 
 
 class NanoVisitor(Visitor):
     def __init__(self):
-        # we do not need list since we only support single file compiling
+        # we do not need list since we only support single filre compiling
         self.cur_ll_module = None
         # we do not need list since we do not support sub-procedure
         self.cur_func_name = ''
@@ -193,7 +194,7 @@ class NanoVisitor(Visitor):
         /  pre -> cond <----|                /
         /  /=========|======|==scope_new_1===/
         /  /        body    |                /
-        /  /=========|======|==scope_new_2===/
+        /  /=========|======|================/
         /           post----|                /
         /====================================/
         
@@ -225,19 +226,32 @@ class NanoVisitor(Visitor):
             pass
         # while
         else:
-            node.cond.accept(self)
-            cond = self._get_builder().icmp_signed('!=', node.cond.ll_value, int32(0))
-            # body block
+            self._push_scope()
+            if type(node.pre) != EmptyStmtNode:
+                node.pre.accept(self)
+            # scope_new_0
+            if type(node.cond) != EmptyExpNode:
+                node.cond.accept(self)
+                cond = self._get_builder().icmp_signed('!=', node.cond.ll_value, int32(0))
+            else:
+                cond = bool(1)
             body_block = self._get_builder().append_basic_block()
-            # post block
             post_block = self._get_builder().append_basic_block()
             self._get_builder().cbranch(cond, body_block, post_block)
-            # body
+
+            # scope_new_1 auto created when visitBlockNode
             self._get_builder().position_at_start(body_block)
             node.body.accept(self)
-            node.cond.accept(self)  
-            cond = self._get_builder().icmp_signed('!=', node.cond.ll_value, int32(0))
+            if type(node.post) != EmptyStmtNode:
+                node.post.accept(self)
+            if type(node.cond) != EmptyExpNode:
+                node.cond.accept(self)
+                cond = self._get_builder().icmp_signed('!=', node.cond.ll_value, int32(0))
+            else:
+                cond = bool(1)
+            self._pop_scope()
             self._get_builder().cbranch(cond, body_block, post_block)
+
             # after
             self._get_builder().position_at_start(post_block)
             self._push_block(post_block)

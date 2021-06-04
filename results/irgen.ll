@@ -8,32 +8,38 @@ define i32 @"main"()
   %"a" = alloca i32
   %".3" = add i32 1, 3
   store i32 %".3", i32* %"a"
-  %".5" = load i32, i32* %"a"
-  %".6" = icmp eq i32 %".5", 3
-  %".7" = icmp ne i1 %".6", 0
-  br i1 %".7", label %".2.if", label %".2.else"
+  %"b" = alloca i32
+  store i32 1, i32* %"b"
+  %".6" = load i32, i32* %"a"
+  %".7" = icmp eq i32 %".6", 3
+  %".8" = icmp ne i1 %".7", 0
+  br i1 %".8", label %".2.if", label %".2.else"
 .2.if:
-  %".9" = mul i32 1, -1
-  store i32 %".9", i32* %"a"
+  %".10" = mul i32 1, -1
+  store i32 %".10", i32* %"a"
   br label %".2.endif"
 .2.else:
-  %".12" = mul i32 2, -1
-  store i32 %".12", i32* %"a"
+  %".13" = mul i32 2, -1
+  store i32 %".13", i32* %"a"
   br label %".2.endif"
 .2.endif:
-  %".15" = load i32, i32* %"a"
-  %".16" = icmp ne i32 %".15", 4
-  %".17" = icmp ne i1 %".16", 0
-  br i1 %".17", label %".18", label %".19"
-.18:
-  %".21" = load i32, i32* %"a"
-  %".22" = add i32 %".21", 1
-  store i32 %".22", i32* %"a"
-  %".24" = load i32, i32* %"a"
-  %".25" = icmp ne i32 %".24", 4
-  %".26" = icmp ne i1 %".25", 0
-  br i1 %".26", label %".18", label %".19"
-.19:
-  %".28" = load i32, i32* %"a"
-  ret i32 %".28"
+  %"i" = alloca i32
+  store i32 0, i32* %"i"
+  %".17" = load i32, i32* %"i"
+  %".18" = icmp slt i32 %".17", 10
+  %".19" = icmp ne i1 %".18", 0
+  br i1 %".19", label %".20", label %".21"
+.20:
+  %".23" = load i32, i32* %"i"
+  store i32 %".23", i32* %"a"
+  %".25" = load i32, i32* %"i"
+  %".26" = add i32 %".25", 1
+  store i32 %".26", i32* %"i"
+  %".28" = load i32, i32* %"i"
+  %".29" = icmp slt i32 %".28", 10
+  %".30" = icmp ne i1 %".29", 0
+  br i1 %".30", label %".20", label %".21"
+.21:
+  %".32" = load i32, i32* %"a"
+  ret i32 %".32"
 }

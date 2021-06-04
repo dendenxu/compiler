@@ -1,9 +1,9 @@
 int main() {
-    int a=1+3;
+    int a=1+3, b=1;
     if (a==3) a=-1;
     else a=-2;
-    while (a!=4){
-        a = a+1;
+    for (int i=0;i<10;i=i+1){
+        a = i;
     }
     return a;
 }
