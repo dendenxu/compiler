@@ -140,7 +140,7 @@ class NanoVisitor(Visitor):
         node.type.accept(self)
 
     def visitTypeNode(self, node: TypeNode):
-        if node.is_ptr:
+        if node._is_ptr:
             node.typestr.accept(self)
             node.ll_type = make_ptr(node.typestr.ll_type)
         elif node.typestr == 'int':
