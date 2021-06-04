@@ -202,9 +202,9 @@ class NanoVisitor(Visitor):
             body: BlockNode
             post: EmptyStmtNode
         do-while:
-            pre: BlockNode
-            cond: 'while'
-            body: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
+            pre: EmptyStmtNode()
+            cond: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
+            body: BlockNode()
             post: EmptyStmtNode()
         """
 
@@ -214,9 +214,24 @@ class NanoVisitor(Visitor):
         print('post', node.post)
 
         # do-while
-        if node.cond == 'cond':
-            # scope_new_0 auto created
-            pass
+        if node.cond == 'while':
+            node.cond = node.body
+            node.body = node.pre
+            node.pre = node.post
+            
+            # scope_new_0
+            self._push_scope()
+            body_block = self._get_builder().append_basic_block()
+            post_block = self._get_builder().append_basic_block()
+            self._get_builder().branch(body_block)
+            self._get_builder().position_at_start(body_block)
+            node.body.accept(self)
+            node.cond.accept(self)
+            cond = self._get_builder().icmp_signed('!=', node.cond.ll_value, int32(0))
+            self._get_builder().cbranch(cond, body_block, post_block)
+            self._get_builder().position_at_start(post_block)
+            self._push_block(post_block)
+            self._pop_scope()
         # while
         else:
             self._push_scope()
