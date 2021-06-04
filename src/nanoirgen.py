@@ -199,14 +199,14 @@ class NanoVisitor(Visitor):
         self._add_identifier(node.id.name, node.item)
 
     def visitAssNode(self, node: AssNode):
-        if type(node.id) == IDNode:
+        if type(node.unary) == IDNode:
             item = self._get_identifier(node.id.name)
         else:
-            node.id.accept(self)
-            item = node.id.ll_value
+            node.unary.accept(self)
+            item = node.unary.ll_value
             raise NotImplementedError
         if item is None:
-            raise RuntimeError(node.id.name, "not declared")
+            raise RuntimeError(node.unary.name, "not declared")
         node.exp.accept(self)
         self._get_builder().store(node.exp.ll_value, item)
 
