@@ -368,7 +368,7 @@ class NanoParser():
         logical_or          : logical_or LOR logical_and
         logical_and         : logical_and LAND equality
         '''
-        p[0] = BinopNode(p[2], p[1], p[3])
+        p[0] = BinaryNode(p[2], p[1], p[3])
 
     #############################################################
     #                     Array Subscription                    #
