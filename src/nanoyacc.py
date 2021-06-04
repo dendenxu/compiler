@@ -1,9 +1,10 @@
 from ply import yacc
-from nanolex import NanoLexer
-from nanoast import *
 import sys
 from termcolor import colored
 import traceback
+from nanolex import NanoLexer
+from nanoast import *
+
 
 """ 
 Grammars written here is for you (the human reading this) to have a comprehensive understanding of the NanoC language. They're written in BNF for better copy-pasting compability for the parser, and it should be just the same as the ones used in the parser to build the AST.
@@ -11,6 +12,7 @@ Grammars written here is for you (the human reading this) to have a comprehensiv
 Productions used in the parser:
 
         program             : program function
+                            | program declaration
                             |
         function            : type id LPAREN param_list RPAREN curl_block
         param_list          : type id comma_paramters
@@ -97,10 +99,18 @@ class NanoParser():
 
     def p_prog_func(self, p):
         # program can have multiple functions
-        'program            : program function'
+        # and global variable definitions
+        '''
+        program             : program function
+                            | program declaration
+        '''
         if p[1] is None:
             p[1] = ProgNode()
-        p[1].append(p[2])  # init to a function
+        if isinstance(p[2], list):
+            for dec in p[2]:
+                p[1].append(dec)
+        else:
+            p[1].append(p[2])
         p[0] = p[1]
 
     #############################################################
@@ -367,7 +377,6 @@ class NanoParser():
             p[1] = []
         p[1].append(p[3])
         p[0] = p[1]
-
 
     ########################################################
     ###                                                  ###

@@ -1,5 +1,11 @@
+from __future__ import annotations
 from typing import List
 from termcolor import colored
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from nanoirgen import *
+
 
 class Node(object):
     # A simple Abstract Syntax Tree node
@@ -8,7 +14,7 @@ class Node(object):
     def __init__(self):
         self.indentLevel = 0
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         pass
 
 #############################################################
@@ -24,7 +30,7 @@ class IDNode(Node):
     def __str__(self):
         return f"{self.__class__.__name__}({self.name})"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitIDNode(self)
 
 
@@ -42,7 +48,7 @@ class IntNode(LiteralNode):
     def __str__(self):
         return f"{self.__class__.__name__}({self.value})"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitIntNode(self)
 
 
@@ -57,8 +63,9 @@ class FloatNode(LiteralNode):
 
 class CharNode(LiteralNode):
     def __init__(self, value: str):
-        assert len(value) == 1, "Char literal should only have a length of 1"
         super().__init__()
+        value = value[1:-1]  # remove starting and ending quotes
+        assert len(value) == 1, f"Char literal should only have a length of 1, you have: {repr(value)}:{len(value)}"
         self.value = value
 
     def __str__(self):
@@ -68,6 +75,7 @@ class CharNode(LiteralNode):
 class StringNode(LiteralNode):
     def __init__(self, value: str):
         super().__init__()
+        value = value[1:-1]  # remove starting and ending quotes
         self.value = value
 
     def __str__(self):
@@ -86,7 +94,7 @@ class TypeNode(Node):
     def __str__(self):
         return f"{self.__class__.__name__}({self.typestr})"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitTypeNode(self)
 
 
@@ -112,7 +120,7 @@ class FuncNode(Node):
             f"( {self.type} {self.id}( {', '.join(list(map(str, self.params)))} )" + \
             f" {{ {self.block}\n" + self.TABSTR * self.indentLevel + "} )EndFunc\n" + self.TABSTR
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitFuncNode(self)
 
 
@@ -132,7 +140,7 @@ class ProgNode(Node):
             f.indentLevel = self.indentLevel + 1
         return f"\n{self.__class__.__name__}(\n" + "\n".join(list(map(str, self.funcs))) + "\n)EndProg"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitProgNode(self)
 
 
@@ -179,7 +187,7 @@ class BinopNode(ExpNode):
     def __str__(self):
         return f"{self.__class__.__name__}( {self.left} {self.op} {self.right} )"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitBinopNode(self)
 
 
@@ -212,7 +220,7 @@ class BlockNode(Node):
             ('\n' + self.TABSTR * self.indentLevel).join(list(map(str, self.stmts))) + \
             '\n' + self.TABSTR * (self.indentLevel - 1) + colored(f')EndBlock{self.indentLevel}', color='magenta', attrs=['bold'])
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitBlockNode(self)
 
 
@@ -225,7 +233,7 @@ class AssNode(StmtNode):
     def __str__(self):
         return f"{self.__class__.__name__}( {self.id} = {self.exp} )"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitAssNode(self)
 
 
@@ -239,7 +247,7 @@ class DecNode(StmtNode):
     def __str__(self):
         return f"{self.__class__.__name__}( {self.type} {self.id}" + (f' = {self.init}' if self.init is not None else '') + ' )'
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitDecNode(self)
 
 
@@ -251,7 +259,7 @@ class RetNode(StmtNode):
     def __str__(self):
         return f"{self.__class__.__name__}( RETURN {self.exp}; )"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitRetNode(self)
 
 
@@ -267,7 +275,7 @@ class IfStmtNode(StmtNode):
         self.ifbody.indentLevel = self.elsebody.indentLevel = self.indentLevel
         return f"{self.__class__.__name__}( IF ({self.cond}) {{ {self.ifbody} }} ELSE {{ {self.elsebody} }} )"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitIfStmtNode(self)
 
 
@@ -281,7 +289,7 @@ class LoopNode(StmtNode):
         self.pre.indentLevel = self.body.indentLevel = self.post.indentLevel = self.indentLevel
         return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.body}, {self.post} }} )"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitLoopNode(self)
 
 
