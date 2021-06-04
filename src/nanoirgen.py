@@ -61,15 +61,21 @@ class NanoVisitor(Visitor):
     def _pop_block(self):
         return self.block_stack.pop()
 
-    def _add_identifier(self, name, item):
+    def _add_identifier(self, name, reference, layout=[]):
         if name in self.scope_stack[-1]:
             raise RuntimeError("{name} alredy declared")
-        self.scope_stack[-1][name] = item
+        self.scope_stack[-1][name] = {'ref':reference, 'layout':layout}
 
     def _get_identifier(self, name):
         for d in self.scope_stack[::-1]:  # reversing the scope_block
             if name in d:
-                return d[name]
+                return d[name]['ref']
+        return None
+    
+    def _get_identifier_layout(self, name):
+        for d in self.scope_stack[::-1]:  # reversing the scope_block
+            if name in d:
+                return d[name]['layout']
         return None
 
     def _add_func(self, name, func, params=dict()):
@@ -140,13 +146,14 @@ class NanoVisitor(Visitor):
         node.type.accept(self)
 
     def visitArrSubNode(self, node: ArrSubNode):
-        print(node.subee)
-
+        node.ll_ref = self._get_builder().gep(self._get_identifier('a'), [int32(0), int32(0), int32(0), int32(0)])
+        node.ll_value = self._get_builder().load(node.ll_ref)
+        
     def visitTypeNode(self, node: TypeNode):
         if node._is_ptr:
             node.typestr.accept(self)
             node.ll_type = make_ptr(node.typestr.ll_type)
-        elif node.typestr == 'int':
+        elif node.typestr == 'int': 
             node.ll_type = ir.IntType(32)
 
     def visitBlockNode(self, node: BlockNode):
@@ -163,7 +170,7 @@ class NanoVisitor(Visitor):
         item = self._get_identifier(node.name)
         if item is None:
             raise RuntimeError(node.name, "not declared")
-        node.ll_value = self._get_builder().load(item)
+        node.ll_ref = item
 
     def visitIntNode(self, node: IntNode):
         node.ll_value = ir.Constant(int32, node.value)
@@ -174,6 +181,8 @@ class NanoVisitor(Visitor):
 
     def visitUnaryNode(self, node: UnaryNode):
         node.node.accept(self)
+        if type(node.node) == IDNode:
+            node.node.ll_value = self._get_builder().load(node.node.ll_ref)
         if node.op == '+':
             node.ll_value = node.node.ll_value
         elif node.op == '-':
@@ -189,21 +198,28 @@ class NanoVisitor(Visitor):
 
     def visitDecNode(self, node: DecNode):
         node.type.accept(self)
+        node.ll_type = node.type.ll_type
+        if len(node.arr):
+            for a in reversed(node.arr):
+                node.ll_type = ir.ArrayType(node.ll_type, a)
         if self.in_global:
-            node.item = ir.GlobalVariable(self.ll_module, node.type.ll_type, node.id.name)
+            node.item = ir.GlobalVariable(self.ll_module, node.ll_type, node.id.name)
         else:
-            node.item = self._get_builder().alloca(node.type.ll_type)
+            node.item = self._get_builder().alloca(node.ll_type)
         if node.init is not None:
             node.init.accept(self)
             if self.in_global:
                 node.item.initializer = node.init.ll_value
             else:
                 self._get_builder().store(node.init.ll_value, node.item)
-        self._add_identifier(node.id.name, node.item)
+        self._add_identifier(node.id.name, node.item, node.arr)
 
     def visitAssNode(self, node: AssNode):
         if type(node.unary) == IDNode:
             item = self._get_identifier(node.unary.name)
+        elif type(node.unary) == ArrSubNode:
+            node.unary.accept(self)
+            item = node.unary.ll_ref
         else:
             node.unary.accept(self)
             item = node.unary.ll_value
@@ -325,6 +341,10 @@ class NanoVisitor(Visitor):
     def visitBinaryNode(self, node: BinaryNode):
         node.left.accept(self)
         node.right.accept(self)
+        if type(node.left) == IDNode:
+            node.left.ll_value = self._get_builder().load(node.left.ll_ref)
+        if type(node.right) == IDNode:
+            node.right.ll_value = self._get_builder().load(node.right.ll_ref)
         if node.op == '+':
             node.ll_value = self._get_builder().add(
                 node.left.ll_value,
