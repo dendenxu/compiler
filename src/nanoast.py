@@ -33,11 +33,11 @@ class IDNode(Node):
         return visitor.visitIDNode(self)
 
 
-class LiteralNode(Node):
+class EmptyLiteralNode(Node):
     pass
 
 
-class IntNode(LiteralNode):
+class IntNode(EmptyLiteralNode):
     def __init__(self, value: int):
         assert value <= 2**31 - 1 and value >= 0, \
             f"{value} is out of integer range"
@@ -51,7 +51,7 @@ class IntNode(LiteralNode):
         return visitor.visitIntNode(self)
 
 
-class FloatNode(LiteralNode):
+class FloatNode(EmptyLiteralNode):
     def __init__(self, value: float):
         super().__init__()
         self.value = value
@@ -60,7 +60,7 @@ class FloatNode(LiteralNode):
         return f"{self.__class__.__name__}({self.value})"
 
 
-class CharNode(LiteralNode):
+class CharNode(EmptyLiteralNode):
     def __init__(self, value: str):
         super().__init__()
         value = value[1:-1]  # remove starting and ending quotes
@@ -71,7 +71,7 @@ class CharNode(LiteralNode):
         return f"{self.__class__.__name__}({self.value})"
 
 
-class StringNode(LiteralNode):
+class StringNode(EmptyLiteralNode):
     def __init__(self, value: str):
         super().__init__()
         value = value[1:-1]  # remove starting and ending quotes
@@ -147,12 +147,12 @@ class ProgNode(Node):
 #                        Expression                         #
 #############################################################
 
-class ExpNode(Node):
+class EmptyExpNode(Node):
     pass
 
 
-class CallNode(ExpNode):
-    def __init__(self, id: IDNode, params: List[ExpNode]):
+class CallNode(EmptyExpNode):
+    def __init__(self, id: IDNode, params: List[EmptyExpNode]):
         super().__init__()
         self.id, self.params = id, params
 
@@ -160,7 +160,7 @@ class CallNode(ExpNode):
         return f"{self.__class__.__name__}( {self.id}({', '.join(map(str, self.params))}) )"
 
 
-class UnaryNode(ExpNode):
+class UnaryNode(EmptyExpNode):
     _legal_ops = {*"+-!~*&"}
 
     def __init__(self, op: str, node: Node):
@@ -175,7 +175,7 @@ class UnaryNode(ExpNode):
         return visitor.visitUnaryNode(self)
 
 
-class BinopNode(ExpNode):
+class BinopNode(EmptyExpNode):
     _legal_ops = {*"+-*/%<>", '==', '!=', '<=', '>=', '||', '&&'}
 
     def __init__(self, op: str, left: Node, right: Node):
@@ -194,7 +194,7 @@ class BinopNode(ExpNode):
 #                         Statement                         #
 #############################################################
 
-class StmtNode(Node):
+class EmptyStmtNode(Node):
     def __str__(self):
         return f"{self.__class__.__name__}()"
     def accept(self, visitor):
@@ -208,7 +208,7 @@ class BlockNode(Node):
         super().__init__()
         self.stmts = [*args]
 
-    def append(self, node: StmtNode):
+    def append(self, node: EmptyStmtNode):
         self.stmts.append(node)
 
     def __str__(self):
@@ -223,9 +223,9 @@ class BlockNode(Node):
         return visitor.visitBlockNode(self)
 
 
-class AssNode(StmtNode):
+class AssNode(EmptyStmtNode):
 
-    def __init__(self, id: IDNode, exp: ExpNode):
+    def __init__(self, id: IDNode, exp: EmptyExpNode):
         super().__init__()
         self.id, self.exp = id, exp
 
@@ -236,7 +236,7 @@ class AssNode(StmtNode):
         return visitor.visitAssNode(self)
 
 
-class DecNode(StmtNode):
+class DecNode(EmptyStmtNode):
 
     def __init__(self, type: TypeNode, id: IDNode, init: Node):
         # init might be none
@@ -250,8 +250,8 @@ class DecNode(StmtNode):
         return visitor.visitDecNode(self)
 
 
-class RetNode(StmtNode):
-    def __init__(self, exp: ExpNode):
+class RetNode(EmptyStmtNode):
+    def __init__(self, exp: EmptyExpNode):
         super().__init__()
         self.exp = exp
 
@@ -262,9 +262,9 @@ class RetNode(StmtNode):
         return visitor.visitRetNode(self)
 
 
-class IfStmtNode(StmtNode):
+class IfStmtNode(EmptyStmtNode):
 
-    def __init__(self, cond: ExpNode, ifbody: BlockNode, elsebody: BlockNode = None):
+    def __init__(self, cond: EmptyExpNode, ifbody: BlockNode, elsebody: BlockNode = None):
         super().__init__()
         self.cond = cond
         self.ifbody = ifbody
@@ -278,9 +278,9 @@ class IfStmtNode(StmtNode):
         return visitor.visitIfStmtNode(self)
 
 
-class LoopNode(StmtNode):
+class LoopNode(EmptyStmtNode):
 
-    def __init__(self, pre: BlockNode, cond: ExpNode, body: BlockNode, post: BlockNode):
+    def __init__(self, pre: BlockNode, cond: EmptyExpNode, body: BlockNode, post: BlockNode):
         super().__init__()
         self.pre, self.cond, self.body, self.post = pre, cond, body, post
 
@@ -292,9 +292,9 @@ class LoopNode(StmtNode):
         return visitor.visitLoopNode(self)
 
 
-class BreakNode(StmtNode):
+class BreakNode(EmptyStmtNode):
     pass
 
 
-class ContinueNode(StmtNode):
+class ContinueNode(EmptyStmtNode):
     pass
