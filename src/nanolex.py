@@ -1,4 +1,3 @@
-import re
 import sys
 from ply import lex
 from termcolor import colored
@@ -116,41 +115,9 @@ class NanoLexer():
         'SEMI', 'COLON',            # ; :
     )
 
-    # valid C identifiers (K&R2: A.2.3), plus '$' (supported by some compilers)
-    # reference(K&R):
-    # The C Programming Language (book), a book written by Brian Kernighan and Dennis Ritchie
     identifier = r'[a-zA-Z_$][0-9a-zA-Z_$]*'
 
     decimal_constant = '(0+)|[1-9][0-9]*'
-
-    # character constants (K&R2: A.2.5.2)
-    # Note: a-zA-Z and '.-~^_!=&;,' are allowed as escape chars to support #line
-    # directives with Windows paths as filenames (..\..\dir\file)
-    # For the same reason, decimal_escape allows all digit sequences. We want to
-    # parse all correct code, even if it means to sometimes parse incorrect
-    # code.
-    #
-    # The original regexes were taken verbatim from the C syntax definition,
-    # and were later modified to avoid worst-case exponential running time.
-    #
-    #   simple_escape = r"""([a-zA-Z._~!=&\^\-\\?'"])"""
-    #   decimal_escape = r"""(\d+)"""
-    #   hex_escape = r"""(x[0-9a-fA-F]+)"""
-    #   bad_escape = r"""([\\][^a-zA-Z._~^!=&\^\-\\?'"x0-7])"""
-    #
-    # The following modifications were made to avoid the ambiguity that allowed backtracking:
-    # (https://github.com/eliben/pycparser/issues/61)
-    #
-    # - \x was removed from simple_escape, unless it was not followed by a hex digit, to avoid ambiguity with hex_escape.
-    # - hex_escape allows one or more hex characters, but requires that the next character(if any) is not hex
-    # - decimal_escape allows one or more decimal characters, but requires that the next character(if any) is not a decimal
-    # - bad_escape does not allow any decimals (8-9), to avoid conflicting with the permissive decimal_escape.
-    #
-    # Without this change, python's `re` module would recursively try parsing each ambiguous escape sequence in multiple ways.
-    # e.g. `\123` could be parsed as `\1`+`23`, `\12`+`3`, and `\123`.
-
-    # This complicated regex with lookahead might be slow for strings, so because all of the valid escapes (including \x) allowed
-    # 0 or more non-escaped characters after the first character, simple_escape+decimal_escape+hex_escape got simplified to
 
     cconst_char = r"""[^'\\\n]"""
     char_const = "'"+cconst_char+"'"
