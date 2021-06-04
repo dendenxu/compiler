@@ -489,7 +489,7 @@ class NanoParser():
         '''
         block               :
         '''
-        p[0] = BlockNode(EmptyStmtNode())
+        p[0] = BlockNode()
 
     def p_empty_list(self, p):
         '''
