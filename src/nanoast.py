@@ -172,6 +172,9 @@ class ArrSubNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}( {self.subee}[{self.suber}] )"
+    
+    def accept(self, visitor: NanoVisitor):
+        return visitor.visitArrSubNode(self)
 
 
 class CallNode(EmptyExpNode):
