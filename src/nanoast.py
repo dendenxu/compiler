@@ -10,10 +10,9 @@ if TYPE_CHECKING:
 class Node(object):
     # A simple Abstract Syntax Tree node
     TABSTR = '|   '
-    _except = ['indentLevel']
 
     def __init__(self):
-        self.indentLevel = 0
+        self._indentLevel = 0
 
     def accept(self, visitor: NanoVisitor):
         pass
@@ -98,12 +97,11 @@ class TypeNode(Node):
 
     def __init__(self, typestr: str):
         super().__init__()
-        self._except += ['is_ptr']
-        self.is_ptr = not typestr in TypeNode._primitive_types
+        self._is_ptr = not typestr in TypeNode._primitive_types
         self.typestr = typestr
 
     def __str__(self):
-        return f"{self.__class__.__name__}" + (f"(PTR)" if self.is_ptr else "") + f"({self.typestr})"
+        return f"{self.__class__.__name__}" + ("(PTR)" if self._is_ptr else "") + f"({self.typestr})"
 
     def accept(self, visitor: NanoVisitor):
         return visitor.visitTypeNode(self)
@@ -130,10 +128,10 @@ class FuncNode(Node):
         self.type, self.id, self.params, self.block = type, id, params, block
 
     def __str__(self):
-        self.block.indentLevel = self.indentLevel + 1
-        return self.TABSTR * self.indentLevel + colored(f"{self.__class__.__name__}", color='green', attrs=['bold']) + \
+        self.block._indentLevel = self._indentLevel + 1
+        return self.TABSTR * self._indentLevel + colored(f"{self.__class__.__name__}", color='green', attrs=['bold']) + \
             f"( {self.type} {self.id}( {', '.join(list(map(str, self.params)))} )" + \
-            f" {{ {self.block}\n" + self.TABSTR * self.indentLevel + "} )EndFunc\n" + self.TABSTR
+            f" {{ {self.block}\n" + self.TABSTR * self._indentLevel + "} )EndFunc\n" + self.TABSTR
 
     def accept(self, visitor: NanoVisitor):
         return visitor.visitFuncNode(self)
@@ -152,7 +150,7 @@ class ProgNode(Node):
 
     def __str__(self):
         for f in self.funcs:
-            f.indentLevel = self.indentLevel + 1
+            f._indentLevel = self._indentLevel + 1
         return f"\n{self.__class__.__name__}(\n" + "\n".join(list(map(str, self.funcs))) + "\n)EndProg"
 
     def accept(self, visitor: NanoVisitor):
@@ -246,7 +244,6 @@ class EmptyStmtNode(Node):
 class BlockNode(EmptyStmtNode):
 
     def __init__(self, *args):
-        # self.indentLevel = 2
         super().__init__()
         self.stmts = [*args]
 
@@ -255,11 +252,11 @@ class BlockNode(EmptyStmtNode):
 
     def __str__(self):
         for item in self.stmts:
-            item.indentLevel = self.indentLevel + 1
-        return colored(f'{self.__class__.__name__}({self.indentLevel}\n', color='cyan', attrs=['bold']) + \
-            self.TABSTR * self.indentLevel + \
-            ('\n' + self.TABSTR * self.indentLevel).join(list(map(str, self.stmts))) + \
-            '\n' + self.TABSTR * (self.indentLevel - 1) + colored(f')EndBlock{self.indentLevel}', color='magenta', attrs=['bold'])
+            item._indentLevel = self._indentLevel + 1
+        return colored(f'{self.__class__.__name__}({self._indentLevel}\n', color='cyan', attrs=['bold']) + \
+            self.TABSTR * self._indentLevel + \
+            ('\n' + self.TABSTR * self._indentLevel).join(list(map(str, self.stmts))) + \
+            '\n' + self.TABSTR * (self._indentLevel - 1) + colored(f')EndBlock{self._indentLevel}', color='magenta', attrs=['bold'])
 
     def accept(self, visitor: NanoVisitor):
         return visitor.visitBlockNode(self)
@@ -313,7 +310,7 @@ class IfStmtNode(EmptyStmtNode):
         self.elsebody = elsebody  # this can be None if this if stmt is not paired with a else statement
 
     def __str__(self):
-        self.ifbody.indentLevel = self.elsebody.indentLevel = self.indentLevel
+        self.ifbody._indentLevel = self.elsebody._indentLevel = self._indentLevel
         return f"{self.__class__.__name__}( IF ({self.cond}) {{ {self.ifbody} }} ELSE {{ {self.elsebody} }} )"
 
     def accept(self, visitor: NanoVisitor):
@@ -328,8 +325,8 @@ class LoopNode(EmptyStmtNode):
 
     def __str__(self):
         if self.pre is not None:
-            self.pre.indentLevel = self.indentLevel
-        self.body.indentLevel = self.post.indentLevel = self.indentLevel
+            self.pre._indentLevel = self._indentLevel
+        self.body._indentLevel = self.post._indentLevel = self._indentLevel
         return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.body}, {self.post} }} )"
 
     def accept(self, visitor: NanoVisitor):
