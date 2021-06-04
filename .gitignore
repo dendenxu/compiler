@@ -4,4 +4,4 @@ build
 *.exe
 parsetab.py
 trash/*
-results
+results/
