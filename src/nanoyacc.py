@@ -2,8 +2,10 @@ from ply import yacc
 import sys
 from termcolor import colored
 import traceback
+from nanotraverse import traverse
 from nanolex import NanoLexer
 from nanoast import *
+from pprint import pprint
 
 
 """ 
@@ -199,7 +201,7 @@ class NanoParser():
         '''
         array_list          : array_list LBRACKET INT_CONST_DEC RBRACKET
         '''
-        p[1].append(p[3])  # should always be an array
+        p[1].append(int(p[3]))  # should always be an array
         p[0] = p[1]
 
     def p_dec_list(self, p):
@@ -321,7 +323,6 @@ class NanoParser():
         conditional         : logical_or CONDOP expression COLON expression
         '''
         p[0] = TernaryNode(p[1], p[2], p[3], p[4], p[5])
-        
 
     #############################################################
     #                           Assignment                      #
@@ -484,7 +485,7 @@ class NanoParser():
         comma_exps          :
         '''
         p[0] = None
-    
+
     def p_empty_spec(self, p):
         '''
         block               :
@@ -562,3 +563,6 @@ if __name__ == '__main__':
         parser.build()
         root = parser.parse(content, debug=0)
         print(colored("Tree: ", 'yellow', attrs=['bold']) + str(root))
+        tree = traverse(root)
+        print(colored("Structrued Tree: ", 'blue', attrs=['bold']))
+        pprint(tree)
