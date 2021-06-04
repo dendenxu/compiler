@@ -179,6 +179,9 @@ class CallNode(EmptyExpNode):
 
     def __str__(self):
         return f"{self.__class__.__name__}( {self.id}({', '.join(map(str, self.params))}) )"
+    
+    def accept(self, visitor: NanoVisitor):
+        return visitor.visitCallNode(self)
 
 
 class UnaryNode(EmptyExpNode):

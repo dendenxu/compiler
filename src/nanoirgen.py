@@ -123,6 +123,14 @@ class NanoVisitor(Visitor):
         self._pop_block()
         self._pop_scope()
 
+    def visitCallNode(self, node: CallNode):
+        call_func_args = []
+        for param in node.params:
+            param.accept(self)
+            call_func_args.append(param.ll_value)
+        func = self._get_func(node.id.name)
+        node.ll_value = self._get_builder().call(func, tuple(call_func_args))
+
     def visitParamNode(self, node: ParamNode):
         node.type.accept(self)
 
