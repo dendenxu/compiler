@@ -26,6 +26,7 @@ class NanoVisitor(Visitor):
         self.block_stack = []
         self.scope_stack = []
         self.defined_funcs = dict()
+        self.func_params = dict()
 
     def _push_builder(self, builder=None):
         if builder is not None:
@@ -70,14 +71,20 @@ class NanoVisitor(Visitor):
                 return d[name]
         return None
 
-    def _add_func(self, name, func):
+    def _add_func(self, name, func, params=dict()):
         if name in self.defined_funcs.keys():
             raise RuntimeError("{name} alredy declared")
-        self.defined_funcs[name] = func
+        self.defined_funcs[name] = [func, params]
 
     def _get_func(self, name):
         if name in self.defined_funcs.keys():
-            return self.defined_funcs[name]
+            return self.defined_funcs[name][0]
+        else:
+            return None
+    
+    def _get_func_param_refs(self, name):
+        if name in self.defined_funcs.keys():
+            return self.defined_funcs[name][1]
         else:
             return None
 
@@ -88,15 +95,27 @@ class NanoVisitor(Visitor):
             func.accept(self)
 
     def visitFuncNode(self, node: FuncNode):
+        func_param_map = dict()
+        func_param_type_tuple = []
+        for param in node.params:
+            param.accept(self)
+            func_param_map.update(param.map)
+            func_param_type_tuple.append(param.map[param.id.name])
+        node.func_params_type = func_param_type_tuple = tuple(func_param_type_tuple)
+                
         self._push_scope()
         node.type.accept(self)
-        node.ll_func_type = ir.FunctionType(node.type.ll_type, ())
+        node.ll_func_type = ir.FunctionType(node.type.ll_type, node.func_params_type)
         node.ll_func = ir.Function(self.ll_module, node.ll_func_type, name=node.id.name)
         self.cur_func_name = node.id.name
         self._add_func(node.id.name, node.ll_func)
 
         self._push_block()
         self._push_builder()
+        for param_name in func_param_map.keys():
+            func_param_map[param_name] = self._get_builder().alloca(func_param_map[param_name], name=param_name)
+            self._add_identifier(param_name, func_param_map[param_name])
+        self.func_params.update({node.id.name: func_param_map})
         node.block.accept(self)
         self._pop_builder()
         self._pop_block()
@@ -104,7 +123,8 @@ class NanoVisitor(Visitor):
         self._pop_scope()
 
     def visitParamNode(self, node: ParamNode):
-        
+        node.type.accept(self)
+        node.map = {node.id.name: node.type.ll_type}
 
     def visitTypeNode(self, node: TypeNode):
         if node.typestr == 'int':
