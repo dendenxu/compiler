@@ -330,8 +330,12 @@ class NanoParser():
                             | LNOT unary
                             | TIMES unary
                             | AND unary
+                            | LPAREN type RPAREN unary
         '''
-        p[0] = UnaryNode(p[1], p[2])
+        if len(p) == 3:  # ordinary unary operation
+            p[0] = UnaryNode(p[1], p[2])
+        else:
+            p[0] = UnaryNode(p[2], p[4])  # note that p[2] is a TypeNode for type casting
 
     #############################################################
     #                  Arithmetic/Logical Operations            #
@@ -439,7 +443,7 @@ class NanoParser():
                             | CHAR
                             | type TIMES
         '''
-        p[0] = TypeNode(p[1]) # nested type: pointers
+        p[0] = TypeNode(p[1])  # nested type: pointers
 
     ########################################################
     ###                                                  ###

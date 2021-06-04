@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from nanoirgen import *
 
+
 class Node(object):
     # A simple Abstract Syntax Tree node
     TABSTR = '|   '
@@ -161,10 +162,10 @@ class CallNode(EmptyExpNode):
 
 
 class UnaryNode(EmptyExpNode):
-    _legal_ops = {*"+-!~*&"}
+    # _legal_ops = {*"+-!~*&"}
 
     def __init__(self, op: str, node: Node):
-        assert op in UnaryNode._legal_ops
+        # assert op in UnaryNode._legal_ops
         super().__init__()
         self.op, self.node = op, node
 
@@ -197,6 +198,7 @@ class BinopNode(EmptyExpNode):
 class EmptyStmtNode(Node):
     def __str__(self):
         return f"{self.__class__.__name__}()"
+
     def accept(self, visitor):
         return super().accept(visitor)
 
