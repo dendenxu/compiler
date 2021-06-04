@@ -37,19 +37,12 @@ class NanoVisitor(Visitor):
 
     def _get_builder(self):
         return self.builder_stack[-1]
-    
+
     def _pop_builder(self):
         return self.builder_stack.pop()
 
-    def _push_scope(self, dic=None):
-        if dic is not None:
-            self.scope_stack.append(dic)
-            return
-        if len(self.scope_stack) == 0:
-            self.scope_stack.append(dict())
-        else:
-            dic = copy.deepcopy(self.scope_stack[-1])
-            self.scope_stack.append(dic)
+    def _push_scope(self):
+        self.scope_stack.append(dict())
 
     def _pop_scope(self):
         return self.scope_stack.pop()
@@ -62,20 +55,20 @@ class NanoVisitor(Visitor):
 
     def _get_block(self):
         return self.block_stack[-1]
-    
+
     def _pop_block(self):
         return self.block_stack.pop()
 
     def _add_identifier(self, name, item):
-        if name in self.scope_stack[-1].keys():
+        if name in self.scope_stack[-1]:
             raise RuntimeError("{name} alredy declared")
         self.scope_stack[-1][name] = item
 
     def _get_identifier(self, name):
-        if name in self.scope_stack[-1].keys():
-            return self.scope_stack[-1][name]
-        else:
-            return None
+        for d in self.scope_stack[::-1]:  # reversing the scope_block
+            if name in d:
+                return d[name]
+        return None
 
     def _add_func(self, name, func):
         if name in self.defined_funcs.keys():
@@ -107,7 +100,7 @@ class NanoVisitor(Visitor):
         node.block.accept(self)
         self._pop_builder()
         self._pop_block()
-        
+
         self._pop_scope()
 
     def visitTypeNode(self, node: TypeNode):
@@ -186,7 +179,7 @@ class NanoVisitor(Visitor):
                     self._push_scope()
                     node.elsebody.accept(self)
                     self._pop_scope()
-                
+
     def visitLoopNode(self, node: LoopNode):
         """
                 ...scope_original...
@@ -197,7 +190,7 @@ class NanoVisitor(Visitor):
         /  /=========|======|================/
         /           post----|                /
         /====================================/
-        
+
         for:
             pre: EmptyStmtNode / DecNode
             cond: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
@@ -214,12 +207,12 @@ class NanoVisitor(Visitor):
             body: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
             post: EmptyStmtNode()
         """
-        
+
         print('pre', node.pre)
         print('cond', node.cond)
         print('body', node.body)
         print('post', node.post)
-        
+
         # do-while
         if node.cond == 'cond':
             # scope_new_0 auto created
@@ -255,7 +248,6 @@ class NanoVisitor(Visitor):
             # after
             self._get_builder().position_at_start(post_block)
             self._push_block(post_block)
-            
 
     def visitBinopNode(self, node: BinopNode):
         node.left.accept(self)
