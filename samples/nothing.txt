@@ -10,7 +10,7 @@ char thisisaarry[19][20][21] = longtimeago;
 
 int main() {
 
-    *hello = 1090;
+    *hello = *1090;
     &hello = *wow + &new - (16384 % 100 + (&NULL || *OK));
     *casted = *((float)old + (int)invalid);
 
