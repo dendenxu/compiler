@@ -296,7 +296,9 @@ class LoopNode(EmptyStmtNode):
         self.pre, self.cond, self.body, self.post = pre, cond, body, post
 
     def __str__(self):
-        self.pre.indentLevel = self.body.indentLevel = self.post.indentLevel = self.indentLevel
+        if self.pre is not None:
+            self.pre.indentLevel = self.indentLevel
+        self.body.indentLevel = self.post.indentLevel = self.indentLevel
         return f"{self.__class__.__name__}( {self.pre} LOOP({self.cond}) {{ {self.body}, {self.post} }} )"
 
     def accept(self, visitor: NanoVisitor):

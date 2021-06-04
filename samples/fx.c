@@ -3,7 +3,6 @@ int main() {
     if (a==3) a=-1;
     else a=-2;
     do {
-        ;
     } while (a);
     return a;
 }

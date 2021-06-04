@@ -477,13 +477,18 @@ class NanoParser():
 
     def p_empty(self, p):
         '''
-        block               :
         typeinit            :
         program             :
         comma_params        : 
         comma_exps          :
         '''
         p[0] = None
+    
+    def p_empty_spec(self, p):
+        '''
+        block               :
+        '''
+        p[0] = BlockNode(EmptyStmtNode())
 
     def p_empty_list(self, p):
         '''

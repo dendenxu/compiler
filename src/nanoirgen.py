@@ -182,18 +182,18 @@ class NanoVisitor(Visitor):
         
         for:
             pre: StmtNode / DecNode
-            cond: ExpNode / subclass of ExpNode / LiteralNode / IDNode
+            cond: ExpNode / subclass of ExpNode / subclass of EmptyLiteralNode / IDNode
             body: BlockNode
-            post: ExpNode / subclass of ExpNode / LiteralNode / IDNode
+            post: ExpNode / subclass of ExpNode / subclass of EmptyLiteralNode / IDNode
         while:
             pre: StmtNode
-            cond: ExpNode / subclass of ExpNode / LiteralNode / IDNode
+            cond: ExpNode / subclass of ExpNode / subclass of EmptyLiteralNode / IDNode
             body: BlockNode
             post: StmtNode
         do-while:
             pre: BlockNode
             cond: 'while'
-            body: ExpNode / subclass of ExpNode / LiteralNode / IDNode
+            body: ExpNode / subclass of ExpNode / subclass of EmptyLiteralNode / IDNode
             post: StmtNode()
         """
         # scope_new_0
