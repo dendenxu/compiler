@@ -250,7 +250,6 @@ if __name__ == '__main__':
         lexer.build()
         parser = NanoParser()
         parser.build()
-        visitor = NanoVisitor()
         root = parser.parse(content, lexer=lexer)
         print(root)
         visitor = NanoVisitor()

@@ -1,9 +1,10 @@
 from ply import yacc
-from nanolex import NanoLexer
-from nanoast import *
 import sys
 from termcolor import colored
 import traceback
+from nanolex import NanoLexer
+from nanoast import *
+
 
 """ 
 Grammars written here is for you (the human reading this) to have a comprehensive understanding of the NanoC language. They're written in BNF for better copy-pasting compability for the parser, and it should be just the same as the ones used in the parser to build the AST.
