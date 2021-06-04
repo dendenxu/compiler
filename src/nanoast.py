@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 class Node(object):
     # A simple Abstract Syntax Tree node
     TABSTR = '|   '
+    _except = ['indentLevel']
 
     def __init__(self):
         self.indentLevel = 0
@@ -94,8 +95,10 @@ class TypeNode(Node):
         'float',
         'double',
     ]
+
     def __init__(self, typestr: str):
         super().__init__()
+        self._except += ['is_ptr']
         self.is_ptr = not typestr in TypeNode._primitive_types
         self.typestr = typestr
 
@@ -110,18 +113,19 @@ class TypeNode(Node):
 #                    Program/Function                       #
 #############################################################
 class ParamNode(Node):
-    def __init__(self, type: TypeNode, id: IDNode):
+    def __init__(self, type: TypeNode, id: UnaryNode):
+        super().__init__()
         self.type, self.id = type, id
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.type} {self.id})"
-    
+
     def accept(self, visitor: NanoVisitor):
         return visitor.visitParamNode(self)
 
 
 class FuncNode(Node):
-    def __init__(self, type: TypeNode, id: IDNode, params: List[ParamNode], block: Node):
+    def __init__(self, type: TypeNode, id: UnaryNode, params: List[ParamNode], block: Node):
         super().__init__()
         self.type, self.id, self.params, self.block = type, id, params, block
 
@@ -173,7 +177,7 @@ class ArrSubNode(Node):
 
 
 class CallNode(EmptyExpNode):
-    def __init__(self, id: IDNode, params: List[EmptyExpNode]):
+    def __init__(self, id: UnaryNode, params: List[EmptyExpNode]):
         super().__init__()
         self.id, self.params = id, params
 
@@ -205,7 +209,7 @@ class BinaryNode(EmptyExpNode):
     def __init__(self, op: str, left: Node, right: Node):
         assert op in BinaryNode._legal_ops
         super().__init__()
-        self.op, self.left, self.right = op, left, right
+        self.left, self.op, self.right = left, op, right
 
     def __str__(self):
         return f"{self.__class__.__name__}( {self.left} {self.op} {self.right} )"
@@ -215,11 +219,10 @@ class BinaryNode(EmptyExpNode):
 
 
 class TernaryNode(EmptyExpNode):
-    
+
     def __init__(self, exp1: EmptyExpNode, op1: str, exp2: EmptyExpNode, op2: str, exp3: EmptyExpNode):
         super().__init__()
-        self.exp1, self.exp2, self.exp3 = exp1, exp2, exp3
-        self.op1, self.op2 = op1, op2
+        self.exp1, self.op1, self.exp2, self.op2, self.exp3 = exp1, op1, exp2, op2, exp3
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}( {self.exp1} {self.op1} {self.exp2} {self.op2} {self.exp3} )"
@@ -264,12 +267,12 @@ class BlockNode(EmptyStmtNode):
 
 class AssNode(EmptyStmtNode):
 
-    def __init__(self, id: IDNode, exp: EmptyExpNode):
+    def __init__(self, unary: UnaryNode, exp: EmptyExpNode):
         super().__init__()
-        self.id, self.exp = id, exp
+        self.unary, self.exp = unary, exp
 
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.id} = {self.exp} )"
+        return f"{self.__class__.__name__}( {self.unary} = {self.exp} )"
 
     def accept(self, visitor: NanoVisitor):
         return visitor.visitAssNode(self)
@@ -277,7 +280,7 @@ class AssNode(EmptyStmtNode):
 
 class DecNode(EmptyStmtNode):
 
-    def __init__(self, type: TypeNode, id: IDNode, arr: List[int], init: Node):
+    def __init__(self, type: TypeNode, id: UnaryNode, arr: List[int], init: Node):
         # init might be none
         super().__init__()
         self.type, self.id, self.arr, self.init = type, id, arr, init
@@ -339,3 +342,7 @@ class BreakNode(EmptyStmtNode):
 
 class ContinueNode(EmptyStmtNode):
     pass
+
+
+# How to effectively traverse the node?
+# [ c for c in a.__dict__.keys() if not c.startswith('_') and not c i n a._except ]
