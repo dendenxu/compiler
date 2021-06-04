@@ -22,5 +22,18 @@ define i32 @"main"()
   br label %".2.endif"
 .2.endif:
   %".15" = load i32, i32* %"a"
-  ret i32 %".15"
+  %".16" = icmp ne i32 %".15", 4
+  %".17" = icmp ne i1 %".16", 0
+  br i1 %".17", label %".18", label %".19"
+.18:
+  %".21" = load i32, i32* %"a"
+  %".22" = add i32 %".21", 1
+  store i32 %".22", i32* %"a"
+  %".24" = load i32, i32* %"a"
+  %".25" = icmp ne i32 %".24", 4
+  %".26" = icmp ne i1 %".25", 0
+  br i1 %".26", label %".18", label %".19"
+.19:
+  %".28" = load i32, i32* %"a"
+  ret i32 %".28"
 }

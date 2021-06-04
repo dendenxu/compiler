@@ -21,11 +21,29 @@ class NanoVisitor(Visitor):
         self.cur_ll_module = None
         # we do not need list since we do not support sub-procedure
         self.cur_func_name = ''
+        self.builder_stack = []
         self.block_stack = []
         self.scope_stack = []
         self.defined_funcs = dict()
 
-    def _push_scope(self):
+    def _push_builder(self, builder=None):
+        if builder is not None:
+            self.builder_stack.append(builder)
+        else:
+            block = self._get_block()
+            builder = ir.IRBuilder(block)
+            self.builder_stack.append(builder)
+
+    def _get_builder(self):
+        return self.builder_stack[-1]
+    
+    def _pop_builder(self):
+        return self.builder_stack.pop()
+
+    def _push_scope(self, dic=None):
+        if dic is not None:
+            self.scope_stack.append(dic)
+            return
         if len(self.scope_stack) == 0:
             self.scope_stack.append(dict())
         else:
@@ -33,19 +51,19 @@ class NanoVisitor(Visitor):
             self.scope_stack.append(dic)
 
     def _pop_scope(self):
-        self.scope_stack.pop()
+        return self.scope_stack.pop()
 
     def _push_block(self, block=None):
-        func = self.defined_funcs[self.cur_func_name]
+        func = self._get_func(self.cur_func_name)
         if block is None:
             block = func.append_basic_block()
-        self.block_stack.append(ir.IRBuilder(block))
+        self.block_stack.append(block)
 
     def _get_block(self):
         return self.block_stack[-1]
     
     def _pop_block(self):
-        self.block_stack.pop()
+        return self.block_stack.pop()
 
     def _add_identifier(self, name, item):
         if name in self.scope_stack[-1].keys():
@@ -70,26 +88,26 @@ class NanoVisitor(Visitor):
             return None
 
     def visitProgNode(self, node: ProgNode):
-        # scope for global variables
-        self._push_scope()
         node.ll_module = ir.Module(name='program')
         self.ll_module = node.ll_module
         for func in node.funcs:
             func.accept(self)
-        self._pop_scope()
 
     def visitFuncNode(self, node: FuncNode):
+        self._push_scope()
         node.type.accept(self)
         node.ll_func_type = ir.FunctionType(node.type.ll_type, ())
         node.ll_func = ir.Function(self.ll_module, node.ll_func_type, name=node.id.name)
-        # backup old function name
-        old_func_name = self.cur_func_name
         self.cur_func_name = node.id.name
         self._add_func(node.id.name, node.ll_func)
+
         self._push_block()
+        self._push_builder()
         node.block.accept(self)
+        self._pop_builder()
         self._pop_block()
-        self.cur_func_name = old_func_name
+        
+        self._pop_scope()
 
     def visitTypeNode(self, node: TypeNode):
         if node.typestr == 'int':
@@ -99,17 +117,17 @@ class NanoVisitor(Visitor):
         self._push_scope()
         for stmt in node.stmts:
             stmt.accept(self)
-        self._pop_scope()
+        return self._pop_scope()
 
     def visitRetNode(self, node: RetNode):
         node.exp.accept(self)
-        self._get_block().ret(node.exp.ll_value)
+        self._get_builder().ret(node.exp.ll_value)
 
     def visitIDNode(self, node: IDNode):
         item = self._get_identifier(node.name)
         if item is None:
             raise RuntimeError(node.name, "not declared")
-        node.ll_value = self._get_block().load(item)
+        node.ll_value = self._get_builder().load(item)
 
     def visitIntNode(self, node: IntNode):
         node.ll_value = int32(node.value)
@@ -123,17 +141,17 @@ class NanoVisitor(Visitor):
         if node.op == '+':
             node.ll_value = node.node.ll_value
         elif node.op == '-':
-            node.ll_value = self._get_block().mul(node.node.ll_value, int32(-1))
+            node.ll_value = self._get_builder().mul(node.node.ll_value, int32(-1))
         elif node.op == '!':
-            node.ll_value = self._get_block().icmp_signed('==', node.node.ll_value, int32(0))
+            node.ll_value = self._get_builder().icmp_signed('==', node.node.ll_value, int32(0))
         elif node.op == '~':
-            node.ll_value = self._get_block().not_(node.node.ll_value)
+            node.ll_value = self._get_builder().not_(node.node.ll_value)
 
     def visitDecNode(self, node: DecNode):
-        node.item = self._get_block().alloca(int32, name=node.id.name)
+        node.item = self._get_builder().alloca(int32, name=node.id.name)
         if node.init is not None:
             node.init.accept(self)
-            self._get_block().store(node.init.ll_value, node.item)
+            self._get_builder().store(node.init.ll_value, node.item)
         self._add_identifier(node.id.name, node.item)
 
     def visitAssNode(self, node: AssNode):
@@ -141,23 +159,22 @@ class NanoVisitor(Visitor):
         if item is None:
             raise RuntimeError(node.id.name, "not declared")
         node.exp.accept(self)
-        self._get_block().store(node.exp.ll_value, item)
+        self._get_builder().store(node.exp.ll_value, item)
 
     def visitIfStmtNode(self, node: IfStmtNode):
         node.cond.accept(self)
-        pred = self._get_block().icmp_signed('!=', node.cond.ll_value, int32(0))
+        pred = self._get_builder().icmp_signed('!=', node.cond.ll_value, int32(0))
         if type(node.ifbody) == EmptyStmtNode:
             return
         if type(node.elsebody) == EmptyStmtNode:
-            with self._get_block().if_then(pred) as then:
+            with self._get_builder().if_then(pred) as then:
                 self._push_block(then)
                 self._push_scope()
                 node.ifbody.accept(self)
                 self._pop_scope()
                 self._pop_block()
         else:
-            with self._get_block().if_else(pred) as (then, othrewise):
-                # print('========debug========\n',then)
+            with self._get_builder().if_else(pred) as (then, othrewise):
                 with then:
                     # ifbody
                     self._push_scope()
@@ -181,106 +198,129 @@ class NanoVisitor(Visitor):
         /====================================/
         
         for:
-            pre: StmtNode / DecNode
-            cond: ExpNode / subclass of ExpNode / subclass of EmptyLiteralNode / IDNode
+            pre: EmptyStmtNode / DecNode
+            cond: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
             body: BlockNode
-            post: ExpNode / subclass of ExpNode / subclass of EmptyLiteralNode / IDNode
+            post: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
         while:
-            pre: StmtNode
-            cond: ExpNode / subclass of ExpNode / subclass of EmptyLiteralNode / IDNode
+            pre: EmptyStmtNode
+            cond: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
             body: BlockNode
-            post: StmtNode
+            post: EmptyStmtNode
         do-while:
             pre: BlockNode
             cond: 'while'
-            body: ExpNode / subclass of ExpNode / subclass of EmptyLiteralNode / IDNode
-            post: StmtNode()
+            body: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
+            post: EmptyStmtNode()
         """
-        # scope_new_0
-
-        print('node.pre', node.pre)
-        print('node.cond', node.cond)
-        print('node.body', node.body)
-        print('node.post', node.post)
+        
+        print('pre', node.pre)
+        print('cond', node.cond)
+        print('body', node.body)
+        print('post', node.post)
+        
+        # do-while
+        if node.cond == 'cond':
+            # scope_new_0 auto created
+            pass
+        # while
+        else:
+            node.cond.accept(self)
+            cond = self._get_builder().icmp_signed('!=', node.cond.ll_value, int32(0))
+            # body block
+            body_block = self._get_builder().append_basic_block()
+            # post block
+            post_block = self._get_builder().append_basic_block()
+            self._get_builder().cbranch(cond, body_block, post_block)
+            # body
+            self._get_builder().position_at_start(body_block)
+            node.body.accept(self)
+            node.cond.accept(self)  
+            cond = self._get_builder().icmp_signed('!=', node.cond.ll_value, int32(0))
+            self._get_builder().cbranch(cond, body_block, post_block)
+            # after
+            self._get_builder().position_at_start(post_block)
+            self._push_block(post_block)
+            
 
     def visitBinopNode(self, node: BinopNode):
         node.left.accept(self)
         node.right.accept(self)
         if node.op == '+':
-            node.ll_value = self._get_block().add(
+            node.ll_value = self._get_builder().add(
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '-':
-            node.ll_value = self._get_block().sub(
+            node.ll_value = self._get_builder().sub(
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '*':
-            node.ll_value = self._get_block().mul(
+            node.ll_value = self._get_builder().mul(
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '/':
-            node.ll_value = self._get_block().sdiv(
+            node.ll_value = self._get_builder().sdiv(
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '%':
-            node.ll_value = self._get_block().srem(
+            node.ll_value = self._get_builder().srem(
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '<':
-            node.ll_value = self._get_block().icmp_signed(
+            node.ll_value = self._get_builder().icmp_signed(
                 '<',
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '>':
-            node.ll_value = self._get_block().icmp_signed(
+            node.ll_value = self._get_builder().icmp_signed(
                 '<',
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '==':
-            node.ll_value = self._get_block().icmp_signed(
+            node.ll_value = self._get_builder().icmp_signed(
                 '==',
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '!=':
-            node.ll_value = self._get_block().icmp_signed(
+            node.ll_value = self._get_builder().icmp_signed(
                 '!=',
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '<=':
-            node.ll_value = self._get_block().icmp_signed(
+            node.ll_value = self._get_builder().icmp_signed(
                 '<=',
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '>=':
-            node.ll_value = self._get_block().icmp_signed(
+            node.ll_value = self._get_builder().icmp_signed(
                 '>=',
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '>':
-            node.ll_value = self._get_block().icmp_signed(
+            node.ll_value = self._get_builder().icmp_signed(
                 '>',
                 node.left.ll_value,
                 node.right.ll_value)
         elif node.op == '||':
-            explicit_value = self._get_block().or_(
+            explicit_value = self._get_builder().or_(
                 node.left.ll_value,
                 node.right.ll_value)
-            bit_1_value = self._get_block().icmp_signed(
+            bit_1_value = self._get_builder().icmp_signed(
                 '!=',
                 explicit_value,
                 int32(0))
-            node.ll_value = self._get_block().zext(
+            node.ll_value = self._get_builder().zext(
                 bit_1_value,
                 int32)
         elif node.op == '&&':
-            explicit_value = self._get_block().and_(
+            explicit_value = self._get_builder().and_(
                 node.left.ll_value,
                 node.right.ll_value)
-            bit_1_value = self._get_block().icmp_signed(
+            bit_1_value = self._get_builder().icmp_signed(
                 '!=',
                 explicit_value,
                 int32(0))
-            node.ll_value = self._get_block().zext(
+            node.ll_value = self._get_builder().zext(
                 bit_1_value,
                 int32)
 
