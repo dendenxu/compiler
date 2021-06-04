@@ -369,6 +369,10 @@ class NanoParser():
         '''
         p[0] = BinopNode(p[2], p[1], p[3])
 
+    #############################################################
+    #                     Array Subscription                    #
+    #############################################################
+
     def p_arr_sub(self, p):
         '''
         postfix             : postfix LBRACKET expression RBRACKET
