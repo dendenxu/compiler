@@ -171,6 +171,10 @@ class NanoVisitor(Visitor):
             node.ll_value = self._get_builder().icmp_signed('==', node.node.ll_value, int32(0))
         elif node.op == '~':
             node.ll_value = self._get_builder().not_(node.node.ll_value)
+        elif node.op == '*':
+            raise NotImplementedError
+        elif node.op == '&':
+            raise NotImplementedError
 
     def visitDecNode(self, node: DecNode):
         node.item = self._get_builder().alloca(int32)
