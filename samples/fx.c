@@ -1,18 +1,6 @@
 int g = 100;
-
-int sum_up_to(int a) {
-    int **********************sum = 0;
-    for (int i=0;i<a;i=i+1) {
-        sum = sum+i;
-    }
-    return sum;
-}
-
-int two() { return 2; }
-
 int main() {
-    int a=2;
-    int b=10;
-    int c[4];
-    return a;
+    int a[4][4][4];
+    a[0][0][0] = 1;
+    return a[0][0][0];
 }
