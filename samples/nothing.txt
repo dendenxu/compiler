@@ -1,3 +1,9 @@
+int hello = "world";
+float f = 0.03;
+double pi2 = pi * 2;
+char a, b, c='1', d, e;
+
+
 int main() {
     int a;
     int a = 1, b = 2, c, d = 4;

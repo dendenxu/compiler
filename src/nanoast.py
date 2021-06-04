@@ -1,6 +1,7 @@
 from typing import List
 from termcolor import colored
 
+
 class Node(object):
     # A simple Abstract Syntax Tree node
     TABSTR = '|   '
@@ -57,8 +58,9 @@ class FloatNode(LiteralNode):
 
 class CharNode(LiteralNode):
     def __init__(self, value: str):
-        assert len(value) == 1, "Char literal should only have a length of 1"
         super().__init__()
+        value = value[1:-1]  # remove starting and ending quotes
+        assert len(value) == 1, f"Char literal should only have a length of 1, you have: {repr(value)}:{len(value)}"
         self.value = value
 
     def __str__(self):
@@ -68,6 +70,7 @@ class CharNode(LiteralNode):
 class StringNode(LiteralNode):
     def __init__(self, value: str):
         super().__init__()
+        value = value[1:-1]  # remove starting and ending quotes
         self.value = value
 
     def __str__(self):
