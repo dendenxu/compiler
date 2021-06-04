@@ -179,15 +179,29 @@ class NanoVisitor(Visitor):
         /  /=========|======|==scope_new_2===/
         /           post----|                /
         /====================================/
+        
+        for:
+            pre: StmtNode / DecNode
+            cond: ExpNode / subclass of ExpNode / LiteralNode / IDNode
+            body: BlockNode
+            post: ExpNode / subclass of ExpNode / LiteralNode / IDNode
+        while:
+            pre: StmtNode
+            cond: ExpNode / subclass of ExpNode / LiteralNode / IDNode
+            body: BlockNode
+            post: StmtNode
+        do-while:
+            pre: BlockNode
+            cond: 'while'
+            body: ExpNode / subclass of ExpNode / LiteralNode / IDNode
+            post: StmtNode()
         """
-        #
-        self._push_scope()
-        cur_ll_func = self.defined_funcs[self.cur_func_name]
-        ll_block = cur_ll_func.append_basic_block()
-        ll_builder = ir.IRBuilder(ll_block)
-        self.cur_ll_block_builders.append(ll_builder)
+        # scope_new_0
 
-        self._pop_scope()
+        print('node.pre', node.pre)
+        print('node.cond', node.cond)
+        print('node.body', node.body)
+        print('node.post', node.post)
 
     def visitBinopNode(self, node: BinopNode):
         node.left.accept(self)
