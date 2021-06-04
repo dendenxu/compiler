@@ -139,6 +139,9 @@ class NanoVisitor(Visitor):
     def visitParamNode(self, node: ParamNode):
         node.type.accept(self)
 
+    def visitArrSubNode(self, node: ArrSubNode):
+        print(node.subee)
+
     def visitTypeNode(self, node: TypeNode):
         if node._is_ptr:
             node.typestr.accept(self)
@@ -200,7 +203,7 @@ class NanoVisitor(Visitor):
 
     def visitAssNode(self, node: AssNode):
         if type(node.unary) == IDNode:
-            item = self._get_identifier(node.id.name)
+            item = self._get_identifier(node.unary.name)
         else:
             node.unary.accept(self)
             item = node.unary.ll_value
@@ -263,10 +266,10 @@ class NanoVisitor(Visitor):
             post: EmptyStmtNode()
         """
 
-        print('pre', node.pre)
-        print('cond', node.cond)
-        print('body', node.body)
-        print('post', node.post)
+        # print('pre', node.pre)
+        # print('cond', node.cond)
+        # print('body', node.body)
+        # print('post', node.post)
 
         # do-while
         if node.cond == 'while':
