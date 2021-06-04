@@ -235,7 +235,7 @@ class NanoParser():
         '''
         statement           : SEMI
         '''
-        p[0] = StmtNode()  # empty statment node
+        p[0] = EmptyStmtNode()  # empty statment node
 
     #############################################################
     #                         Control Flow                      #
@@ -250,19 +250,19 @@ class NanoParser():
         if len(p) > 6:
             p[0] = IfStmtNode(p[3], p[5], p[7])  # with else statement
         else:
-            p[0] = IfStmtNode(p[3], p[5], StmtNode())  # no else statement
+            p[0] = IfStmtNode(p[3], p[5], EmptyStmtNode())  # no else statement
 
     def p_while_stmt(self, p):
         '''
         statement           : WHILE LPAREN expression RPAREN ctrl_block
         '''
-        p[0] = LoopNode(StmtNode(), p[3], p[5], StmtNode())  # simple while loop
+        p[0] = LoopNode(EmptyStmtNode(), p[3], p[5], EmptyStmtNode())  # simple while loop
 
     def p_do_while_stmt(self, p):
         '''
         statement           : DO ctrl_block WHILE LPAREN expression RPAREN SEMI
         '''
-        p[0] = LoopNode(p[2], p[3], p[5], StmtNode())  # simple do-while loop
+        p[0] = LoopNode(p[2], p[3], p[5], EmptyStmtNode())  # simple do-while loop
 
     def p_for_stmt(self, p):
         '''
@@ -304,7 +304,7 @@ class NanoParser():
         '''
         for_exp             : 
         '''
-        p[0] = ExpNode()  # empty expression node
+        p[0] = EmptyExpNode()  # empty expression node
 
     def p_cond_exp(self, p):
         '''

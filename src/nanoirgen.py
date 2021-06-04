@@ -146,9 +146,9 @@ class NanoVisitor(Visitor):
     def visitIfStmtNode(self, node: IfStmtNode):
         node.cond.accept(self)
         pred = self._get_block().icmp_signed('!=', node.cond.ll_value, int32(0))
-        if type(node.ifbody) == StmtNode:
+        if type(node.ifbody) == EmptyStmtNode:
             return
-        if type(node.elsebody) == StmtNode:
+        if type(node.elsebody) == EmptyStmtNode:
             with self._get_block().if_then(pred) as then:
                 self._push_block(then)
                 self._push_scope()
