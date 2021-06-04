@@ -107,6 +107,9 @@ class ParamNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.type} {self.id})"
+    
+    def accept(self, visitor: NanoVisitor):
+        return visitor.visitParamNode()
 
 
 class FuncNode(Node):

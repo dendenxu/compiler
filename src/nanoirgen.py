@@ -103,6 +103,9 @@ class NanoVisitor(Visitor):
 
         self._pop_scope()
 
+    def visitParamNode(self, node: ParamNode):
+        
+
     def visitTypeNode(self, node: TypeNode):
         if node.typestr == 'int':
             node.ll_type = ir.IntType(32)
