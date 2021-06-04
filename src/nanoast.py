@@ -240,13 +240,13 @@ class AssNode(EmptyStmtNode):
 
 class DecNode(EmptyStmtNode):
 
-    def __init__(self, type: TypeNode, id: IDNode, init: Node):
+    def __init__(self, type: TypeNode, id: IDNode, arr: List[int], init: Node):
         # init might be none
         super().__init__()
-        self.type, self.id, self.init = type, id, init
+        self.type, self.id, self.arr, self.init = type, id, arr, init
 
     def __str__(self):
-        return f"{self.__class__.__name__}( {self.type} {self.id}" + (f' = {self.init}' if self.init is not None else '') + ' )'
+        return f"{self.__class__.__name__}( {self.type} {self.id}{''.join([f'[{i}]' for i in self.arr])}" + (f' = {self.init}' if self.init is not None else '') + ' )'
 
     def accept(self, visitor: NanoVisitor):
         return visitor.visitDecNode(self)

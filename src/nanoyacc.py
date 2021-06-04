@@ -52,11 +52,13 @@ Productions used in the parser:
         ctrl_block          : curl_block
                             | statement
         curl_block          : LBRACE block RBRACE
-        declaration         : type declist SEMI
-        declist             : declist COMMA id typeinit
-                            | id typeinit
+        declaration         : type dec_list SEMI
+        dec_list            : dec_list COMMA id array_list typeinit
+                            | id array_list typeinit
         typeinit            : EQUALS expression
                             | 
+        array_list          : array_list LBRACKET INT_CONST_DEC RBRACKET
+                            |
         expression          : assignment
         assignment          : conditional
                             | unary EQUALS expression
@@ -71,6 +73,7 @@ Productions used in the parser:
                             | LPAREN type RPAREN unary
         postfix             : primary
                             | id LPAREN exp_list RPAREN
+                            | postfix LBRACKET expression RBRACKET
         primary             : INT_CONST_DEC
                             | FLOAT_CONST
                             | CHAR_CONST
@@ -183,7 +186,7 @@ class NanoParser():
 
     def p_declaration(self, p):
         '''
-        declaration         : type declist SEMI
+        declaration         : type dec_list SEMI
         '''
         if isinstance(p[2], list):
             for dec in p[2]:
@@ -192,22 +195,30 @@ class NanoParser():
             p[2].type = p[1]
         p[0] = p[2]
 
+    def p_dec_arr_list(self, p):
+        '''
+        array_list          : array_list LBRACKET INT_CONST_DEC RBRACKET
+        '''
+        p[1].append(p[3]) # should always be an array
+        p[0] = p[1]
+        
+
     def p_dec_list(self, p):
         '''
-        declist             : declist COMMA id typeinit
+        dec_list            : dec_list COMMA id array_list typeinit
         '''
         if isinstance(p[1], DecNode):
             dec = p[1]
             p[1] = []
             p[1].append(dec)
-        p[1].append(DecNode(None, p[3], p[4]))
+        p[1].append(DecNode(None, p[3], p[4], p[5]))
         p[0] = p[1]
 
     def p_dec_init(self, p):
         '''
-        declist             : id typeinit
+        dec_list            : id array_list typeinit
         '''
-        p[0] = DecNode(None, p[1], p[2])
+        p[0] = DecNode(None, p[1], p[2], p[3])
 
     #############################################################
     #                      Single Statements                    #
@@ -469,6 +480,7 @@ class NanoParser():
         '''
         exp_list            :
         param_list          :
+        array_list          :
         '''
         p[0] = []
 
