@@ -1,10 +1,14 @@
-int fib(int n) {
-    if (n < 0) return 0;
-    else if (n == 1) return 1;
-    else if (n == 2) return 1;
-    else return fib(n-1) + fib(n-2);
+int sum_up_to(int a) {
+    int sum =0;
+    for (int i=0;i<a;i=i+1) {
+        if (i == 3) continue;
+        sum = sum+i;
+        if (sum > 10) break;
+    }
+    return sum;
 }
 
 int main() {
-    return fib(5);
+    int a = 10;
+    return sum_up_to(a);
 }

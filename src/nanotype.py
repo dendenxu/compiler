@@ -37,6 +37,8 @@ def ref(node: Node):
         return node.ref
     elif type(node) == UnaryNode:
         return node.ref
+    elif type(node) == ArrSubNode:
+        return node.ref
     else:
         print(type(node))
         raise NotImplementedError
@@ -51,6 +53,8 @@ def val(node: Node):
     elif type(node) == BinaryNode:
         return node.value
     elif type(node) == UnaryNode:
+        return node.value
+    elif type(node) == ArrSubNode:
         return node.value
     else:
         print(type(node))

@@ -168,6 +168,7 @@ class EmptyExpNode(Node):
 class ArrSubNode(Node):
     def __init__(self, subee: UnaryNode, suber: UnaryNode):
         super().__init__()
+        # self.subee, self.suber = subee, suber
         self.subee, self.suber = subee, suber
 
     def __str__(self):
@@ -337,11 +338,15 @@ class LoopNode(EmptyStmtNode):
 
 
 class BreakNode(EmptyStmtNode):
-    pass
+
+    def accept(self, visitor):
+        return visitor.visitBreakNode(self)
 
 
 class ContinueNode(EmptyStmtNode):
-    pass
+    
+    def accept(self, visitor):
+        return visitor.visitContinueNode(self)
 
 
 # How to effectively traverse the node?
