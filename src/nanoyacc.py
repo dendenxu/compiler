@@ -2,8 +2,8 @@ from ply import yacc
 import sys
 from termcolor import colored
 import traceback
-from nanotraverse import traverse
-from nanolex import NanoLexer
+from nanotraverse import *
+from nanolex import *
 from nanoast import *
 from pprint import pprint
 import requests
@@ -569,6 +569,19 @@ if __name__ == '__main__':
         tree = traverse(root)
         print(colored("Structrued Tree: ", 'blue', attrs=['bold']))
         print(tree)
+        tree_depth = depth(tree)
+        min_width = 1900
+        min_height = 850
+        min_depth = 9
+        approx_height = min_height / (2 ** min_depth) * 2 ** tree_depth
+        approx_height = max(min_height, approx_height)
+        approx_width = min_width / min_depth * tree_depth
+        approx_width = max(min_width, approx_width)
+        print(colored(f'Depth: {tree_depth}', "blue"))
+        print(colored(f'Height: {approx_height}', "blue"))
+        print(colored(f'Width: {approx_width}', "blue"))
+
+        tree["size"] = [approx_width, approx_height]
         payload = json.dumps(tree)
         r = requests.post(url=URL, data=payload)
         print(colored(f"Posting result: {r}", "blue"))

@@ -1,14 +1,17 @@
 from nanoast import *
 
+CHILDREN = "_children"
+NAME = "name"
+
 
 def traverse(node: Node):
     if not isinstance(node, Node):
         tree = {}
-        tree['name'] = str(node)
+        tree[NAME] = str(node)
         return tree
     tree = {}
-    tree['name'] = node.__class__.__name__[:-4]
-    tree['_children'] = []
+    tree[NAME] = node.__class__.__name__[:-4]
+    tree[CHILDREN] = []
 
     attrnames = [attrname for attrname in node.__dict__.keys() if not attrname.startswith('_')]
 
@@ -20,10 +23,10 @@ def traverse(node: Node):
             if isinstance(attr, list):
                 attr = attr[0]
             ctree = traverse(attr)
-            tree['name'] += f"{{{ctree['name']}}}"
-            if '_children' in ctree:
-                for c in ctree['_children']:
-                    tree['_children'].append(c)
+            tree[NAME] += f"{{{ctree[NAME]}}}"
+            if CHILDREN in ctree:
+                for c in ctree[CHILDREN]:
+                    tree[CHILDREN].append(c)
         else:
             FLAG = True
     else:
@@ -34,11 +37,21 @@ def traverse(node: Node):
             attr = getattr(node, attrname)
             if isinstance(attr, list):
                 for a in attr:
-                    tree['_children'].append(traverse(a))
+                    tree[CHILDREN].append(traverse(a))
             else:
-                tree['_children'].append(traverse(attr))
+                tree[CHILDREN].append(traverse(attr))
 
-    if len(tree['_children']) == 0:
-        del tree['_children']
+    if len(tree[CHILDREN]) == 0:
+        del tree[CHILDREN]
 
     return tree
+
+
+def depth(tree: dict):
+    d = 0
+    if isinstance(tree, dict) and CHILDREN in tree:
+        for c in tree[CHILDREN]:
+            cur_d = depth(c)
+            if cur_d > d:
+                d = cur_d
+    return d + 1

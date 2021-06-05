@@ -42,6 +42,7 @@
 
         .btn {
             margin-left: 60px;
+            margin-top: 30px;
             font-family: 'Cascadia Code';
             font-weight: 600;
             background-color: inherit;
@@ -77,24 +78,16 @@
     </center>
     <button class="btn success" id="expand">Expand All</button>
     <button class="btn success" id="collapse">Collapse All</button>
+    <button class="btn success" id="grow">Grow Viewport</button>
+    <button class="btn success" id="shrink">Shrink Viewport</button>
 
     <!-- load the d3.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
 
     <script>
-        var treeData = {};
-        const dataFile = './tree.json'
-        d3.json(dataFile, (payload) => {
-            console.log(`Loaded data from local file: ${dataFile}`);
-            root = payload;
-            root.x0 = height / 2;
-            root.y0 = 0;
-            update(root);
-            d3.select(self.frameElement).style("height", "500px");
-        })
-
-
         // ************** Generate the tree diagram	 *****************
+        const BASE_WIDTH = 1900;
+        const BASE_HEIGHT = 850;
         var margin = {
                 top: 20,
                 right: 120,
@@ -102,7 +95,7 @@
                 left: 120
             },
             width = 1900 - margin.right - margin.left,
-            height = 890 - margin.top - margin.bottom;
+            height = 850 - margin.top - margin.bottom;
 
         var i = 0,
             duration = 750,
@@ -116,12 +109,47 @@
                 return [d.y, d.x];
             });
 
-        var svg = d3.select("body").append("svg")
+        var svgelement = d3.select("body").append("svg")
             .attr("width", width + margin.right + margin.left)
             .attr("height", height + margin.top + margin.bottom)
+
+        var svg = svgelement
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+        const dataFile = './tree.json'
+        var approx_width = BASE_WIDTH;
+        var approx_height = BASE_HEIGHT;
+        d3.json(dataFile, (payload) => {
+            console.log(`Loaded data from local file: ${dataFile}`);
+            root = payload;
+
+            if (root.size) {
+                approx_width = root.size[0]
+                approx_height = root.size[1]
+
+                console.log(`Loaded width: ${approx_width}, height: ${approx_height}`);
+                if (root.children)
+                    updateWH(approx_width, approx_height);
+            }
+
+            root.x0 = height / 2;
+            root.y0 = 0;
+            update(root);
+            d3.select(self.frameElement).style("height", "500px");
+        })
+
+        const updateWH = (width, height) => {
+            svgelement.attr("width", width)
+                .attr("height", height)
+
+            width = width - margin.right - margin.left;
+            height = height - margin.top - margin.bottom;
+
+            console.log(`Tree width: ${width}, height: ${height}`);
+
+            tree.size([height, width])
+        }
 
         function update(source) {
 
@@ -299,14 +327,35 @@
 
         const expand = window.document.getElementById("expand");
         const collapse = window.document.getElementById("collapse");
+        const grow = window.document.getElementById("grow");
+        const shrink = window.document.getElementById("shrink");
 
         expand.addEventListener('click', () => {
+            updateWH(approx_width, approx_height);
             expandall(root);
             update(root);
         });
 
         collapse.addEventListener('click', () => {
+            updateWH(BASE_WIDTH, BASE_HEIGHT);
             collapseall(root);
+            update(root);
+        });
+
+        grow.addEventListener('click', () => {
+            width = svgelement.attr("width");
+            height = svgelement.attr("height");
+            updateWH(width * 2, height * 2);
+            update(root);
+        });
+
+        shrink.addEventListener('click', () => {
+            width = svgelement.attr("width");
+            height = svgelement.attr("height");
+            console.log("Shrinking")
+            console.log(height / 2)
+            console.log(BASE_HEIGHT)
+            updateWH(Math.max(width / 2, BASE_WIDTH), Math.max(height / 2, BASE_HEIGHT));
             update(root);
         });
     </script>
