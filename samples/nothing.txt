@@ -105,4 +105,9 @@ void nothing(int a, int b, int c) {
     1 ? 1 ? 2 :3 : 4;
     1 ? 2 : 0 ? 3 : 4;
     test = 1 ? 1 ? 0 ? 2 : 3 : 4 : 5;
+
+
+    for (; i < "Hello" ;i++) {
+        print("This print function doesn't even exist hahahah");
+    }
 }

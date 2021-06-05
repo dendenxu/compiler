@@ -162,7 +162,8 @@ class ProgNode(Node):
 #############################################################
 
 class EmptyExpNode(Node):
-    pass
+    def __str__(self):
+        return f"{self.__class__.__name__}()"
 
 
 class ArrSubNode(Node):
@@ -173,7 +174,7 @@ class ArrSubNode(Node):
 
     def __str__(self):
         return f"{self.__class__.__name__}( {self.subee}[{self.suber}] )"
-    
+
     def accept(self, visitor: NanoVisitor):
         return visitor.visitArrSubNode(self)
 
@@ -185,7 +186,7 @@ class CallNode(EmptyExpNode):
 
     def __str__(self):
         return f"{self.__class__.__name__}( {self.id}({', '.join(map(str, self.params))}) )"
-    
+
     def accept(self, visitor: NanoVisitor):
         return visitor.visitCallNode(self)
 
@@ -344,7 +345,7 @@ class BreakNode(EmptyStmtNode):
 
 
 class ContinueNode(EmptyStmtNode):
-    
+
     def accept(self, visitor):
         return visitor.visitContinueNode(self)
 
