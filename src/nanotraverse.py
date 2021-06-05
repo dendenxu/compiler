@@ -20,6 +20,33 @@ def traverse(node: Node):
 
     FLAG = False
 
+    if isinstance(node, UnaryNode):
+        attr = attrnames[0]
+        del attrnames[0]
+        attr = getattr(node, attr)
+        ctree = traverse(attr)
+        tree[NAME] += f"{{{ctree[NAME]}}}"
+    elif isinstance(node, BinaryNode):
+        attr = attrnames[1]
+        del attrnames[1]
+        attr = getattr(node, attr)
+        ctree = traverse(attr)
+        tree[NAME] += f"{{{ctree[NAME]}}}"
+    elif isinstance(node, AssNode):
+        # ctree = traverse(attr)
+        # tree[NAME] += f"{{{ctree[NAME]}}}"
+        tree[NAME] += f"{{=}}"
+    # elif isinstance(node, DecNode):
+    #     t = attrnames[0]
+    #     del attrnames[0]
+    #     i = attrnames[0]
+    #     del attrnames[0]
+    #     t = getattr(node, t)
+    #     i = getattr(node, i)
+    #     ttree = traverse(t)
+    #     itree = traverse(i)
+    #     tree[NAME] += f"{{{ttree[NAME]}{itree[NAME]}}}"
+
     if len(attrnames) == 1:
         attr = getattr(node, attrnames[0])
         if not isinstance(attr, list) or len(attr) == 1:
