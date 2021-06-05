@@ -272,7 +272,11 @@ def cast(value, tgt_type: str, ref=None):
         return tp_visitor._get_builder().fptosi(value, int32)
     elif (src_type, tgt_type) == ('float', 'i1'):
         return tp_visitor._get_builder().fptoui(value, int1)
+    elif (src_type, tgt_type) == ('[@ x i32]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return val
     elif (src_type, tgt_type) == ('[@ x [@ x i32]]*', 'i32*'):
         val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
                                                   ir.Constant(int32, 0),])
-        return tp_visitor._get_builder().bitcast(val, int32)
+        return tp_visitor._get_builder().bitcast(val, make_ptr(int32))

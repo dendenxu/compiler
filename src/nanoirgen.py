@@ -623,7 +623,7 @@ class NanoVisitor(Visitor):
                 raise NotImplementedError
         elif exp_type(node.left) == 'i32*' and exp_type(node.right) == 'i32':
             node.value = self._get_builder().gep(
-                val(node.left), [ir.Constant(int32, 0)])
+                val(node.left), [val(node.right)])
         else:
             print(node)
             raise NotImplementedError

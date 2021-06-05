@@ -1,10 +1,8 @@
-int sign(int n) {
-    if (n<0) return -1;
-    else if (n == 0) return 0;
-    else return 1;
-}
-
-int main()
-{
-    return sign((int)1.0);
+int a[10];
+int main() {
+    for (int i=0;i<10;i++) {
+        a[i] = i;
+    }
+    int * b = (int*)a;
+    return *(b+4);
 }
