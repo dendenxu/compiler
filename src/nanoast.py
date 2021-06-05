@@ -192,10 +192,8 @@ class CallNode(EmptyExpNode):
 
 
 class UnaryNode(EmptyExpNode):
-    # _legal_ops = {*"+-!~*&"}
 
     def __init__(self, op: str, node: Node):
-        # assert op in UnaryNode._legal_ops
         super().__init__()
         self.op, self.node = op, node
 
@@ -207,7 +205,7 @@ class UnaryNode(EmptyExpNode):
 
 
 class BinaryNode(EmptyExpNode):
-    _legal_ops = {*"+-*/%<>", '==', '!=', '<=', '>=', '||', '&&'}
+    _legal_ops = {*"+-*/%<>&|^", '==', '!=', '<<', '>>', '<=', '>=', '||', '&&'}
 
     def __init__(self, op: str, left: Node, right: Node):
         assert op in BinaryNode._legal_ops

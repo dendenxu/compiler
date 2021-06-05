@@ -65,9 +65,25 @@ Productions used in the parser:
                             |
         expression          : assignment
         assignment          : conditional
-                            | unary EQUALS expression
         conditional         : logical_or
                             | logical_or CONDOP expression COLON conditional
+                            | unary EQUALS expression
+        logical_or          : logical_and
+                            | logical_or LOR logical_and
+        logical_and         : bitwise_or
+                            | logical_and LAND bitwise_or
+        bitwise_or          : bitwise_xor
+                            | bitwise_or OR bitwise_xor
+        bitwise_xor         : bitwise_and
+                            | bitwise_xor XOR bitwise_and
+        bitwise_and         : equality
+                            | bitwise_and AND equality
+        equality            : relational
+                            | equality (EQ|NE) relational
+        relational          : shiftable
+                            | relational (LT|GT|LE|GE) shiftable
+        shiftable           : additive
+                            | shiftable (LSHIFT|RSHIFT) additive
         additive            : multiplicative
                             | additive (PLUS|MINUS) multiplicative
         multiplicative      : unary
@@ -86,14 +102,6 @@ Productions used in the parser:
                             | STRING_LITERAL
                             | id
                             | LPAREN expression RPAREN
-        equality            : relational
-                            | equality (EQ|NE) relational
-        relational          : additive
-                            | relational (LT|GT|LE|GE) additive
-        logical_or          : logical_and
-                            | logical_or LOR logical_and
-        logical_and         : equality
-                            | logical_and LAND equality
 """
 
 
@@ -372,19 +380,24 @@ class NanoParser():
 
     def p_binary_operators(self, p):
         '''
+        logical_or          : logical_or LOR logical_and
+        logical_and         : logical_and LAND bitwise_or
+        bitwise_or          : bitwise_or OR bitwise_xor
+        bitwise_xor         : bitwise_xor XOR bitwise_and
+        bitwise_and         : bitwise_and AND equality
+        equality            : equality EQ relational
+                            | equality NE relational
+        relational          : relational LT shiftable
+                            | relational GT shiftable
+                            | relational GE shiftable
+                            | relational LE shiftable
+        shiftable           : shiftable LSHIFT additive
+                            | shiftable RSHIFT additive
         additive            : additive PLUS multiplicative
                             | additive MINUS multiplicative
         multiplicative      : multiplicative TIMES unary
                             | multiplicative DIVIDE unary
                             | multiplicative MOD unary
-        equality            : equality EQ relational
-                            | equality NE relational
-        relational          : relational LT additive
-                            | relational GT additive
-                            | relational GE additive
-                            | relational LE additive
-        logical_or          : logical_or LOR logical_and
-        logical_and         : logical_and LAND equality
         '''
         p[0] = BinaryNode(p[2], p[1], p[3])
 
@@ -519,6 +532,7 @@ class NanoParser():
 
     def p_pass_on_first(self, p):
         '''
+        statement           : declaration
         statement           : expression SEMI
         for_exp             : expression
         ctrl_block          : curl_block
@@ -526,14 +540,17 @@ class NanoParser():
         assignment          : conditional
         conditional         : logical_or
         logical_or          : logical_and
-        logical_and         : equality
+        logical_and         : bitwise_or
+        bitwise_or          : bitwise_xor
+        bitwise_xor         : bitwise_and
+        bitwise_and         : equality
+        equality            : relational
+        relational          : shiftable
+        shiftable           : additive
         additive            : multiplicative
         multiplicative      : unary
         unary               : postfix
         postfix             : primary
-        equality            : relational
-        relational          : additive
-        statement           : declaration
         primary             : id
         '''
         p[0] = p[1]
