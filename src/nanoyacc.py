@@ -73,11 +73,13 @@ Productions used in the parser:
         multiplicative      : unary
                             | multiplicative (TIMES|DEVIDE|MOD) unary
         unary               : postfix
-                            | (PLUS|MINUS|NOT|LNOT|TIMES|AND) unary
+                            | (PLUS|MINUS|NOT|LNOT|TIMES|AND|PLUSPLUS|MINUSMINUS) unary
                             | LPAREN type RPAREN unary
         postfix             : primary
                             | id LPAREN exp_list RPAREN
                             | postfix LBRACKET expression RBRACKET
+                            | id PLUSPLUS
+                            | id MINUSMINUS
         primary             : INT_CONST_DEC
                             | FLOAT_CONST
                             | CHAR_CONST
@@ -333,8 +335,21 @@ class NanoParser():
     def p_assignment(self, p):
         '''
         assignment          : unary EQUALS expression
+        unary               : PLUSPLUS unary
+                            | MINUSMINUS unary
+        postfix             : postfix PLUSPLUS
+                            | postfix MINUSMINUS
         '''
-        p[0] = AssNode(p[1], p[3])
+        if len(p) == 4:  # true assignment
+            p[0] = AssNode(p[1], p[3])
+        elif p[1] == "++":
+            p[0] = AssNode(p[2], BinaryNode('+', p[2], IntNode(1)))
+        elif p[1] == "--":
+            p[0] = AssNode(p[2], BinaryNode('-', p[2], IntNode(1)))
+        elif p[2] == "++":
+            p[0] = AssNode(p[1], BinaryNode('+', p[1], IntNode(1)))
+        elif p[2] == "--":
+            p[0] = AssNode(p[1], BinaryNode('-', p[1], IntNode(1)))
 
     def p_unary_op(self, p):
         '''
@@ -557,22 +572,33 @@ class NanoParser():
 
 
 if __name__ == '__main__':
-    if len(sys.argv) >= 3:
-        url = sys.argv[2]
-    else:
-        url = "http://neon-cubes.xyz:8000/src/tree.json"
-    with open(sys.argv[1], 'r', encoding='utf-8') as f:
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-input", default="samples/fx.c", type=str)
+    parser.add_argument("-output", type=str)
+    parser.add_argument("-url", default="http://neon-cubes.xyz:8000/src/tree.json", type=str)
+    args = parser.parse_args()
+
+    with open(args.input, 'r', encoding='utf-8') as f:
         content = f.read()
         lexer = NanoLexer()
         lexer.build()
         parser = NanoParser()
         parser.build()
         root = parser.parse(content, debug=0)
-        print(colored("Tree: ", 'yellow', attrs=['bold']) + str(root))
+        print(colored(f"Abstract Syntax Tree:", "yellow", attrs=["bold"]))
+        print(root)
+
         tree = traverse(root)
-        print(colored("Structrued Tree: ", 'blue', attrs=['bold']))
+        print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
         print(tree)
         addsize(tree)
         payload = json.dumps(tree)
-        r = requests.post(url=url, data=payload)
-        print(colored(f"Posting result: {r}", "blue"))
+
+        if args.output:
+            print(colored(f"Saving Structrued Tree to {args.output}", 'yellow', attrs=['bold']))
+            with open(args.output, 'w') as f:
+                f.write(payload)
+
+        r = requests.post(url=args.url, data=payload)
+        print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))

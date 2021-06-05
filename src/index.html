@@ -184,15 +184,25 @@
         })
 
         const updateWH = (width, height) => {
-            svgelement.attr("width", width)
-                .attr("height", height)
 
-            width = width - margin.right - margin.left;
-            height = height - margin.top - margin.bottom;
+            tree_width = width - margin.right - margin.left;
+            tree_height = height - margin.top - margin.bottom;
+            ori_height = tree.size()[0] // the first element is the height
 
-            console.log(`Tree width: ${width}, height: ${height}`);
+            console.log(`Tree width: ${tree_width}, height: ${tree_height}`);
 
-            tree.size([height, width])
+            tree.size([tree_height, tree_width])
+
+            if (tree_height < ori_height) {
+                setTimeout(() => {
+                    svgelement.attr("width", width)
+                        .attr("height", height)
+                }, duration)
+            } else {
+                svgelement.attr("width", width)
+                    .attr("height", height)
+            }
+
         }
 
         function update(source) {
@@ -383,6 +393,8 @@
         collapse.addEventListener('click', () => {
             updateWH(BASE_WIDTH, BASE_HEIGHT);
             collapseall(root);
+            root.x0 = BASE_HEIGHT / 2;
+            root.y0 = 0;
             update(root);
         });
 
@@ -399,8 +411,8 @@
             console.log("Shrinking")
             console.log(height / 2)
             console.log(BASE_HEIGHT)
-            updateWH(Math.max(width / 2, BASE_WIDTH), Math.max(height / 2, BASE_HEIGHT));
             update(root);
+            updateWH(Math.max(width / 2, BASE_WIDTH), Math.max(height / 2, BASE_HEIGHT));
         });
     </script>
 
