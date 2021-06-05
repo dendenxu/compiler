@@ -585,5 +585,6 @@ if __name__ == '__main__':
         print(colored(f'Width: {approx_width}', "blue"))
 
         tree["size"] = [approx_width, approx_height]
-        r = requests.post(url=url, data=json.dumps(tree))
+        payload = json.dumps(tree)
+        r = requests.post(url=url, data=payload)
         print(colored(f"Posting result: {r}", "blue"))
