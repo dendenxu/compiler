@@ -42,7 +42,7 @@ class NanoVisitor(Visitor):
             builder = ir.IRBuilder(block)
             self.builder_stack.append(builder)
 
-    def _get_builder(self):
+    def _get_builder(self) -> ir.IRBuilder:
         return self.builder_stack[-1]
 
     def _pop_builder(self):

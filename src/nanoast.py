@@ -202,7 +202,7 @@ class UnaryNode(EmptyExpNode):
     def __str__(self):
         return f"{self.__class__.__name__}( {self.op}{self.node} )"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitUnaryNode(self)
 
 
