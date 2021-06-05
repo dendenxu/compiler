@@ -66,9 +66,9 @@ Productions used in the parser:
                             |
         expression          : assignment
         assignment          : conditional
+                            | unary EQUALS expression
         conditional         : logical_or
                             | logical_or CONDOP expression COLON conditional
-                            | unary EQUALS expression
         logical_or          : logical_and
                             | logical_or LOR logical_and
         logical_and         : bitwise_or
@@ -333,7 +333,7 @@ class NanoParser():
 
     def p_cond_exp(self, p):
         '''
-        conditional         : logical_or CONDOP expression COLON expression
+        conditional         : logical_or CONDOP expression COLON conditional
         '''
         p[0] = TernaryNode(p[1], p[2], p[3], p[4], p[5])
 
@@ -536,7 +536,7 @@ class NanoParser():
         '''
         statement           : declaration
         statement           : expression SEMI
-        empty_or_exp             : expression
+        empty_or_exp        : expression
         ctrl_block          : curl_block
         expression          : assignment
         assignment          : conditional
@@ -594,7 +594,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-input", default="samples/fx.c", type=str)
-    parser.add_argument("-output", type=str)
+    parser.add_argument("-tree", type=str)
     parser.add_argument("-url", default="http://neon-cubes.xyz:8000/src/tree.json", type=str)
     args = parser.parse_args()
 
@@ -611,13 +611,13 @@ if __name__ == '__main__':
         tree = traverse(root)
         print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
         print(tree)
-        addsize(tree)
+        addinfo(tree, args.input)
         payload = json.dumps(tree)
 
-        if args.output:
-            print(colored(f"Saving Structrued Tree to {args.output}", 'yellow', attrs=['bold']))
-            with open(args.output, 'w') as f:
+        if args.tree:
+            with open(args.tree, 'w') as f:
                 f.write(payload)
+            print(colored(f"Saved Structrued Tree to {args.tree}", 'yellow', attrs=['bold']))
 
         r = requests.post(url=args.url, data=payload)
         print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))

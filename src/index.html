@@ -55,6 +55,12 @@
             color: #eee;
         }
 
+        h2 {
+            font-family: 'Cascadia Code';
+            font-weight: 400;
+            color: #CCC;
+        }
+
         .btn {
             margin-left: 60px;
             margin-top: 20px;
@@ -117,8 +123,8 @@
 
 <body>
 
-    <center>
-        <h1> Abstract Syntax Tree </h1>
+    <center id="centernode">
+        <h1 id="bigtitle">Abstract Syntax Tree</h1>
     </center>
     <button class="btn success" id="expand">Expand All</button>
     <button class="btn success" id="collapse">Collapse All</button>
@@ -131,7 +137,7 @@
     <script>
         // ************** Generate the tree diagram	 *****************
         const BASE_WIDTH = 1900;
-        const BASE_HEIGHT = 870;
+        const BASE_HEIGHT = 820;
         var margin = {
                 top: 20,
                 right: 120,
@@ -181,6 +187,21 @@
             root.y0 = 0;
             update(root);
             d3.select(self.frameElement).style("height", "500px");
+            document.title = root.filename;
+            titlenode = document.getElementById("bigtitle")
+            titlenode.innerText += ": "
+            // titlenode.setAttribute("")
+            // .appendChild(`<strong>${}</strong>`)
+            filenamenode = document.createElement('strong')
+            filenamenode.innerText = document.title
+            titlenode.appendChild(filenamenode)
+
+            if (root.address) {
+                addrnode = document.createElement('h2')
+                addrnode.innerText = root.address
+                centernode = document.getElementById("centernode")
+                centernode.appendChild(addrnode)
+            }
         })
 
         const updateWH = (width, height) => {
@@ -218,7 +239,19 @@
             const eps = 1e-6;
             const width = 180;
             const radius = 10;
+            const big_radius = 12;
             const opacity = 1;
+            const larger_node_desc = ["Func", "Block", "Prog"]
+            const judge = (data) => {
+                // console.log(data)
+                // console.log(larger_node_desc)
+                if (data.name) {
+                    return larger_node_desc.some((e) =>
+                        data.name.includes(e))
+                } else {
+                    return false;
+                }
+            }
             // Compute the new tree layout.
             var nodes = tree.nodes(root).reverse(),
                 links = tree.links(nodes);
@@ -246,6 +279,9 @@
                 .attr("r", eps)
                 .style("fill", function (d) {
                     return d._children ? "lightsteelblue" : "#fff";
+                })
+                .style("stroke", function (d) {
+                    return judge(d) ? "#ff99a8" : "steelblue";
                 });
 
             nodeEnter.append("text")
@@ -271,14 +307,24 @@
                 });
 
             nodeUpdate.select("circle")
-                .attr("r", radius)
+                .attr("r", (d) => {
+                    return judge(d) ? big_radius : radius;
+                })
                 .style("fill-opacity", opacity)
                 .style("fill", function (d) {
-                    return d._children ? "lightsteelblue" : "#222";
+                    if (d._children) {
+                        return judge(d) ? "#eebbc4" : "lightsteelblue";
+                    } else {
+
+                        return judge(d) ? "#44000f" : "#222";
+                    }
                 });
 
             nodeUpdate.select("text")
-                .style("fill-opacity", opacity);
+                .style("fill-opacity", opacity)
+                .style("font-weight", (d) => {
+                    return judge(d) ? "600" : "400";
+                })
 
             // Transition exiting nodes to the parent's new position.
             var nodeExit = node.exit().transition()
@@ -302,6 +348,15 @@
 
             // Enter any new links at the parent's previous position.
             link.enter().insert("path", "g")
+                .style("stroke-width", (d) => {
+
+                    // console.log(d)
+                    if (d.source && d.target) {
+                        return (judge(d.source) && judge(d.target)) ? '5px' : '2px';
+                    } else {
+                        return '2px';
+                    }
+                })
                 .attr("class", "link")
                 .attr("d", function (d) {
                     var o = {
@@ -411,8 +466,8 @@
             console.log("Shrinking")
             console.log(height / 2)
             console.log(BASE_HEIGHT)
-            update(root);
             updateWH(Math.max(width / 2, BASE_WIDTH), Math.max(height / 2, BASE_HEIGHT));
+            update(root);
         });
     </script>
 

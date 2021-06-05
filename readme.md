@@ -13,7 +13,7 @@ And **do remember to delete these lines after this repo goes public**
 - Types: `int`, `long`, `double`, `float`, `char`, `void`, `[]`, **pointer**
 - Control Flow: `if`, `else`, `while`, `for`, `continue`, `break`, `do-while`
 - Function: `return`, **typed functions**, **scope**(`{}` `;`)
-- Operators (with priorities):
+- Operators (with precedence):
   1. `()` `[]` Function Call, Array Subscription
   2. `-` `+` `++` `--` `!` `&` `*` `~` `(type)` Negation, Positive Number, Minus Minus, Plus Plus, Logical Not, Bitwise And, Get Element Of Pointer, Bitwise Not, Type Casting
   3. `*` `/` `%` Times, Divide, Modulus
@@ -27,7 +27,7 @@ And **do remember to delete these lines after this repo goes public**
   11. `&&` Logical And
   12. `||` Logical Or
   13. `?:` Conditional Expression
-  14. `=` `<<=` `>>=` `&=` `~=` `^=` `+=` `-=` `/=` `*=` `%=` Assignment Operation
+  14. `=` `<<=` `>>=` `&=` `|=` `^=` `+=` `-=` `/=` `*=` `%=` Assignment Operation
 - Comment:
   1. `//` (one-line comment)
   2. `/* */` (multi-line comment)
