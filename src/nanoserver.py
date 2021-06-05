@@ -25,7 +25,8 @@ class NanoRequestHandler(SimpleHTTPRequestHandler):
                 f.write(body)
 
         self.send_response(200)
-        self.flush_headers()
+        self.end_headers()
+        self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
         print(f"Sent response")
 
 
