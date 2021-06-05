@@ -59,6 +59,9 @@ class FloatNode(EmptyLiteralNode):
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.value})"
+    
+    def accept(self, visitor: NanoVisitor):
+        visitor.visitFloatNode(self)
 
 
 class CharNode(EmptyLiteralNode):

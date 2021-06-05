@@ -54,7 +54,7 @@ int main()
 {
     // initArr(n);
     for (int i=0;i<n;i=i+1) {
-        a[i] = n-i-1;
+        a[i] = n-i;
     }
     // int sorted_before = isSorted(n);
     qsort(0, n - 1);
