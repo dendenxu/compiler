@@ -513,12 +513,12 @@ class NanoVisitor(Visitor):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", default="samples/fx.c", type=str)
-    parser.add_argument("--output", default="results/irgen.ll", type=str)
-    parser.add_argument("--target", default="x86_64-pc-linux", type=str)
-    parser.add_argument("--url", default="http://neon-cubes.xyz:8000/src/tree.json", type=str)
-    parser.add_argument("--generate", action="store_true", default=True, dest='generate', help="Whether to generate the target machine code")
-    parser.add_argument("--ext", default="", type=str, help="Executable file extension")
+    parser.add_argument("-input", default="samples/fx.c", type=str)
+    parser.add_argument("-output", default="results/irgen.ll", type=str)
+    parser.add_argument("-target", default="x86_64-pc-linux", type=str)
+    parser.add_argument("-url", default="http://neon-cubes.xyz:8000/src/tree.json", type=str)
+    parser.add_argument("-generate", action="store_true", default=True, dest='generate', help="Whether to generate the target machine code")
+    parser.add_argument("-ext", default="", type=str, help="Executable file extension")
     args = parser.parse_args()
     with open(args.input, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -551,6 +551,6 @@ if __name__ == '__main__':
         ass = os.path.join(path, basenamenoext + '.s')
         exe = os.path.join(path, basenamenoext + args.ext)
 
-        os.system(' '.join(["clang", args.output, "-S", ass]))
+        os.system(' '.join(["clang", args.output, "-S", "-o", ass]))
         os.system(' '.join(["clang", ass, "-o", exe]))
         print(colored(f"IR/Assembly/Executable stored at: {path}", "yellow", attrs=["bold"]))
