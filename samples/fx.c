@@ -1,10 +1,9 @@
-int fib(int n) {
-    if (n < 0) return 0;
-    else if (n == 1) return 1;
-    else if (n == 2) return 1;
-    else return fib(n-1) + fib(n-2);
-}
-
 int main() {
-    return fib(5);
+    int b[10][10];
+    for (int i=0;i<10;i=i+1) {
+        for (int j=0;j<10;j=j+1) {
+            b[i][j] = i*j;
+        }
+    }
+    return b[3][9];
 }

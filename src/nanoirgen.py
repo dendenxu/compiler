@@ -25,6 +25,8 @@ class NanoVisitor(Visitor):
         self.builder_stack = []
         self.block_stack = []
         self.scope_stack = []
+        self.loop_exit_stack = []
+        self.loop_entr_stack = []
         self.defined_funcs = dict()
         self.func_params = dict()
         self.in_global = True
@@ -45,9 +47,12 @@ class NanoVisitor(Visitor):
 
     def _push_scope(self):
         self.scope_stack.append(dict())
+        # print('push', self.scope_stack)
 
     def _pop_scope(self):
-        return self.scope_stack.pop()
+        pop = self.scope_stack.pop()
+        # print('pop', self.scope_stack)
+        return pop
 
     def _push_block(self, block=None):
         func = self._get_func(self.cur_func_name)
@@ -131,7 +136,6 @@ class NanoVisitor(Visitor):
         self.in_global = True
 
     def visitCallNode(self, node: CallNode):
-        print(node.params)
         call_func_args = []
         for param in node.params:
             param.accept(self)
@@ -143,8 +147,13 @@ class NanoVisitor(Visitor):
         node.type.accept(self)
 
     def visitArrSubNode(self, node: ArrSubNode):
-        raise NotImplementedError
-        
+        node.subee.accept(self)
+        node.suber.accept(self)
+        node.ref = self._get_builder().gep(ref(node.subee),
+                                           [ir.Constant(int32, 0),
+                                            val(node.suber),])
+        node.value = self._get_builder().load(node.ref)
+
     def visitTypeNode(self, node: TypeNode):
         if node._is_ptr:
             node.typestr.accept(self)
@@ -197,9 +206,9 @@ class NanoVisitor(Visitor):
     def visitDecNode(self, node: DecNode):
         node.type.accept(self)
         node.type = typ(node.type)
-        # if len(node.arr):
-        #     for a in reversed(node.arr):
-        #         node.type = ir.ArrayType(node.type, a)
+        if len(node.arr):
+            for a in reversed(node.arr):
+                node.type = ir.ArrayType(node.type, a)
         if self.in_global:
             node.item = ir.GlobalVariable(self.module, node.type, nam(node.id))
             if node.init is not None:
@@ -215,9 +224,14 @@ class NanoVisitor(Visitor):
     def visitAssNode(self, node: AssNode):
         node.unary.accept(self)
         node.exp.accept(self)
-        print('val', val(node.exp))
-        print('ref', ref(node.unary))
         self._get_builder().store(val(node.exp), ref(node.unary))
+
+    def visitContinueNode(self, node: ContinueNode):
+        self._get_builder().branch(self.loop_entr_stack[-1])
+    
+    def visitBreakNode(self, node: BreakNode):
+        print(self.loop_exit_stack)
+        self._get_builder().branch(self.loop_exit_stack[-1])
 
     def visitIfStmtNode(self, node: IfStmtNode):
         node.cond.accept(self)
@@ -302,9 +316,21 @@ class NanoVisitor(Visitor):
         # print('cond', node.cond)
         # print('body', node.body)
         # print('post', node.post)
-
+        
         # do-while
         if node.cond == 'while':
+            """ do-while
+                ...
+                branch body_block
+            body_block:
+                body...
+                branch cond_block
+            cond_block [continue target]:
+                cond...
+                branch(cond, body_block, tail_block)
+            tail_block [break target]:
+                ...
+            """
             node.cond = node.body
             node.body = node.pre
             node.pre = node.post
@@ -312,25 +338,67 @@ class NanoVisitor(Visitor):
             # scope_new_0
             self._push_scope()
             body_block = self._get_builder().append_basic_block()
-            post_block = self._get_builder().append_basic_block()
+            cond_block = self._get_builder().append_basic_block()
+            tail_block = self._get_builder().append_basic_block()
+            self.loop_entr_stack.append(cond_block)
+            self.loop_exit_stack.append(tail_block)
             self._get_builder().branch(body_block)
             self._get_builder().position_at_start(body_block)
+            
             # scope_new_1 auto created when visitBlockNode
             node.body.accept(self)
+            self._get_builder().branch(cond_block)
+            self._get_builder().position_at_start(cond_block)
+            
             node.cond.accept(self)
             cond = self._get_builder().icmp_signed('!=',
                                                    val(node.cond),
                                                    ir.Constant(int32, 0))
-            self._get_builder().cbranch(cond, body_block, post_block)
-            self._get_builder().position_at_start(post_block)
-            # self._push_block(post_block)
+            self._get_builder().cbranch(cond, body_block, tail_block)
+            # exit
+            self._get_builder().position_at_start(tail_block)
             self._pop_scope()
-        # while
+            
+            self.loop_entr_stack.pop()
+            self.loop_exit_stack.pop()
+            
+
+        # while & for
         else:
+            """ for & while
+                ...
+                pre...
+                branch cond_block
+            cond_block:
+                cond...
+                branch(cond, body_block, tail_block)
+            body_block:
+                body...
+                branch post_block
+            post_block [continue target]:
+                post...
+                branch cond_block
+            tail_block [break target]:
+                ...
+            """
+
+            cond_block = self._get_builder().append_basic_block()
+            body_block = self._get_builder().append_basic_block()
+            post_block = self._get_builder().append_basic_block()
+            tail_block = self._get_builder().append_basic_block()
+            self.loop_entr_stack.append(post_block)
+            self.loop_exit_stack.append(tail_block)
+            
+            print(tail_block)
+            
+            # scope_new_0
             self._push_scope()
             if type(node.pre) != EmptyStmtNode:
                 node.pre.accept(self)
-            # scope_new_0
+            self._get_builder().branch(cond_block)
+            
+            # entrance
+            self._get_builder().position_at_start(cond_block)
             if type(node.cond) != EmptyExpNode:
                 node.cond.accept(self)
                 cond = self._get_builder().icmp_signed('!=',
@@ -338,28 +406,25 @@ class NanoVisitor(Visitor):
                                                        ir.Constant(int32, 0))
             else:
                 cond = bool(1)
-            body_block = self._get_builder().append_basic_block()
-            post_block = self._get_builder().append_basic_block()
-            self._get_builder().cbranch(cond, body_block, post_block)
+            self._get_builder().cbranch(cond, body_block, tail_block)
 
             # scope_new_1 auto created when visitBlockNode
             self._get_builder().position_at_start(body_block)
             node.body.accept(self)
+            self._get_builder().branch(post_block)
+            
+            # return to scope 0
+            self._get_builder().position_at_start(post_block)
             if type(node.post) != EmptyStmtNode:
                 node.post.accept(self)
-            if type(node.cond) != EmptyExpNode:
-                node.cond.accept(self)
-                cond = self._get_builder().icmp_signed('!=',
-                                                       val(node.cond),
-                                                       ir.Constant(int32, 0))
-            else:
-                cond = bool(1)
+            self._get_builder().branch(cond_block)
             self._pop_scope()
-            self._get_builder().cbranch(cond, body_block, post_block)
 
             # after
-            self._get_builder().position_at_start(post_block)
-            # self._push_block(post_block)
+            self._get_builder().position_at_start(tail_block)
+            
+            self.loop_entr_stack.pop()
+            self.loop_exit_stack.pop()
 
     def visitBinaryNode(self, node: BinaryNode):
         node.left.accept(self)
@@ -391,7 +456,7 @@ class NanoVisitor(Visitor):
                 val(node.right))
         elif node.op == '>':
             node.value = self._get_builder().icmp_signed(
-                '<',
+                '>',
                 val(node.left),
                 val(node.right))
         elif node.op == '==':
