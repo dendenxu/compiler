@@ -333,7 +333,7 @@ class NanoParser():
 
     def p_cond_exp(self, p):
         '''
-        conditional         : logical_or CONDOP expression COLON expression
+        conditional         : logical_or CONDOP expression COLON conditional
         '''
         p[0] = TernaryNode(p[1], p[2], p[3], p[4], p[5])
 
