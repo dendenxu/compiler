@@ -23,10 +23,11 @@ class NanoRequestHandler(SimpleHTTPRequestHandler):
                 content_length = int(self.headers['content-length'])
                 body = self.rfile.read(content_length)
                 print(f"Got payload {body}")
-                body = json.loads(body)
+                body = json.loads(body.decode('utf-8'))
                 body["address"] = self.address_string()
+                body = json.dumps(body).encode('utf-8')
                 with open(path, 'wb') as f:
-                    json.dump(body, f)
+                    f.write(body)
 
             self.send_response(200)
             self.end_headers()
