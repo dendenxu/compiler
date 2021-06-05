@@ -57,7 +57,11 @@ def depth(tree: dict):
     return d + 1
 
 
-def addsize(tree: dict):
+def addinfo(tree: dict, filename: str = "nothing.txt"):
+    """
+    updates approximate tree size
+    add file name
+    """
     tree_depth = depth(tree)
     min_width = 1900
     min_height = 850
@@ -71,3 +75,5 @@ def addsize(tree: dict):
     print(colored(f'Width: {approx_width}', "blue"))
 
     tree["size"] = [approx_width, approx_height]
+
+    tree['filename'] = filename

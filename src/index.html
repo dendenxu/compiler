@@ -118,7 +118,7 @@
 <body>
 
     <center>
-        <h1> Abstract Syntax Tree </h1>
+        <h1 id="bigtitle">Abstract Syntax Tree</h1>
     </center>
     <button class="btn success" id="expand">Expand All</button>
     <button class="btn success" id="collapse">Collapse All</button>
@@ -181,6 +181,15 @@
             root.y0 = 0;
             update(root);
             d3.select(self.frameElement).style("height", "500px");
+            document.title = root.filename;
+            titlenode = document.getElementById("bigtitle")
+            titlenode.innerText += ": "
+            // titlenode.setAttribute("")
+            // .appendChild(`<strong>${}</strong>`)
+            filenamenode = document.createElement('strong')
+            filenamenode.innerText = document.title
+            titlenode.appendChild(filenamenode)
+
         })
 
         const updateWH = (width, height) => {
@@ -445,8 +454,8 @@
             console.log("Shrinking")
             console.log(height / 2)
             console.log(BASE_HEIGHT)
-            update(root);
             updateWH(Math.max(width / 2, BASE_WIDTH), Math.max(height / 2, BASE_HEIGHT));
+            update(root);
         });
     </script>
 

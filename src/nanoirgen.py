@@ -625,6 +625,7 @@ if __name__ == '__main__':
     parser.add_argument("-output", default="results/irgen.ll", type=str)
     parser.add_argument("-target", default="x86_64-pc-linux", type=str)
     parser.add_argument("-url", default="http://neon-cubes.xyz:8000/src/tree.json", type=str)
+    parser.add_argument("-tree", type=str)
     parser.add_argument("-generate", action="store_true", default=True, dest='generate', help="Whether to generate the target machine code")
     parser.add_argument("-ext", default="", type=str, help="Executable file extension")
     args = parser.parse_args()
@@ -639,8 +640,13 @@ if __name__ == '__main__':
         print(root)
 
         tree = traverse(root)
-        addsize(tree)
+        addinfo(tree, args.input)
         payload = json.dumps(tree)
+        if args.tree:
+            with open(args.tree, 'w') as f:
+                f.write(payload)
+            print(colored(f"Saved Structrued Tree to {args.tree}", 'yellow', attrs=['bold']))
+
         r = requests.post(url=args.url, data=payload)
         print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))
 
