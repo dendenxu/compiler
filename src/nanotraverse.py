@@ -2,6 +2,9 @@ from nanoast import *
 
 CHILDREN = "_children"
 NAME = "name"
+BASE_WIDTH = 1900
+BASE_HEIGHT = 820
+BASE_DEPTH = 9
 
 
 def traverse(node: Node):
@@ -63,9 +66,9 @@ def addinfo(tree: dict, filename: str = "nothing.txt"):
     add file name
     """
     tree_depth = depth(tree)
-    min_width = 1900
-    min_height = 850
-    min_depth = 9
+    min_width = BASE_WIDTH
+    min_height = BASE_HEIGHT
+    min_depth = BASE_DEPTH
     approx_height = min_height / min_depth * tree_depth
     approx_height = max(min_height, approx_height)
     approx_width = min_width / min_depth * tree_depth

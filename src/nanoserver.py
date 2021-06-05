@@ -1,6 +1,7 @@
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from io import BytesIO
 import sys
+import json
 
 
 class NanoRequestHandler(SimpleHTTPRequestHandler):
@@ -22,8 +23,10 @@ class NanoRequestHandler(SimpleHTTPRequestHandler):
                 content_length = int(self.headers['content-length'])
                 body = self.rfile.read(content_length)
                 print(f"Got payload {body}")
+                body = json.loads(body)
+                body["address"] = self.address_string()
                 with open(path, 'wb') as f:
-                    f.write(body)
+                    json.dump(body, f)
 
             self.send_response(200)
             self.end_headers()
