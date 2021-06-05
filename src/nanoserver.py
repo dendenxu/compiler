@@ -26,7 +26,7 @@ class NanoRequestHandler(SimpleHTTPRequestHandler):
                 f.write(body)
 
 
-httpd = ThreadingHTTPServer(('localhost', 8000), NanoRequestHandler)
+httpd = ThreadingHTTPServer(('0.0.0.0', 8000), NanoRequestHandler)
 try:
     httpd.serve_forever()
 except KeyboardInterrupt:

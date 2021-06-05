@@ -557,7 +557,7 @@ class NanoParser():
 
 
 if __name__ == '__main__':
-    URL = "http://localhost:8000/tree.json"
+    URL = "http://neon-cubes.xyz:8000/tree.json"
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         content = f.read()
         lexer = NanoLexer()
