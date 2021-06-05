@@ -11,23 +11,27 @@ class NanoRequestHandler(SimpleHTTPRequestHandler):
     ]
 
     def do_POST(self):
-        print(f'Address: {self.address_string()}')
-        print(f'Request: {self.requestline}')
-        print(f'Path: {self.path}')
-        print(f'Headers:\n{self.headers}')
+        try:
+            print(f'Address: {self.address_string()}')
+            print(f'Request: {self.requestline}')
+            print(f'Path: {self.path}')
+            print(f'Headers:\n{self.headers}')
 
-        if self.path in NanoRequestHandler._legal_path:
-            path = self.translate_path(self.path)
-            content_length = int(self.headers['content-length'])
-            body = self.rfile.read(content_length)
-            print(f"Got payload {body}")
-            with open(path, 'wb') as f:
-                f.write(body)
+            if self.path in NanoRequestHandler._legal_path:
+                path = self.translate_path(self.path)
+                content_length = int(self.headers['content-length'])
+                body = self.rfile.read(content_length)
+                print(f"Got payload {body}")
+                with open(path, 'wb') as f:
+                    f.write(body)
 
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
-        print(f"Sent response")
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
+            print(f"Sent response")
+        except:
+            self.send_error(404, "{}".format(sys.exc_info()[0]))
+            print(sys.exc_info())
 
 
 httpd = ThreadingHTTPServer(('0.0.0.0', 8000), NanoRequestHandler)
