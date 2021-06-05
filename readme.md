@@ -27,7 +27,7 @@ And **do remember to delete these lines after this repo goes public**
   11. `&&` Logical And
   12. `||` Logical Or
   13. `?:` Conditional Expression
-  14. `=` `<<=` `>>=` `&=` `~=` `^=` `+=` `-=` `/=` `*=` `%=` Assignment Operation
+  14. `=` `<<=` `>>=` `&=` `|=` `^=` `+=` `-=` `/=` `*=` `%=` Assignment Operation
 - Comment:
   1. `//` (one-line comment)
   2. `/* */` (multi-line comment)
