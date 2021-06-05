@@ -52,11 +52,14 @@ int isSorted(int n)
 
 int main()
 {
-    initArr(n);
-    int sorted_before = isSorted(n);
+    // initArr(n);
+    for (int i=0;i<n;i=i+1) {
+        a[i] = n-i-1;
+    }
+    // int sorted_before = isSorted(n);
     qsort(0, n - 1);
-    int sorted_after = isSorted(n);
-    if (!(sorted_before == 0 && sorted_after == 1))
-        return 1;
-    return 0;
+    // int sorted_after = isSorted(n);
+    // if (!(sorted_before == 0 && sorted_after == 1))
+        // return 1;
+    return a[3];
 }
