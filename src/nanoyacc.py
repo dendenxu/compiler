@@ -150,7 +150,7 @@ class NanoParser():
         param = ParamNode(p[1], p[2])
         if p[3] is None:
             p[3] = []
-        p[3].append(param)
+        p[3] = [param] + p[3]
         p[0] = p[3]
 
     def p_comma_params(self, p):
@@ -428,7 +428,7 @@ class NanoParser():
         '''
         if p[2] is None:
             p[2] = []
-        p[2].append(p[1])
+        p[2] = [p[1]] + p[2]
         p[0] = p[2]
 
     def p_comma_exp_list(self, p):

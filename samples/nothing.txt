@@ -3,7 +3,7 @@ float f = 0.03;
 double pi2 = pi * 2;
 char a, b, c='1', d, e;
 
-char * array;
+char ********************* array;
 
 char thisisaarry[19][20][21] = longtimeago;
 
