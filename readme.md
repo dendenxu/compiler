@@ -131,9 +131,38 @@ It mainly recognize variables defined as `t_TOKEN_NAME`, the content of the vari
 
 To help the user pinpoint what's gone wrong the tokenization process, we "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
 
+
+
 ### Specific Optimizations
 
+We used `t_ignore` pattern to discard unwanted information provided by the program source code for readability of us **humans** (but not for the **parser**)
 
+- White Space
+- Comments
+    - Single-lined comment
+    - Multi-lined comment
+
+```python
+# empty space
+t_ignore = ' \t'
+
+# Comment
+t_ignore_SING_COMMENT = r'//.*?\n'
+t_ignore_MULT_COMMENT = r'/\*(\*(?!\/)|[^*])*\*\/'
+
+# Define a rule so we can track line numbers
+def t_NEWLINE(self, t):
+    r'\n+'
+    t.lexer.lineno += t.value.count("\n")
+```
+
+
+
+We carefully optimized the order in which each regular expression is provided to the lexer, to make sure some overlapping definitions don't get mixed up, for example:
+
+- `//` for line comment comes before `/` Operator
+- `/*` for multi-line comment comes before `/` Operator
+- `ID` for identifier comes after other constants that may include characters and numbers (**char literal, string literal, int/float constant values**)
 
 
 
@@ -153,9 +182,9 @@ To help the user pinpoint what's gone wrong the tokenization process, we "rememb
 
 ### Tree Traversal (Optimization)
 
+### Side Note: Python Hosted Server
+
 ### Tree Visualization and Interaction
-
-
 
 
 
