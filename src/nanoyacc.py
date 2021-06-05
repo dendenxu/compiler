@@ -560,7 +560,7 @@ if __name__ == '__main__':
     if len(sys.argv) >= 3:
         url = sys.argv[2]
     else:
-        url = "http://neon-cubes.xyz:8000/tree.json"
+        url = "http://neon-cubes.xyz:8000/src/tree.json"
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         content = f.read()
         lexer = NanoLexer()
@@ -585,6 +585,5 @@ if __name__ == '__main__':
         print(colored(f'Width: {approx_width}', "blue"))
 
         tree["size"] = [approx_width, approx_height]
-        payload = json.dumps(tree)
-        r = requests.post(url=url, data=payload)
+        r = requests.post(url=url, data=json.dumps(tree))
         print(colored(f"Posting result: {r}", "blue"))
