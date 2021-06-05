@@ -215,6 +215,7 @@ class NanoVisitor(Visitor):
                 node.type = ir.ArrayType(node.type, a)
         if self.in_global:
             node.item = ir.GlobalVariable(self.module, node.type, nam(node.id))
+            node.item.linkage = 'internal'
             if node.init is not None:
                 node.init.accept(self)
                 node.item.initializer = val(node.init)
