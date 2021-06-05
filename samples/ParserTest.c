@@ -1,4 +1,4 @@
-// Multi-line Comment
+/* Multi-line Comment */
 /**
  * @file ParserTest.c
  * This file gives test cases to all language elements
@@ -7,22 +7,34 @@
  */
 
 
-// One-line Comment
-// Program
+/* One-line Comment */
+/* Program */
 
 
-// Global Declarations
+/* Global Declarations */
 int a = 0;
+long l = 9999999;
+double pi = 3.141592;
 float f = 0.03;
-double pi2 = pi * 2;
 // declaration list with initialization
-char a, b, c = '1', d, e;
-char * array;
-char thisisaarry[19][20][21] = thisisanotherarray;
-// function 
+char ch, d = '1', e;
+// pointer
+char * str;
+// array
+char thisisaarry[19][20][21];
 
 
 // Function 1
-int main(int argc, char **argv) {
+int main() {
+    double pi2 = pi * 2;
+
     
+    return 0;
+}
+
+
+// Function 2
+void PrintHello(void) {
+    printf("Hello, Nano C!");
+    return;
 }

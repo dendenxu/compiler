@@ -93,6 +93,7 @@ class TypeNode(Node):
         'long',
         'float',
         'double',
+        'void',
     ]
 
     def __init__(self, typestr: str):
