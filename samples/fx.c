@@ -1,6 +1,10 @@
-int g = 100;
+int fib(int n) {
+    if (n < 0) return 0;
+    else if (n == 1) return 1;
+    else if (n == 2) return 1;
+    else return fib(n-1) + fib(n-2);
+}
+
 int main() {
-    int a[4][4][4];
-    a[0][0][0] = 1;
-    return a[0][0][0];
+    return fib(5);
 }
