@@ -9,7 +9,10 @@ import sys
 from termcolor import colored
 from llvmlite import ir, binding
 import copy
-
+from nanotraverse import *
+import json
+import requests
+import os
 
 
 class Visitor:
@@ -87,7 +90,7 @@ class NanoVisitor(Visitor):
             return self.defined_funcs[name][0]
         else:
             return None
-    
+
     def _get_func_param_refs(self, name):
         if name in self.defined_funcs.keys():
             return self.defined_funcs[name][1]
@@ -104,7 +107,7 @@ class NanoVisitor(Visitor):
     def visitFuncNode(self, node: FuncNode):
         self.in_global = False
         self._push_scope()
-    
+
         func_param_type_list = []
         for param in node.params:
             param.accept(self)
@@ -118,18 +121,18 @@ class NanoVisitor(Visitor):
 
         self._push_block()
         self._push_builder()
-        
+
         func_args = list(ref(node).args)
         for i in range(len(func_args)):
             arg_ref = self._get_builder().alloca(func_param_type_list[i])
             self._add_identifier(nam(node.params[i]), arg_ref)
             self._get_builder().store(func_args[i], arg_ref)
-        
+
         node.block.accept(self)
-        
+
         if self._get_builder().basic_block.terminator is None:
             self._get_builder().ret(ir.Constant(int32, 0))
-        
+
         self._pop_builder()
         self._pop_block()
         self._pop_scope()
@@ -151,14 +154,14 @@ class NanoVisitor(Visitor):
         node.suber.accept(self)
         node.ref = self._get_builder().gep(ref(node.subee),
                                            [ir.Constant(int32, 0),
-                                            val(node.suber),])
+                                            val(node.suber), ])
         node.value = self._get_builder().load(node.ref)
 
     def visitTypeNode(self, node: TypeNode):
         if node._is_ptr:
             node.typestr.accept(self)
             node.type = make_ptr(typ(node.typestr))
-        elif node.typestr == 'int': 
+        elif node.typestr == 'int':
             node.type = ir.IntType(32)
 
     def visitBlockNode(self, node: BlockNode):
@@ -228,7 +231,7 @@ class NanoVisitor(Visitor):
 
     def visitContinueNode(self, node: ContinueNode):
         self._get_builder().branch(self.loop_entr_stack[-1])
-    
+
     def visitBreakNode(self, node: BreakNode):
         print(self.loop_exit_stack)
         self._get_builder().branch(self.loop_exit_stack[-1])
@@ -316,7 +319,7 @@ class NanoVisitor(Visitor):
         # print('cond', node.cond)
         # print('body', node.body)
         # print('post', node.post)
-        
+
         # do-while
         if node.cond == 'while':
             """ do-while
@@ -334,7 +337,7 @@ class NanoVisitor(Visitor):
             node.cond = node.body
             node.body = node.pre
             node.pre = node.post
-            
+
             # scope_new_0
             self._push_scope()
             body_block = self._get_builder().append_basic_block()
@@ -344,12 +347,12 @@ class NanoVisitor(Visitor):
             self.loop_exit_stack.append(tail_block)
             self._get_builder().branch(body_block)
             self._get_builder().position_at_start(body_block)
-            
+
             # scope_new_1 auto created when visitBlockNode
             node.body.accept(self)
             self._get_builder().branch(cond_block)
             self._get_builder().position_at_start(cond_block)
-            
+
             node.cond.accept(self)
             cond = self._get_builder().icmp_signed('!=',
                                                    val(node.cond),
@@ -358,10 +361,9 @@ class NanoVisitor(Visitor):
             # exit
             self._get_builder().position_at_start(tail_block)
             self._pop_scope()
-            
+
             self.loop_entr_stack.pop()
             self.loop_exit_stack.pop()
-            
 
         # while & for
         else:
@@ -388,15 +390,15 @@ class NanoVisitor(Visitor):
             tail_block = self._get_builder().append_basic_block()
             self.loop_entr_stack.append(post_block)
             self.loop_exit_stack.append(tail_block)
-            
+
             print(tail_block)
-            
+
             # scope_new_0
             self._push_scope()
             if type(node.pre) != EmptyStmtNode:
                 node.pre.accept(self)
             self._get_builder().branch(cond_block)
-            
+
             # entrance
             self._get_builder().position_at_start(cond_block)
             if type(node.cond) != EmptyExpNode:
@@ -412,7 +414,7 @@ class NanoVisitor(Visitor):
             self._get_builder().position_at_start(body_block)
             node.body.accept(self)
             self._get_builder().branch(post_block)
-            
+
             # return to scope 0
             self._get_builder().position_at_start(post_block)
             if type(node.post) != EmptyStmtNode:
@@ -422,7 +424,7 @@ class NanoVisitor(Visitor):
 
             # after
             self._get_builder().position_at_start(tail_block)
-            
+
             self.loop_entr_stack.pop()
             self.loop_exit_stack.pop()
 
@@ -509,18 +511,46 @@ class NanoVisitor(Visitor):
 
 
 if __name__ == '__main__':
-    with open('../samples/fx.c', 'r', encoding='utf-8') as f:
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", default="samples/fx.c", type=str)
+    parser.add_argument("--output", default="results/irgen.ll", type=str)
+    parser.add_argument("--target", default="x86_64-pc-linux", type=str)
+    parser.add_argument("--url", default="http://neon-cubes.xyz:8000/src/tree.json", type=str)
+    parser.add_argument("--generate", action="store_true", default=True, dest='generate', help="Whether to generate the target machine code")
+    parser.add_argument("--ext", default="", type=str, help="Executable file extension")
+    args = parser.parse_args()
+    with open(args.input, 'r', encoding='utf-8') as f:
         content = f.read()
         lexer = NanoLexer()
         lexer.build()
         parser = NanoParser()
         parser.build()
         root = parser.parse(content, lexer=lexer)
+        print(colored(f"Abstract Syntax Tree:", "yellow", attrs=["bold"]))
         print(root)
+
+        tree = traverse(root)
+        addsize(tree)
+        payload = json.dumps(tree)
+        r = requests.post(url=args.url, data=payload)
+        print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))
+
         visitor = NanoVisitor()
         visitor.visitProgNode(root)
         ir = str(root.module).replace('unknown-unknown-unknown',
-                                         'x86_64-pc-linux')
+                                      args.target)
+        print(colored(f"LLVM IR:", "yellow", attrs=["bold"]))
         print(f"{ir}")
-    with open('../results/irgen.ll', 'w') as I:
+    with open(args.output, 'w') as I:
         I.write(ir)
+
+    if args.generate:
+        path, basename = os.path.split(args.output)
+        basenamenoext = os.path.splitext(basename)[0]
+        ass = os.path.join(path, basenamenoext + '.s')
+        exe = os.path.join(path, basenamenoext + args.ext)
+
+        os.system(' '.join(["clang", args.output, "-S", ass]))
+        os.system(' '.join(["clang", ass, "-o", exe]))
+        print(colored(f"IR/Assembly/Executable stored at: {path}", "yellow", attrs=["bold"]))
