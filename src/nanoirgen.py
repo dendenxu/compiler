@@ -239,6 +239,10 @@ class NanoVisitor(Visitor):
             node.ref = self._get_builder().load(ref(node.node))
         elif node.op == '&':
             node.value = ref(node.node)
+        elif type(node.op) == TypeNode:
+            # type casting
+            node.op.accept(self)
+            node.value = cast(val(node.node), exp_type(node.op))
         else:
             raise NotImplementedError
         node.exp_type = str(val(node).type)

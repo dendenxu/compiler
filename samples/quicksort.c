@@ -1,17 +1,17 @@
 int n = 10;
-int a[10];
+float a[10];
 
 int qsort(int l, int r)
 {
     int i = l;
     int j = r;
-    int p = a[(l + r) / 2];
+    float p = a[(l + r) / 2];
     int flag = 1;
     while (i <= j) {
         while (a[i] < p) i = i + 1;
         while (a[j] > p) j = j - 1;
         if (i > j) break;
-        int u = a[i];
+        float u = a[i];
         a[i] = a[j];
         a[j] = u;
         i = i + 1;
@@ -33,7 +33,7 @@ int initArr(int n)
     int state = 474230941;
     int i = 0;
     while (i < n) {
-        a[i] = rand(&state);
+        a[i] = (float)rand(&state);
         i = i + 1;
     }
 }
@@ -53,12 +53,12 @@ int main()
 {
     // initArr(n);
     for (int i=0;i<n;i=i+1) {
-        a[i] = n-i;
+        a[i] = (float)(n-i);
     }
     // int sorted_before = isSorted(n);
     qsort(0, n - 1);
     // int sorted_after = isSorted(n);
     // if (!(sorted_before == 0 && sorted_after == 1))
     // return 1;
-    return a[3];
+    return (int)a[3];
 }

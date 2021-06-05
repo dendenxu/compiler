@@ -10,7 +10,6 @@ flpt = ir.FloatType()
 long = ir.IntType(64)
 
 tp_visitor = None
-            
 
 def typ(node: Node):
     # print(tp_visitor)
@@ -237,3 +236,26 @@ def binCompat(left: Node, right: Node, op: str):
             right.value = tp_visitor._get_builder().fcmp_ordered('!=', val(right), ir.Constant(flpt, 0))
     
     return ret_type
+
+allowed_casting = [
+    ('i1'    , 'i32'  ),
+    ('i32'   , 'float'),
+    ('i1'    , 'float'),
+    ('float' , 'i1'   ),
+    ('float' , 'i32'  )   
+]
+
+def cast(value, tgt_type: str):
+    src_type = str(value.type)
+    if not ((src_type, tgt_type) in allowed_casting):
+        raise RuntimeError("unable to cast from %s to %s"%(src_type, tgt_type))
+    if (src_type, tgt_type) == ('i1', 'i32'):
+        return tp_visitor._get_builder().zext(value, int32)
+    elif (src_type, tgt_type) == ('i32', 'float'):
+        return tp_visitor._get_builder().sitofp(value, flpt)
+    elif (src_type, tgt_type) == ('i1', 'float'):
+        return tp_visitor._get_builder().uitofp(value, flpt)
+    elif (src_type, tgt_type) == ('float', 'i32'):
+        return tp_visitor._get_builder().fptosi(value, int32)
+    elif (src_type, tgt_type) == ('float', 'i1'):
+        return tp_visitor._get_builder().fptoui(value, int1)

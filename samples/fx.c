@@ -6,5 +6,5 @@ int sign(int n) {
 
 int main()
 {
-    return sign(1);
+    return sign((int)1.0);
 }
