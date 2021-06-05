@@ -1,14 +1,9 @@
-int sum_up_to(int a) {
-    int sum =0;
-    for (int i=0;i<a;i=i+1) {
-        if (i == 3) continue;
-        sum = sum+i;
-        if (sum > 10) break;
-    }
-    return sum;
-}
-
 int main() {
-    int a = 10;
-    return sum_up_to(a);
+    int b[10][10];
+    for (int i=0;i<10;i=i+1) {
+        for (int j=0;j<10;j=j+1) {
+            b[i][j] = i*j;
+        }
+    }
+    return b[3][9];
 }

@@ -147,20 +147,13 @@ class NanoVisitor(Visitor):
         node.type.accept(self)
 
     def visitArrSubNode(self, node: ArrSubNode):
-        node.ref = self._get_builder().gep(self._get_identifier('a'),
-                                           [ir.Constant(int32, 1),
-                                            ir.Constant(int32, 1),
-                                            ir.Constant(int32, 0)])
+        node.subee.accept(self)
+        node.suber.accept(self)
+        node.ref = self._get_builder().gep(ref(node.subee),
+                                           [ir.Constant(int32, 0),
+                                            val(node.suber),])
         node.value = self._get_builder().load(node.ref)
-        # node.subee.accept(self)
-        # node.suber.accept(self)
-        # print('subee', node.subee)
-        # print('suber', node.suber)
-        # node.ref = self._get_builder().gep(ref(node.subee),
-        #                                    [val(node.suber),
-        #                                     ir.Constant(int32, 0)])
-        # print(node.ref)
-        
+
     def visitTypeNode(self, node: TypeNode):
         if node._is_ptr:
             node.typestr.accept(self)
