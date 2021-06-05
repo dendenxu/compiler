@@ -200,6 +200,7 @@ class NanoVisitor(Visitor):
             node.value = self._get_builder().not_(val(node.node))
         elif node.op == '*':
             node.ref = self._get_builder().load(ref(node.node))
+            node.value = self._get_builder().load(node.ref)
         elif node.op == '&':
             node.value = ref(node.node)
 
