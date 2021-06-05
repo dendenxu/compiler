@@ -26,7 +26,8 @@ And **do remember to delete these lines after this repo goes public**
   10. `|` Bitwise Or
   11. `&&` Logical And
   12. `||` Logical Or
-  13. `?:` Conditional Expression 14. `=` `<<=` `>>=` `&=` `~=` `^=` `+=` `-=` `/=` `*=` `%=` Assignment Operation
+  13. `?:` Conditional Expression
+  14. `=` `<<=` `>>=` `&=` `~=` `^=` `+=` `-=` `/=` `*=` `%=` Assignment Operation
 - Comment:
   1. `//` (one-line comment)
   2. `/* */` (multi-line comment)
@@ -188,6 +189,108 @@ We carefully optimized the **order** in which each regular expression is provide
 ## Syntax Analysis
 
 ### Context Free Grammar for Nano C language
+
+Firstly, let's take a comprehensive look at our grammar:
+
+1. We *don't* implement preprocessing like **macros** and **includes**
+
+2. We *don't* implement multi-file compilation, as a direct cause of the first rule
+
+3. Thus we want a program to define the whole program (a single C source file)
+
+4. This program should contain some **global variable definitions**
+
+5. This program should also contain some **function definitions**
+
+6. We *don't* support **external linkage** variable definition due to rule number one
+
+7. We *don't* support function/global variable **declaration** since it won't be of much use in this setup.
+
+8. Every valid statement should be 
+
+    1. A **block of statements**
+
+        Wrapped within two paired curly brackets, namely `{`, `}`
+
+        This block can **recursively contain other statements**
+
+        You can happily and inconsequently do `{{{{{;}}}}}`
+
+    2. Some **control flows**
+
+        1. `for (int i = 0; i < 100 ; i++ ) {;}` for loops
+
+        2. `while (1) {;}` while loops
+
+        3. `do {;} while(1);` do-while loops
+
+        4. `if(1) {;} else if(2) {;} else {;}` if-else statements
+
+        5. Note that we forbid empty block `{}`
+
+        6. But **one single (non-blocked) statement will be valid**, for example: `if(1) print(1); else print(2);`
+
+            Actually, the nested `if` `else if` `else` block is implemented by viewing the second `if-else` block as a single statement
+
+            `if (1) {;} else { if (2) {;} else {;} }`
+
+            You can do crazy things as long as you remember you're writing out one single statement
+
+            `while (1) while(0)while(controller) do p = "inside while loop"; while ( condition == "OK" );`
+
+        7. Every control flow has its own block whether it's wrapped within the brackets, or just a **valid single statement** mentioned above
+
+            Since **blocks** are used for scope resolution
+
+    3. Or **ends with `;`**
+
+        1. `return;` statement (you can return nothing)
+        2. **declaration** statement to be talked about below
+        3. `;` is also a valid statement
+
+9. The variable definition takes traditional C form, with corresponding scope resolution
+
+    1. `int a;` will define the variable `a` as uninitialized memory space
+    2. `int a = 1;` will define the variable `a`, and initialize it to `1`
+    3. `int a = 1, b = 2` will define both `a` and `b` and individually initialize them as specified by the user
+
+10. Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
+
+11. An expression falls in the following group:
+
+    1. **Binary Operations**: left hand side and right hand size operated by the operator
+
+    2. **Unary Operations**: operator acted upon some other expression
+
+    3. **Ternary Operation(s)**: currently only supporting `?:` as ternary operators
+
+    4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as *left values*
+
+        Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Lexical Analysis) sections
+
+        Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
+
+    5. **Function Calls** in the form of `ID(expression list)`
+
+        You can also specify **no parameter**
+
+    6. **Array Subscription** in the form of `ID[expression]`
+
+12. Expressions can be grouped by `(` and `)` to indicate their correspondence
+
+    As long as the grammar is unambiguous in this section, the programmer should be able to define arbitrarily complex expressions
+
+13. Expressions should also be downgraded to some specific stuff:
+
+    1. `ID` for identifiers, this can be variables or functions names
+    2. **integer constant** for some literal integers
+    3. **float constant** for some floating points
+    4. **character constant** wrapped with `''`
+    5. **string constant** wrapped with `""`
+
+
+
+
 
 ### Specific Optimizations
 
