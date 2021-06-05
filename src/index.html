@@ -26,316 +26,28 @@
             stroke: #ccc;
             stroke-width: 2px;
         }
+
+        h1 {
+            font-family: 'Fira Code';
+            font-weight: 400;
+            margin-top: 60px;
+        }
     </style>
 
 </head>
 
 <body>
 
+    <center><h1> Abstract Syntax Tree </h1></center>
+
     <!-- load the d3.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
 
     <script>
-        var treeData = [{
-            'children': [{
-                    'children': [{
-                            'children': [{
-                                'name': 'int'
-                            }],
-                            'name': 'TypeNode'
-                        },
-                        {
-                            'children': [{
-                                'name': 'g'
-                            }],
-                            'name': 'IDNode'
-                        },
-                        {
-                            'children': [{
-                                'name': '100'
-                            }],
-                            'name': 'IntNode'
-                        }
-                    ],
-                    'name': 'DecNode'
-                },
-                {
-                    'children': [{
-                            'children': [{
-                                'name': 'int'
-                            }],
-                            'name': 'TypeNode'
-                        },
-                        {
-                            'children': [{
-                                'name': 'sum_up_to'
-                            }],
-                            'name': 'IDNode'
-                        },
-                        {
-                            'children': [{
-                                    'children': [{
-                                        'name': 'int'
-                                    }],
-                                    'name': 'TypeNode'
-                                },
-                                {
-                                    'children': [{
-                                        'name': 'a'
-                                    }],
-                                    'name': 'IDNode'
-                                }
-                            ],
-                            'name': 'ParamNode'
-                        },
-                        {
-                            'children': [{
-                                    'children': [{
-                                            'children': [{
-                                                'name': 'int'
-                                            }],
-                                            'name': 'TypeNode'
-                                        },
-                                        {
-                                            'children': [{
-                                                'name': 'sum'
-                                            }],
-                                            'name': 'IDNode'
-                                        },
-                                        {
-                                            'children': [{
-                                                'name': '0'
-                                            }],
-                                            'name': 'IntNode'
-                                        }
-                                    ],
-                                    'name': 'DecNode'
-                                },
-                                {
-                                    'children': [{
-                                            'children': [{
-                                                    'children': [{
-                                                        'name': 'int'
-                                                    }],
-                                                    'name': 'TypeNode'
-                                                },
-                                                {
-                                                    'children': [{
-                                                        'name': 'i'
-                                                    }],
-                                                    'name': 'IDNode'
-                                                },
-                                                {
-                                                    'children': [{
-                                                        'name': '0'
-                                                    }],
-                                                    'name': 'IntNode'
-                                                }
-                                            ],
-                                            'name': 'DecNode'
-                                        },
-                                        {
-                                            'children': [{
-                                                    'children': [{
-                                                        'name': 'i'
-                                                    }],
-                                                    'name': 'IDNode'
-                                                },
-                                                {
-                                                    'name': '<'
-                                                },
-                                                {
-                                                    'children': [{
-                                                        'name': 'a'
-                                                    }],
-                                                    'name': 'IDNode'
-                                                }
-                                            ],
-                                            'name': 'BinaryNode'
-                                        },
-                                        {
-                                            'children': [{
-                                                'children': [{
-                                                        'children': [{
-                                                            'name': 'sum'
-                                                        }],
-                                                        'name': 'IDNode'
-                                                    },
-                                                    {
-                                                        'children': [{
-                                                                'children': [{
-                                                                    'name': 'sum'
-                                                                }],
-                                                                'name': 'IDNode'
-                                                            },
-                                                            {
-                                                                'name': '+'
-                                                            },
-                                                            {
-                                                                'children': [{
-                                                                    'name': 'i'
-                                                                }],
-                                                                'name': 'IDNode'
-                                                            }
-                                                        ],
-                                                        'name': 'BinaryNode'
-                                                    }
-                                                ],
-                                                'name': 'AssNode'
-                                            }],
-                                            'name': 'BlockNode'
-                                        },
-                                        {
-                                            'children': [{
-                                                    'children': [{
-                                                        'name': 'i'
-                                                    }],
-                                                    'name': 'IDNode'
-                                                },
-                                                {
-                                                    'children': [{
-                                                            'children': [{
-                                                                'name': 'i'
-                                                            }],
-                                                            'name': 'IDNode'
-                                                        },
-                                                        {
-                                                            'name': '+'
-                                                        },
-                                                        {
-                                                            'children': [{
-                                                                'name': '1'
-                                                            }],
-                                                            'name': 'IntNode'
-                                                        }
-                                                    ],
-                                                    'name': 'BinaryNode'
-                                                }
-                                            ],
-                                            'name': 'AssNode'
-                                        }
-                                    ],
-                                    'name': 'LoopNode'
-                                },
-                                {
-                                    'children': [{
-                                        'children': [{
-                                            'name': 'sum'
-                                        }],
-                                        'name': 'IDNode'
-                                    }],
-                                    'name': 'RetNode'
-                                }
-                            ],
-                            'name': 'BlockNode'
-                        }
-                    ],
-                    'name': 'FuncNode'
-                },
-                {
-                    'children': [{
-                            'children': [{
-                                'name': 'int'
-                            }],
-                            'name': 'TypeNode'
-                        },
-                        {
-                            'children': [{
-                                'name': 'two'
-                            }],
-                            'name': 'IDNode'
-                        },
-                        {
-                            'children': [{
-                                'children': [{
-                                    'children': [{
-                                        'name': '2'
-                                    }],
-                                    'name': 'IntNode'
-                                }],
-                                'name': 'RetNode'
-                            }],
-                            'name': 'BlockNode'
-                        }
-                    ],
-                    'name': 'FuncNode'
-                },
-                {
-                    'children': [{
-                            'children': [{
-                                'name': 'int'
-                            }],
-                            'name': 'TypeNode'
-                        },
-                        {
-                            'children': [{
-                                'name': 'main'
-                            }],
-                            'name': 'IDNode'
-                        },
-                        {
-                            'children': [{
-                                    'children': [{
-                                            'children': [{
-                                                'name': 'int'
-                                            }],
-                                            'name': 'TypeNode'
-                                        },
-                                        {
-                                            'children': [{
-                                                'name': 'a'
-                                            }],
-                                            'name': 'IDNode'
-                                        },
-                                        {
-                                            'children': [{
-                                                'name': '2'
-                                            }],
-                                            'name': 'IntNode'
-                                        }
-                                    ],
-                                    'name': 'DecNode'
-                                },
-                                {
-                                    'children': [{
-                                            'children': [{
-                                                'name': 'int'
-                                            }],
-                                            'name': 'TypeNode'
-                                        },
-                                        {
-                                            'children': [{
-                                                'name': 'b'
-                                            }],
-                                            'name': 'IDNode'
-                                        },
-                                        {
-                                            'children': [{
-                                                'name': '10'
-                                            }],
-                                            'name': 'IntNode'
-                                        }
-                                    ],
-                                    'name': 'DecNode'
-                                },
-                                {
-                                    'children': [{
-                                        'children': [{
-                                            'name': 'a'
-                                        }],
-                                        'name': 'IDNode'
-                                    }],
-                                    'name': 'RetNode'
-                                }
-                            ],
-                            'name': 'BlockNode'
-                        }
-                    ],
-                    'name': 'FuncNode'
-                }
-            ],
-            'name': 'ProgNode'
-        }];
+        var treeData = [
+        {'name': 'Prog', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{g}'}, {'name': 'Int{100}'}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{sum_up_to}'}, {'name': 'Param', '_children': [{'name': 'Type{int}'}, {'name': 'ID{a}'}]}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{int}}}}}}}}}}}}}}}}}}}}}}}'}, {'name': 'ID{sum}'}, {'name': 'Int{0}'}]}, {'name': 'Loop', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{i}'}, {'name': 'Int{0}'}]}, {'name': 'Binary', '_children': [{'name': 'ID{i}'}, {'name': '<'}, {'name': 'ID{a}'}]}, {'name': 'Block{Ass}', '_children': [{'name': 'ID{sum}'}, {'name': 'Binary', '_children': [{'name': 'ID{sum}'}, {'name': '+'}, {'name': 'ID{i}'}]}]}, {'name': 'Ass', '_children': [{'name': 'ID{i}'}, {'name': 'Binary', '_children': [{'name': 'ID{i}'}, {'name': '+'}, {'name': 'Int{1}'}]}]}]}, {'name': 'Ret{ID{sum}}'}]}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{two}'}, {'name': 'Block{Ret{Int{2}}}'}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{main}'}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{a}'}, {'name': 'Int{2}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{b}'}, {'name': 'Int{10}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{c}'}, {'name': '4'}, {'name': 'None'}]}, {'name': 'Ret{ID{a}}'}]}]}]}
+
+        ];
 
 
         // ************** Generate the tree diagram	 *****************
@@ -345,8 +57,8 @@
                 bottom: 20,
                 left: 120
             },
-            width = 1920 - margin.right - margin.left,
-            height = 1080 - margin.top - margin.bottom;
+            width = 1900 - margin.right - margin.left,
+            height = 900 - margin.top - margin.bottom;
 
         var i = 0,
             duration = 750,

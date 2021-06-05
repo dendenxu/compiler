@@ -565,4 +565,4 @@ if __name__ == '__main__':
         print(colored("Tree: ", 'yellow', attrs=['bold']) + str(root))
         tree = traverse(root)
         print(colored("Structrued Tree: ", 'blue', attrs=['bold']))
-        pprint(tree)
+        print(tree)
