@@ -140,7 +140,7 @@ class NanoVisitor(Visitor):
 
         if self._get_builder().basic_block.terminator is None:
             ret_type = self._get_func(self.cur_func_name).ftype.return_type
-            if type(ret_type) != void:
+            if type(ret_type) == void:
                 self._get_builder().ret_void()
             else:
                 self._get_builder().ret(ir.Constant(ret_type, 0))
