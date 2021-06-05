@@ -133,6 +133,7 @@ class NanoLexer():
     fractional_constant = r"""([0-9]*\.[0-9]+)|([0-9]+\.)"""
     floating_constant = '(((('+fractional_constant+')'+exponent_part+'?)|([0-9]+'+exponent_part+'))[FfLl]?)'
 
+    # empty space
     t_ignore = ' \t'
 
     # Comment
