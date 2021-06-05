@@ -49,6 +49,10 @@ int isSorted(int n)
     return 1;
 }
 
+void nothing(void) {
+    return;
+}
+
 int main()
 {
     // initArr(n);

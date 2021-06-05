@@ -119,6 +119,9 @@ class NanoVisitor(Visitor):
         func_param_type_list = []
         for param in node.params:
             param.accept(self)
+            param_typ = typ(param)
+            if param_typ == void:
+                continue
             func_param_type_list.append(typ(param))
 
         node.type.accept(self)
@@ -202,7 +205,10 @@ class NanoVisitor(Visitor):
 
     def visitRetNode(self, node: RetNode):
         node.exp.accept(self)
-        self._get_builder().ret(val(node.exp))
+        try:
+            self._get_builder().ret(val(node.exp))
+        except Exception as e:
+            self._get_builder().ret_void()
 
     def visitIDNode(self, node: IDNode):
         item = self._get_identifier(node.name)
