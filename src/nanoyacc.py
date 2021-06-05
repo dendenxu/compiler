@@ -66,9 +66,9 @@ Productions used in the parser:
                             |
         expression          : assignment
         assignment          : conditional
+                            | unary EQUALS expression
         conditional         : logical_or
                             | logical_or CONDOP expression COLON conditional
-                            | unary EQUALS expression
         logical_or          : logical_and
                             | logical_or LOR logical_and
         logical_and         : bitwise_or
@@ -536,7 +536,7 @@ class NanoParser():
         '''
         statement           : declaration
         statement           : expression SEMI
-        empty_or_exp             : expression
+        empty_or_exp        : expression
         ctrl_block          : curl_block
         expression          : assignment
         assignment          : conditional
