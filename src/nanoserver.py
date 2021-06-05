@@ -7,7 +7,7 @@ class NanoRequestHandler(SimpleHTTPRequestHandler):
 
     _legal_path = [
         "/tree.json",
-        "src/tree.json",
+        "/src/tree.json",
     ]
 
     def do_POST(self):
@@ -15,15 +15,18 @@ class NanoRequestHandler(SimpleHTTPRequestHandler):
         print(f'Request: {self.requestline}')
         print(f'Path: {self.path}')
         print(f'Headers:\n{self.headers}')
-        self.send_response(200)
-        self.end_headers()
 
         if self.path in NanoRequestHandler._legal_path:
             path = self.translate_path(self.path)
-            content_length = int(self.headers.get('Content-Length'))
+            content_length = int(self.headers['content-length'])
             body = self.rfile.read(content_length)
+            print(f"Got payload {body}")
             with open(path, 'wb') as f:
                 f.write(body)
+
+        self.send_response(200)
+        self.flush_headers()
+        print(f"Sent response")
 
 
 httpd = ThreadingHTTPServer(('0.0.0.0', 8000), NanoRequestHandler)

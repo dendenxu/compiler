@@ -557,7 +557,10 @@ class NanoParser():
 
 
 if __name__ == '__main__':
-    URL = "http://neon-cubes.xyz:8000/tree.json"
+    if len(sys.argv) >= 3:
+        url = sys.argv[2]
+    else:
+        url = "http://neon-cubes.xyz:8000/tree.json"
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         content = f.read()
         lexer = NanoLexer()
@@ -583,5 +586,5 @@ if __name__ == '__main__':
 
         tree["size"] = [approx_width, approx_height]
         payload = json.dumps(tree)
-        r = requests.post(url=URL, data=payload)
+        r = requests.post(url=url, data=payload)
         print(colored(f"Posting result: {r}", "blue"))
