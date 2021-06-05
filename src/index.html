@@ -218,7 +218,19 @@
             const eps = 1e-6;
             const width = 180;
             const radius = 10;
+            const big_radius = 12;
             const opacity = 1;
+            const larger_node_desc = ["Func", "Block", "Prog"]
+            const judge = (data) => {
+                // console.log(data)
+                // console.log(larger_node_desc)
+                if (data.name) {
+                    return larger_node_desc.some((e) =>
+                        data.name.includes(e))
+                } else {
+                    return false;
+                }
+            }
             // Compute the new tree layout.
             var nodes = tree.nodes(root).reverse(),
                 links = tree.links(nodes);
@@ -246,6 +258,9 @@
                 .attr("r", eps)
                 .style("fill", function (d) {
                     return d._children ? "lightsteelblue" : "#fff";
+                })
+                .style("stroke", function (d) {
+                    return judge(d) ? "#ff99a8" : "steelblue";
                 });
 
             nodeEnter.append("text")
@@ -271,14 +286,24 @@
                 });
 
             nodeUpdate.select("circle")
-                .attr("r", radius)
+                .attr("r", (d) => {
+                    return judge(d) ? big_radius : radius;
+                })
                 .style("fill-opacity", opacity)
                 .style("fill", function (d) {
-                    return d._children ? "lightsteelblue" : "#222";
+                    if (d._children) {
+                        return judge(d) ? "#eebbc4" : "lightsteelblue";
+                    } else {
+
+                        return judge(d) ? "#44000f" : "#222";
+                    }
                 });
 
             nodeUpdate.select("text")
-                .style("fill-opacity", opacity);
+                .style("fill-opacity", opacity)
+                .style("font-weight", (d) => {
+                    return judge(d) ? "600" : "400";
+                })
 
             // Transition exiting nodes to the parent's new position.
             var nodeExit = node.exit().transition()
@@ -302,6 +327,15 @@
 
             // Enter any new links at the parent's previous position.
             link.enter().insert("path", "g")
+                .style("stroke-width", (d) => {
+
+                    // console.log(d)
+                    if (d.source && d.target) {
+                        return (judge(d.source) && judge(d.target)) ? '5px' : '2px';
+                    } else {
+                        return '2px';
+                    }
+                })
                 .attr("class", "link")
                 .attr("d", function (d) {
                     var o = {
