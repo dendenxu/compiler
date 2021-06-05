@@ -7,6 +7,10 @@
     <title>Tree Example</title>
 
     <style>
+        body {
+            background: #222
+        }
+
         .node {
             cursor: pointer;
         }
@@ -18,7 +22,9 @@
         }
 
         .node text {
-            font: 12px sans-serif;
+            fill: #eee;
+            font-family: 'Cascadia Code';
+            font-size: 14px;
         }
 
         .link {
@@ -28,26 +34,64 @@
         }
 
         h1 {
-            font-family: 'Fira Code';
+            font-family: 'Cascadia Code';
             font-weight: 400;
             margin-top: 60px;
+            color: #eee;
+        }
+
+        .btn {
+            margin-left: 60px;
+            font-family: 'Cascadia Code';
+            font-weight: 600;
+            background-color: inherit;
+            padding: 14px 28px;
+            font-size: 16px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        /* Green */
+        .success {
+            color: lightsteelblue;
+            border: 2px solid lightsteelblue;
+            border-radius: 20px;
+        }
+
+        .success:hover {
+            background-color: lightsteelblue;
+            color: #222;
         }
     </style>
+
+    <script>
+
+    </script>
 
 </head>
 
 <body>
 
-    <center><h1> Abstract Syntax Tree </h1></center>
+    <center>
+        <h1> Abstract Syntax Tree </h1>
+    </center>
+    <button class="btn success" id="expand">Expand All</button>
+    <button class="btn success" id="collapse">Collapse All</button>
 
     <!-- load the d3.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
 
     <script>
-        var treeData = [
-        {'name': 'Prog', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{g}'}, {'name': 'Int{100}'}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{sum_up_to}'}, {'name': 'Param', '_children': [{'name': 'Type{int}'}, {'name': 'ID{a}'}]}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{Type{int}}}}}}}}}}}}}}}}}}}}}}}'}, {'name': 'ID{sum}'}, {'name': 'Int{0}'}]}, {'name': 'Loop', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{i}'}, {'name': 'Int{0}'}]}, {'name': 'Binary', '_children': [{'name': 'ID{i}'}, {'name': '<'}, {'name': 'ID{a}'}]}, {'name': 'Block{Ass}', '_children': [{'name': 'ID{sum}'}, {'name': 'Binary', '_children': [{'name': 'ID{sum}'}, {'name': '+'}, {'name': 'ID{i}'}]}]}, {'name': 'Ass', '_children': [{'name': 'ID{i}'}, {'name': 'Binary', '_children': [{'name': 'ID{i}'}, {'name': '+'}, {'name': 'Int{1}'}]}]}]}, {'name': 'Ret{ID{sum}}'}]}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{two}'}, {'name': 'Block{Ret{Int{2}}}'}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{main}'}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{a}'}, {'name': 'Int{2}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{b}'}, {'name': 'Int{10}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{c}'}, {'name': '4'}, {'name': 'None'}]}, {'name': 'Ret{ID{a}}'}]}]}]}
-
-        ];
+        var treeData = {};
+        const dataFile = './tree.json'
+        d3.json(dataFile, (payload) => {
+            console.log(`Loaded data from local file: ${dataFile}`);
+            root = payload;
+            root.x0 = height / 2;
+            root.y0 = 0;
+            update(root);
+            d3.select(self.frameElement).style("height", "500px");
+        })
 
 
         // ************** Generate the tree diagram	 *****************
@@ -58,7 +102,7 @@
                 left: 120
             },
             width = 1900 - margin.right - margin.left,
-            height = 900 - margin.top - margin.bottom;
+            height = 890 - margin.top - margin.bottom;
 
         var i = 0,
             duration = 750,
@@ -78,23 +122,28 @@
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        root = treeData[0];
-        root.x0 = height / 2;
-        root.y0 = 0;
-
-        update(root);
-
-        d3.select(self.frameElement).style("height", "500px");
 
         function update(source) {
 
+            // const dx = 0;
+            const dx = -16;
+            const enddx = 16;
+            // const dy = -16;
+            const dy = '0.35em';
+            const enddy = '0.35em';
+            const anchorinner = 'end';
+            const anchorleaf = 'start';
+            const eps = 1e-6;
+            const width = 180;
+            const radius = 10;
+            const opacity = 1;
             // Compute the new tree layout.
             var nodes = tree.nodes(root).reverse(),
                 links = tree.links(nodes);
 
             // Normalize for fixed-depth.
             nodes.forEach(function (d) {
-                d.y = d.depth * 180;
+                d.y = d.depth * width;
             });
 
             // Update the nodes…
@@ -112,23 +161,25 @@
                 .on("click", click);
 
             nodeEnter.append("circle")
-                .attr("r", 1e-6)
+                .attr("r", eps)
                 .style("fill", function (d) {
                     return d._children ? "lightsteelblue" : "#fff";
                 });
 
             nodeEnter.append("text")
                 .attr("x", function (d) {
-                    return d.children || d._children ? -13 : 13;
+                    return d.children || d._children ? dx : enddx;
                 })
-                .attr("dy", ".35em")
+                .attr("dy", (d) => {
+                    return d.children || d._children ? dy : enddy;
+                })
                 .attr("text-anchor", function (d) {
-                    return d.children || d._children ? "end" : "start";
+                    return d.children || d._children ? anchorinner : anchorleaf;
                 })
                 .text(function (d) {
                     return d.name;
                 })
-                .style("fill-opacity", 1e-6);
+                .style("fill-opacity", eps);
 
             // Transition nodes to their new position.
             var nodeUpdate = node.transition()
@@ -138,13 +189,14 @@
                 });
 
             nodeUpdate.select("circle")
-                .attr("r", 10)
+                .attr("r", radius)
+                .style("fill-opacity", opacity)
                 .style("fill", function (d) {
-                    return d._children ? "lightsteelblue" : "#fff";
+                    return d._children ? "lightsteelblue" : "#222";
                 });
 
             nodeUpdate.select("text")
-                .style("fill-opacity", 1);
+                .style("fill-opacity", opacity);
 
             // Transition exiting nodes to the parent's new position.
             var nodeExit = node.exit().transition()
@@ -155,10 +207,10 @@
                 .remove();
 
             nodeExit.select("circle")
-                .attr("r", 1e-6);
+                .attr("r", eps);
 
             nodeExit.select("text")
-                .style("fill-opacity", 1e-6);
+                .style("fill-opacity", eps);
 
             // Update the links…
             var link = svg.selectAll("path.link")
@@ -207,6 +259,7 @@
             });
         }
 
+
         // Toggle children on click.
         function click(d) {
             if (d.children) {
@@ -218,6 +271,44 @@
             }
             update(d);
         }
+
+        const expandall = (node) => {
+            if (node._children) {
+                node.children = node._children;
+                node._children = null;
+
+            }
+            if (nodes = node.children) {
+                nodes.forEach((node) => {
+                    expandall(node);
+                });
+            }
+        }
+
+        const collapseall = (node) => {
+            if (node.children) {
+                node._children = node.children;
+                node.children = null;
+            }
+            if (nodes = node._children) {
+                nodes.forEach((node) => {
+                    collapseall(node);
+                });
+            }
+        }
+
+        const expand = window.document.getElementById("expand");
+        const collapse = window.document.getElementById("collapse");
+
+        expand.addEventListener('click', () => {
+            expandall(root);
+            update(root);
+        });
+
+        collapse.addEventListener('click', () => {
+            collapseall(root);
+            update(root);
+        });
     </script>
 
 </body>

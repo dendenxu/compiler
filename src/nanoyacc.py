@@ -6,6 +6,8 @@ from nanotraverse import traverse
 from nanolex import NanoLexer
 from nanoast import *
 from pprint import pprint
+import requests
+import json
 
 
 """ 
@@ -555,6 +557,7 @@ class NanoParser():
 
 
 if __name__ == '__main__':
+    URL = "http://localhost:8000/tree.json"
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         content = f.read()
         lexer = NanoLexer()
@@ -566,3 +569,6 @@ if __name__ == '__main__':
         tree = traverse(root)
         print(colored("Structrued Tree: ", 'blue', attrs=['bold']))
         print(tree)
+        payload = json.dumps(tree)
+        r = requests.post(url=URL, data=payload)
+        print(colored(f"Posting result: {r}", "blue"))
