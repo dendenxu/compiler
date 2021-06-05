@@ -42,13 +42,12 @@ int isSorted(int n)
 {
     int i = 0;
     while (i < n - 1) {
-        if ((a[i]) > a[i+1])
+        if ((a[i]) > a[i + 1])
             return 0;
         i = i + 1;
     }
     return 1;
 }
-
 
 int main()
 {
@@ -60,6 +59,6 @@ int main()
     qsort(0, n - 1);
     // int sorted_after = isSorted(n);
     // if (!(sorted_before == 0 && sorted_after == 1))
-        // return 1;
+    // return 1;
     return a[3];
 }

@@ -96,6 +96,7 @@ class TypeNode(Node):
         'long',
         'float',
         'double',
+        'void',
     ]
 
     def __init__(self, typestr: str):
@@ -195,22 +196,20 @@ class CallNode(EmptyExpNode):
 
 
 class UnaryNode(EmptyExpNode):
-    # _legal_ops = {*"+-!~*&"}
 
     def __init__(self, op: str, node: Node):
-        # assert op in UnaryNode._legal_ops
         super().__init__()
         self.op, self.node = op, node
 
     def __str__(self):
         return f"{self.__class__.__name__}( {self.op}{self.node} )"
 
-    def accept(self, visitor):
+    def accept(self, visitor: NanoVisitor):
         return visitor.visitUnaryNode(self)
 
 
 class BinaryNode(EmptyExpNode):
-    _legal_ops = {*"+-*/%<>", '==', '!=', '<=', '>=', '||', '&&'}
+    _legal_ops = {*"+-*/%<>&|^", '==', '!=', '<<', '>>', '<=', '>=', '||', '&&'}
 
     def __init__(self, op: str, left: Node, right: Node):
         assert op in BinaryNode._legal_ops

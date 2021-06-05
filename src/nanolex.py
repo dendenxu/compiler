@@ -133,16 +133,25 @@ class NanoLexer():
     fractional_constant = r"""([0-9]*\.[0-9]+)|([0-9]+\.)"""
     floating_constant = '(((('+fractional_constant+')'+exponent_part+'?)|([0-9]+'+exponent_part+'))[FfLl]?)'
 
+    # empty space
     t_ignore = ' \t'
 
-    # Comment
-    t_ignore_SING_COMMENT = r'//.*?\n'
-    t_ignore_MULT_COMMENT = r'/\*(\*(?!\/)|[^*])*\*\/'
-
     # Define a rule so we can track line numbers
+    def update_lineno(self, t):
+        t.lexer.lineno += t.value.count("\n")
+
+    # Comment
+    def t_SINGLE_LINE_COMMENT(self, t):
+        r'//.*?\n'
+        self.update_lineno(t)
+
+    def t_MULTI_LINE_COMMENT(self, t):
+        r'/\*(\*(?!\/)|[^*])*\*\/'
+        self.update_lineno(t)
+
     def t_NEWLINE(self, t):
         r'\n+'
-        t.lexer.lineno += t.value.count("\n")
+        self.update_lineno(t)
 
     # Operators
     t_PLUS = r'\+'

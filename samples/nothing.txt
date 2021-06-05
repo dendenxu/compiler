@@ -110,4 +110,14 @@ void nothing(int a, int b, int c) {
     for (; i < "Hello" ;i++) {
         print("This print function doesn't even exist hahahah");
     }
+
+    // Shift Operator
+    b = a >> 1;
+    c = 2 >> 3 << 4;
+
+    // Bitwise Operator
+    d = a & b;
+    e = b | e;
+    f = e ^ e;
+    g = d & e | 3 ^ 5 | (g | i);
 }

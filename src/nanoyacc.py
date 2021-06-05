@@ -20,6 +20,7 @@ Productions used in the parser:
                             |
         function            : type id LPAREN param_list RPAREN curl_block
         param_list          : type id comma_paramters
+                            | VOID
                             |
         comma_params        : comma_params COMMA type id
                             |
@@ -34,24 +35,24 @@ Productions used in the parser:
                             | DOUBLE
                             | CHAR
                             | type TIMES
-        statement           : RETURN expression SEMI
-                            | expression SEMI
+        statement           : expression SEMI
                             | declaration
                             | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
                             | IF LPAREN expression RPAREN ctrl_block
                             | FOR LPAREN for_init RPAREN ctrl_block
                             | WHILE LPAREN expression RPAREN ctrl_block
                             | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
+                            | RETURN empty_or_exp SEMI
                             | BREAK SEMI
                             | CONTINUE SEMI
                             | SEMI
-        for_init            : for_exp SEMI for_exp SEMI for_exp
-                            | declaration for_exp SEMI for_exp
+        for_init            : empty_or_exp SEMI empty_or_exp SEMI empty_or_exp
+                            | declaration empty_or_exp SEMI empty_or_exp
         exp_list            : expression comma_exps
                             |
         comma_exps          : comma_exps COMMA expression
                             |
-        for_exp             : expression
+        empty_or_exp        : expression
                             | 
         ctrl_block          : curl_block
                             | statement
@@ -65,9 +66,25 @@ Productions used in the parser:
                             |
         expression          : assignment
         assignment          : conditional
-                            | unary EQUALS expression
         conditional         : logical_or
                             | logical_or CONDOP expression COLON conditional
+                            | unary EQUALS expression
+        logical_or          : logical_and
+                            | logical_or LOR logical_and
+        logical_and         : bitwise_or
+                            | logical_and LAND bitwise_or
+        bitwise_or          : bitwise_xor
+                            | bitwise_or OR bitwise_xor
+        bitwise_xor         : bitwise_and
+                            | bitwise_xor XOR bitwise_and
+        bitwise_and         : equality
+                            | bitwise_and AND equality
+        equality            : relational
+                            | equality (EQ|NE) relational
+        relational          : shiftable
+                            | relational (LT|GT|LE|GE) shiftable
+        shiftable           : additive
+                            | shiftable (LSHIFT|RSHIFT) additive
         additive            : multiplicative
                             | additive (PLUS|MINUS) multiplicative
         multiplicative      : unary
@@ -86,14 +103,6 @@ Productions used in the parser:
                             | STRING_LITERAL
                             | id
                             | LPAREN expression RPAREN
-        equality            : relational
-                            | equality (EQ|NE) relational
-        relational          : additive
-                            | relational (LT|GT|LE|GE) additive
-        logical_or          : logical_and
-                            | logical_or LOR logical_and
-        logical_and         : equality
-                            | logical_and LAND equality
 """
 
 
@@ -231,7 +240,7 @@ class NanoParser():
 
     def p_stmt_ret_exp(self, p):
         '''
-        statement           : RETURN expression SEMI
+        statement           : RETURN empty_or_exp SEMI
         '''
         p[0] = RetNode(p[2])
 
@@ -290,10 +299,10 @@ class NanoParser():
 
     def p_for_init(self, p):
         '''
-        for_init            : for_exp SEMI for_exp SEMI for_exp
-                            | declaration for_exp SEMI for_exp
+        for_init            : empty_or_exp SEMI empty_or_exp SEMI empty_or_exp
+                            | declaration empty_or_exp SEMI empty_or_exp
         '''
-        if len(p) == 6:  # with for_exp
+        if len(p) == 6:  # with empty_or_exp
             p[0] = [
                 p[1],  # initialization
                 p[3],  # break condition
@@ -318,7 +327,7 @@ class NanoParser():
 
     def p_exp_empty(self, p):
         '''
-        for_exp             : 
+        empty_or_exp             : 
         '''
         p[0] = EmptyExpNode()  # empty expression node
 
@@ -372,19 +381,24 @@ class NanoParser():
 
     def p_binary_operators(self, p):
         '''
+        logical_or          : logical_or LOR logical_and
+        logical_and         : logical_and LAND bitwise_or
+        bitwise_or          : bitwise_or OR bitwise_xor
+        bitwise_xor         : bitwise_xor XOR bitwise_and
+        bitwise_and         : bitwise_and AND equality
+        equality            : equality EQ relational
+                            | equality NE relational
+        relational          : relational LT shiftable
+                            | relational GT shiftable
+                            | relational GE shiftable
+                            | relational LE shiftable
+        shiftable           : shiftable LSHIFT additive
+                            | shiftable RSHIFT additive
         additive            : additive PLUS multiplicative
                             | additive MINUS multiplicative
         multiplicative      : multiplicative TIMES unary
                             | multiplicative DIVIDE unary
                             | multiplicative MOD unary
-        equality            : equality EQ relational
-                            | equality NE relational
-        relational          : relational LT additive
-                            | relational GT additive
-                            | relational GE additive
-                            | relational LE additive
-        logical_or          : logical_or LOR logical_and
-        logical_and         : logical_and LAND equality
         '''
         p[0] = BinaryNode(p[2], p[1], p[3])
 
@@ -513,27 +527,32 @@ class NanoParser():
         '''
         exp_list            :
         param_list          :
+                            | VOID
         array_list          :
         '''
         p[0] = []
 
     def p_pass_on_first(self, p):
         '''
+        statement           : declaration
         statement           : expression SEMI
-        for_exp             : expression
+        empty_or_exp             : expression
         ctrl_block          : curl_block
         expression          : assignment
         assignment          : conditional
         conditional         : logical_or
         logical_or          : logical_and
-        logical_and         : equality
+        logical_and         : bitwise_or
+        bitwise_or          : bitwise_xor
+        bitwise_xor         : bitwise_and
+        bitwise_and         : equality
+        equality            : relational
+        relational          : shiftable
+        shiftable           : additive
         additive            : multiplicative
         multiplicative      : unary
         unary               : postfix
         postfix             : primary
-        equality            : relational
-        relational          : additive
-        statement           : declaration
         primary             : id
         '''
         p[0] = p[1]
