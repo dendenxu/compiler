@@ -5,4 +5,4 @@ build
 parsetab.py
 trash/
 results/
-tree.json
+*tree.json

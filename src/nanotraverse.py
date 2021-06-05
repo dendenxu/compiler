@@ -55,3 +55,19 @@ def depth(tree: dict):
             if cur_d > d:
                 d = cur_d
     return d + 1
+
+
+def addsize(tree: dict):
+    tree_depth = depth(tree)
+    min_width = 1900
+    min_height = 850
+    min_depth = 9
+    approx_height = min_height / (2 ** min_depth) * 2 ** tree_depth
+    approx_height = max(min_height, approx_height)
+    approx_width = min_width / min_depth * tree_depth
+    approx_width = max(min_width, approx_width)
+    # print(colored(f'Depth: {tree_depth}', "blue"))
+    # print(colored(f'Height: {approx_height}', "blue"))
+    # print(colored(f'Width: {approx_width}', "blue"))
+
+    tree["size"] = [approx_width, approx_height]
