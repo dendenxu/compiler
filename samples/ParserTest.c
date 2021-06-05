@@ -23,6 +23,6 @@ char thisisaarry[19][20][21] = thisisanotherarray;
 
 
 // Function 1
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
     
 }

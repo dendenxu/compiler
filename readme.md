@@ -14,25 +14,22 @@ And **do remember to delete these lines after this repo goes public**
 - Control Flow: `if`, `else`, `while`, `for`, `continue`, `break`, `do-while`
 - Function: `return`, **typed functions**, **scope**(`{}` `;`)
 - Operators (with priorities):
-    1. `()` `[]`  Function Call, Array Subscription
-    2. `-` `+` `++` `--` `!` `&` `*` `~` `(type)` Negation, Positive Number, Minus Minus, Plus Plus, Logical Not, Bitwise And, Get Element Of Pointer, Bitwise Not, Type Casting
-    3. `*` `/` `%` Times, Divide, Modulus
-    4. `+` `-` Plus, Minus
-    5. `<<` `>>` Shift Left, Shift Right
-    6. `<` `<=` `>` `<=` Less Than, Less Than Or Equal To, Greater Than, Greater Than Or Equal To
-    7. `==` `!=` Equality, Inequality
-    8. `&` Get Element Pointer
-    9. `^` Bitwise XOR
-    10. `|` Bitwise Or
-    11. `&&` Logical And
-    12. `||` Logical Or
-    13. `?:` Conditional Expression
-        14. `=` `<<=` `>>=` `&=` `~=` `^=` `+=` `-=` `/=` `*=` `%=` Assignment Operation
-- Comment: 
-    1. `//` (one-line comment)
-    2. `/* */` (multi-line comment)
-
-
+  1. `()` `[]` Function Call, Array Subscription
+  2. `-` `+` `++` `--` `!` `&` `*` `~` `(type)` Negation, Positive Number, Minus Minus, Plus Plus, Logical Not, Bitwise And, Get Element Of Pointer, Bitwise Not, Type Casting
+  3. `*` `/` `%` Times, Divide, Modulus
+  4. `+` `-` Plus, Minus
+  5. `<<` `>>` Shift Left, Shift Right
+  6. `<` `<=` `>` `<=` Less Than, Less Than Or Equal To, Greater Than, Greater Than Or Equal To
+  7. `==` `!=` Equality, Inequality
+  8. `&` Get Element Pointer
+  9. `^` Bitwise XOR
+  10. `|` Bitwise Or
+  11. `&&` Logical And
+  12. `||` Logical Or
+  13. `?:` Conditional Expression 14. `=` `<<=` `>>=` `&=` `~=` `^=` `+=` `-=` `/=` `*=` `%=` Assignment Operation
+- Comment:
+  1. `//` (one-line comment)
+  2. `/* */` (multi-line comment)
 
 ### Token Definition
 
@@ -127,38 +124,60 @@ The lexer utilizes Python's object reflection (introspection) so it needs the cu
 
 It mainly recognize variables defined as `t_TOKEN_NAME`, the content of the variable corresponds to the regular expression, and the `TOKEN_NAME` part would be the token this RE recognizes for.
 
-
-
-To help the user pinpoint what's gone wrong the tokenization process, we "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
-
-
-
 ### Specific Optimizations
 
-We used `t_ignore` pattern to discard unwanted information provided by the program source code for readability of us **humans** (but not for the **parser**)
+#### Token Removal
+
+By using `t_ignore` pattern or not returning the recognized token, we discard unwanted information provided by the program source code for readability of us **humans** (but not for the **parser**)
 
 - White Space
+- New Line Characters
 - Comments
-    - Single-lined comment
-    - Multi-lined comment
+  - Single-lined comment
+  - Multi-lined comment
 
 ```python
 # empty space
 t_ignore = ' \t'
-
-# Comment
-t_ignore_SING_COMMENT = r'//.*?\n'
-t_ignore_MULT_COMMENT = r'/\*(\*(?!\/)|[^*])*\*\/'
-
-# Define a rule so we can track line numbers
-def t_NEWLINE(self, t):
-    r'\n+'
-    t.lexer.lineno += t.value.count("\n")
 ```
 
 
 
-We carefully optimized the order in which each regular expression is provided to the lexer, to make sure some overlapping definitions don't get mixed up, for example:
+#### Line Number Memory
+
+To help the user pinpoint what's gone wrong the tokenization process, we "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
+
+Specifically, we used `r'\n+'` to indicate newline(s)
+
+- It's important to notice that **multi-line comment/single-line comment might also consume the newline character**
+- Also note that `r'\n+'` regular expression might contain multiple newline characters
+
+So we should use patterns like `t.lexer.lineno += t.value.count("\n")` to update the new line count accordingly.
+
+```python
+# Define a rule so we can track line numbers
+def update_lineno(self, t):
+    t.lexer.lineno += t.value.count("\n")
+
+# Comment
+def t_SINGLE_LINE_COMMENT(self, t):
+    r'//.*?\n'
+    self.update_lineno(t)
+
+def t_MULTI_LINE_COMMENT(self, t):
+    r'/\*(\*(?!\/)|[^*])*\*\/'
+    self.update_lineno(t)
+
+def t_NEWLINE(self, t):
+    r'\n+'
+    self.update_lineno(t)
+```
+
+
+
+#### Order of Regular Expression
+
+We carefully optimized the **order** in which each regular expression is provided to the lexer, to make sure some overlapping definitions don't get mixed up, for example:
 
 - `//` for line comment comes before `/` Operator
 - `/*` for multi-line comment comes before `/` Operator
@@ -172,10 +191,6 @@ We carefully optimized the order in which each regular expression is provided to
 
 ### Specific Optimizations
 
-
-
-
-
 ## Abstract Syntax Tree
 
 ### Tree Node Design
@@ -186,27 +201,17 @@ We carefully optimized the order in which each regular expression is provided to
 
 ### Tree Visualization and Interaction
 
-
-
 ## Code Generation
 
 ### LLVM Intermediate Representation
 
 ### Specific Optimization
 
-
-
-
-
 ## Compilation
 
 ### IR to Assembly
 
 ### Assembling the Executable
-
-
-
-
 
 ## References
 
