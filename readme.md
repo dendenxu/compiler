@@ -1218,15 +1218,7 @@ Finally, (8) returns from the function with the result named by %4, and (9) defi
 
 To generate the IR mentioned above, we use a visitor class named `NanoVisitor`. Given an abstract syntax tree like the above figure, the visitor will first visit the `ProgNode` which is marked as root. Then the visitor will well grounded travel the children of root.
 
-<<<<<<< HEAD
-
-### §5.3 Design Pattern: Reflection
-
-=======
-
 #### Design Pattern: Reflection
-
-> > > > > > > 6e2d9cfb0ae6167e07e85259869ad37810043584
 
 One problem in traveling step is that visitor does not know the type of node and thus can not do specific actions depending on the type of node. To solve this problem, we use the design pattern of reflection. That is, the visitor will call the `accept` method of class node. The derived classes of `Node` will override the `accept` method to their own visiting procedure. So, the calling flow is just like `Visitor->Node->Visitor` which can be interpreted as reflection. A piece of sample code is shown as below:
 
