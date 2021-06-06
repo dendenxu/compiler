@@ -684,10 +684,10 @@ if __name__ == '__main__':
         print(root)
 
         tree = traverse(root)
-        # Print Struct Tree (data sent to server)
-        # print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
-        # print(tree)
         addinfo(tree, args.input)
+        # Print Struct Tree (data sent to server)
+        print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
+        print(tree)
         payload = json.dumps(tree)
 
         if args.tree:
