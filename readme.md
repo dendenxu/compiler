@@ -262,7 +262,7 @@ Firstly, let's take a comprehensive look at our grammar:
 
    4. Note that type node should only be declared once in one declaration statement or declaration list, meaning `int * a, * b` is illegal, while `int *********** a, b, c=1, d` is OK
 
-10. Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
+10. Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Chapter 5 - Code Generation) section
 
     _This optimization would be later illustrated in better detail in the next section_
 
@@ -282,22 +282,26 @@ Firstly, let's take a comprehensive look at our grammar:
 
     4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as _left values_
 
+<<<<<<< Updated upstream
        Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Lexical Analysis) sections
+=======
+          Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Chapter 1 - Lexical Analysis) sections
+>>>>>>> Stashed changes
 
        Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
-
+    
        - Note that **compound assignment** operations can be easily comprehended as a corresponding expression with a regular assignment operation: `<<=` `+=` `-=`, etc.
-
+    
          _This optimization would be later illustrated in better detail in the next section_
-
+    
     5. **Function Calls** in the form of `ID(expression list)`
-
+    
        You can also specify **no parameter**
-
+    
     6. **Array Subscription** in the form of `ID[expression]`
-
+    
        In array definition (not an expression), you can also specify a set of empty bracket pairs, indicating a so-called "multidimensional array"
-
+    
        **Although they're expected to be allocated as a continuous blob in the runtime memory**
 
 12. Expressions can be grouped by `(` and `)` to indicate their correspondence
@@ -640,13 +644,13 @@ Similar optimization occurs when we're parsing **expression list** of function c
   #############################################################
   #                     Function Definition                   #
   #############################################################
-
+  
   def p_func_def(self, p):
       '''
       function            : type id LPAREN param_list RPAREN curl_block
       '''
       p[0] = FuncNode(p[1], p[2], p[4], p[6])
-
+  
   def p_params(self, p):
       '''
       param_list          : type id comma_params
@@ -656,7 +660,7 @@ Similar optimization occurs when we're parsing **expression list** of function c
           p[3] = []
       p[3] = [param] + p[3]
       p[0] = p[3]
-
+  
   def p_comma_params(self, p):
       '''
       comma_params        : comma_params COMMA type id
@@ -670,7 +674,7 @@ Similar optimization occurs when we're parsing **expression list** of function c
 
 #### Preparations for Scope Resolution
 
-Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
+Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Chapter 5 - Code Generation) section
 
 Note that `BlockNode` is **_ABSTRACT_**, meaning with the total removal of it, the compiler should still be able to work properly. The purpose of the aggregated node is to indicate nested scope creation
 
@@ -809,13 +813,13 @@ There's an ugly solution to this:
   ...
   ...
   state 196
-
+  
       (17) statement -> IF LPAREN expression RPAREN ctrl_block .
       (18) statement -> IF LPAREN expression RPAREN ctrl_block . ELSE ctrl_block
-
+  
     ! shift/reduce conflict for ELSE resolved as shift
       ELSE            shift and go to state 202
-
+  
     ! ELSE            [ reduce using rule 17 (statement -> IF LPAREN expression RPAREN ctrl_block .) ]
   ...
   ...
@@ -827,35 +831,47 @@ There's an ugly solution to this:
 
   > If the parser is produced by an SLR, LR(1) or LALR [LR parser](https://en.wikipedia.org/wiki/LR_parser) generator, the programmer will often rely on the generated parser feature of preferring shift over reduce whenever there is a conflict.[[2\]](https://en.wikipedia.org/wiki/Dangling_else#cite_note-Bison_Manual-2) Alternatively, the grammar can be rewritten to remove the conflict, at the expense of an increase in grammar size
 
-## Abstract Syntax Tree
+## Chapter 3 - Abstract Syntax Tree
 
-### Node Design
+### §3.1 Node Design
 
-### Tree Traversal
+### §3.2 Tree Traversal
 
-### Side Note: Python Hosted Server
+### §3.3 Side Note: Python Hosted Server
 
-### Tree Visualization and Interaction
+### §3.4 Tree Visualization and Interaction
 
-## Semantic Analysis
 
-### Name Resolution
 
-### Type Checking (L value Checking)
+## Chapter 4 - Semantic Analysis
+
+### §4.1 Name Resolution
+
+### §4.2 Type Checking (L value Checking)
+
+
 
 ## Chapter 5 - Code Generation
 
-### LLVM Intermediate Representation
+### §5.1 LLVM Intermediate Representation
 
-### Specific Optimization
+### §5.2 Specific Optimization
+
+
 
 ## Chapter 6 - Compilation
 
-### IR to Assembly
+### §6.1 IR to Assembly
 
-### Assembling the Executable
+### §6.2 Assembling the Executable
+
+
 
 ## Chapter 7 - Test Cases
+
+### §7.1 
+
+
 
 ## References
 
