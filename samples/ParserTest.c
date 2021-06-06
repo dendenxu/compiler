@@ -92,7 +92,7 @@ int main() {
     /* Operators & Nested */
     // assignment
     t = 1;
-    t = a = -j = 9;
+    t = a = -j;
     // t <<= a;
     // t &= 0;
     // t ^= b;
