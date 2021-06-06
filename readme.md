@@ -1,12 +1,67 @@
 # Nano C Compiler
 
-The C programming language compiler with extremely limited functionality.
-
-We'd only implement a subset of a subset of C. Don't even expect preprocessing.
-
-And **do remember to delete these lines after this repo goes public**
+The C programming language compiler with extremely limited functionality:smile:
 
 Visit [the tree visualizer](http://neon-cubes.xyz:8000/src/nanoast.html) to see what abstract tree the developer is lately developing.
+
+
+
+
+
+
+
+Usage:
+
+```shell
+# This will: read the source code, get tokens, generate parse tree, generate AST, send AST to server, emit IR, store IR to file, compile IR to Assembly, compile Assembly to Executable
+python src/nanoirgen.py -i <input_file_path> -o <output_IR_path> -g
+# Executable/Assemble file names/path are derived from <output_IR_path>
+```
+
+Example:
+
+```shell
+# under folder: compiler
+python src/nanoirgen.py -i samples/quicksort.c -o results/quicksort.ll -g -e .exe
+# executable saved at: ./results/
+
+# run the executable
+./results/quicksort.exe
+
+# check output (in return values)
+echo $lastExitCode
+
+# if you see 1, the code works (see ./samples/quicksort.c)
+# if you see 0, the code failed to quicksort
+```
+
+More usage about `nanoirgen.py` and `nanoyacc.py`
+
+```shell
+# python src/nanoirgen.py -h
+usage: nanoirgen.py [-h] [-input INPUT] [-output OUTPUT] [-target TARGET] [-url URL] [-tree TREE] [-generate] [-ext EXT]
+
+optional arguments:
+  -h, --help      show this help message and exit
+  -input INPUT
+  -output OUTPUT
+  -target TARGET
+  -url URL
+  -tree TREE
+  -generate       Whether to generate the target machine code
+  -ext EXT        Executable file extension
+```
+
+```shell
+# python src/nanoyacc.py -h
+usage: nanoyacc.py [-h] [-input INPUT] [-tree TREE] [-url URL]
+
+optional arguments:
+  -h, --help    show this help message and exit
+  -input INPUT
+  -tree TREE
+  -url URL
+```
 
 <center><strong style="font-size: 1.8em">If You're Viewing the PDF Format of This File</strong></center>
 
@@ -1816,10 +1871,199 @@ In conclusion, the program `nanolex.py` tokenized the input files as desired in 
 
 ### §7.2 Yacc
 
-The grammar productions used in Nano C is listed in [BNF Definition for the Nano C Language](#§2.2 BNF Definition for the Nano C Language). File `samples/ParserTest.c` is designed to test the parser implemented by yacc.
+The grammar productions used in Nano C is listed in [BNF Definition for the Nano C Language](#§2.2 BNF Definition for the Nano C Language). File `samples/ParserTest.c` contains **all grammar elements** which Nano C supports and is designed to test the parser implemented by yacc. To test the parser, simply use the command below:
+
+```bash
+$ python3 src/nanoyacc.py -i samples/ParserTest.c
+```
+
+The invocation of `nanoyacc.py` supports *command line options*. To learn how to use the options, you may do:
+
+```bash
+$ python3 src/nanoyacc.py -h
+```
 
 - **Input:** The file to be parsed.
-- **Output:**
+- **Output:** 
+  1. Abstract syntax tree (AST)
+  2. Structed AST
+  3. Visualized AST
+
+The testing file (`samples/ParserTest.c`) is as the following. And the purposes of each statement / expression is commented right above them.
+
+```c
+/* Multi-line Comment */
+/**
+ * @file    ParserTest.c
+ * @note    This file gives test cases to all language elements
+ *          (statements, expressions, etc.) in our parser. Each test 
+ *          case is marked by a one-line comment.
+ */
+
+
+/* Program */
+/* Global Declarations */
+int a = 0;
+long l = 9999999;
+double pi = 3.141592;
+float f = 0.03;
+// declaration list
+char ch = 'a', b = '1', e;
+// pointer
+char * str;
+// array
+char thisIsAnArray[19][20][21];
+
+
+// Function 1
+int main() {
+    double pi2 = pi * 2;
+    double da[10];
+    int i, j, t, controller = 1, condition = 0;
+
+
+    /**
+     *  @note   Statements, Control Flows, Scopes
+     **/
+
+    /* For Loop */
+    for ( int i = 0 ; i < 10 ; i++ )
+        /* Block of single statementm && Array Substitution */
+        da[i] = i * pi;
+
+    /* Empty Loops */
+    while (1);
+    do { ; } while (0);
+    for ( ; ; ) { ; }
+
+    /* Nested Loop */
+    while ( 1 ) 
+        for ( int n = 100; n >= 0; n-- )
+            while ( controller ) 
+                do str = "inside while loop"; 
+                while ( condition == "OK" );
+
+
+    for ( j = 0; j < 10; j++ ) {
+        /* If-else Statement */
+        if ( da[j] < 10 )
+            // continue control
+            continue;
+        else {
+            /* Function Call */
+            PrintHello();
+            // break control
+            break;
+        }
+    }
+
+    /* Dangling If */
+    if ( 1 ) 
+        if ( 2 ) l = 222;
+        else l = 223;
+    else if ( 3 ) l = 333;
+    else l = 444;
+
+    /* Nested Scopes */
+    {   double t = 6.06;
+        {   char t = '0';
+            {   int t = 0;
+                t = pi * f;
+            }
+        }
+    }
+
+    /* Empty Statements */
+    ;;;;;;
+
+    
+    /**
+     *  @note   Expressions
+     **/
+
+    /* Operators & Nested */
+    // assignment
+    t = 1;
+    t = a = -j;
+    // t <<= a;
+    // t &= 0;
+    // t ^= b;
+    // t += ch;
+    // t *= 20;
+    // t %= j;
+    // conditional (ternary op)
+    1 ? 2 : 3;
+    t ? 1 ? 2 : 3 : 4;
+    0 ? 2 : 3 ? t ? 4 : 5 : 6;
+    // logical
+    1 && 2 || 3 && 4;
+    1 || (t || 3) && 4; 
+    // bitwise
+    e ^ e;
+    t & e | 3 ^ 5 | (j | e);
+    // comparison
+    t == 1;
+    e >= 'a';
+    1 == 2 < 3 != 4 <= 5 > 6 >= 7;
+    // shift
+    a >> 10;
+    2 >> 3 << 4;
+    // arithmetic
+    i + 1;
+    100 + 30 / 4.0;
+    // unary
+    ~a;
+    -100;
+    (int)!( *(&t + +1 + -1) + *++str );     // p++ is treated the same as ++p
+    
+    /* Operator Precedence */
+    1 || 0 && 4 == 3 >= 2 - 1 * -1;
+    e = i < t ? ++a : a && t;               // e = ( ((a < t) ? (a++) : a) = t )
+    // a ? t : e = ch;                      // ERROR, assignment must have a unary lvalue.
+    ++da[2];                                // (da[2])++
+
+    
+    return 0;
+}
+
+
+/* Function 2, void Return Value, void Parameter */
+void PrintHello(void) {
+    /* Function Call */
+    printf("Hello, Nano C!");
+    /* Empty Return */
+    return;
+}
+
+
+/* Function 3, Typed Return Value */
+int max(int a, int b) {
+    // return exp
+    return a > b ? a : b;
+}
+```
+
+Output after parsing the testing file:
+
+1. CLI-printed **Abstract Syntax Tree (AST)** (partial)
+
+   <img src="readme.assets/test/yacc-1.png" alt="yacc-1" style="zoom: 67%;" />
+
+2. **Structed AST**
+
+   ```
+   {'name': 'Prog', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{a}'}, {'name': 'Int{0}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{long}'}, {'name': 'ID{l}'}, {'name': 'Int{9999999}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{double}'}, {'name': 'ID{pi}'}, {'name': 'Float{3.141592}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{float}'}, {'name': 'ID{f}'}, {'name': 'Float{0.03}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{ch}'}, {'name': 'Char{a}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{b}'}, {'name': 'Char{1}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{e}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{Type{char}}'}, {'name': 'ID{str}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{thisIsAnArray}'}, {'name': '19'}, {'name': '20'}, {'name': '21'}, {'name': 'None'}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{main}'}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{double}'}, {'name': 'ID{pi2}'}, {'name': 'Binary{*}', '_children': [{'name': 'ID{pi}'}, {'name': 'Int{2}'}]}]}, {'name': 'Dec', '_children': [{'name': 'Type{double}'}, {'name': 'ID{da}'}, {'name': '10'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{i}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{j}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{t}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{controller}'}, {'name': 'Int{1}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{condition}'}, {'name': 'Int{0}'}]}, {'name': 'Loop', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{i}'}, {'name': 'Int{0}'}]}, {'name': 'Binary{<}', '_children': [{'name': 'ID{i}'}, {'name': 'Int{10}'}]}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ArrSub', '_children': [{'name': 'ID{da}'}, {'name': 'ID{i}'}]}, {'name': 'Binary{*}', '_children': [{'name': 'ID{i}'}, {'name': 'ID{pi}'}]}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{i}'}, {'name': 'Binary{+}', '_children': [{'name': 'ID{i}'}, {'name': 'Int{1}'}]}]}]}, {'name': 'Loop', '_children': [{'name': 'EmptyStmt'}, {'name': 'Int{1}'}, {'name': 'Block{EmptyStmt}'}, {'name': 'EmptyStmt'}]}, {'name': 'Loop', '_children': [{'name': 'Block{EmptyStmt}'}, {'name': 'while'}, {'name': 'Int{0}'}, {'name': 'EmptyStmt'}]}, {'name': 'Loop', '_children': [{'name': 'EmptyExp'}, {'name': 'EmptyExp'}, {'name': 'Block{EmptyStmt}'}, {'name': 'EmptyExp'}]}, {'name': 'Loop', '_children': [{'name': 'EmptyStmt'}, {'name': 'Int{1}'}, {'name': 'Block{Loop}', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{n}'}, {'name': 'Int{100}'}]}, {'name': 'Binary{>=}', '_children': [{'name': 'ID{n}'}, {'name': 'Int{0}'}]}, {'name': 'Block{Loop}', '_children': [{'name': 'EmptyStmt'}, {'name': 'ID{controller}'}, {'name': 'Block{Loop}', '_children': [{'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{str}'}, {'name': 'String{inside while loop}'}]}, {'name': 'while'}, {'name': 'Binary{==}', '_children': [{'name': 'ID{condition}'}, {'name': 'String{OK}'}]}, {'name': 'EmptyStmt'}]}, {'name': 'EmptyStmt'}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{n}'}, {'name': 'Binary{-}', '_children': [{'name': 'ID{n}'}, {'name': 'Int{1}'}]}]}]}, {'name': 'EmptyStmt'}]}, {'name': 'Loop', '_children': [{'name': 'Ass{=}', '_children': [{'name': 'ID{j}'}, {'name': 'Int{0}'}]}, {'name': 'Binary{<}', '_children': [{'name': 'ID{j}'}, {'name': 'Int{10}'}]}, {'name': 'Block{IfStmt}', '_children': [{'name': 'Binary{<}', '_children': [{'name': 'ArrSub', '_children': [{'name': 'ID{da}'}, {'name': 'ID{j}'}]}, {'name': 'Int{10}'}]}, {'name': 'Block{Continue}'}, {'name': 'Block', '_children': [{'name': 'Call', '_children': [{'name': 'ID{PrintHello}'}]}, {'name': 'Break'}]}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{j}'}, {'name': 'Binary{+}', '_children': [{'name': 'ID{j}'}, {'name': 'Int{1}'}]}]}]}, {'name': 'IfStmt', '_children': [{'name': 'Int{1}'}, {'name': 'Block{IfStmt}', '_children': [{'name': 'Int{2}'}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{l}'}, {'name': 'Int{222}'}]}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{l}'}, {'name': 'Int{223}'}]}]}, {'name': 'Block{IfStmt}', '_children': [{'name': 'Int{3}'}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{l}'}, {'name': 'Int{333}'}]}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{l}'}, {'name': 'Int{444}'}]}]}]}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{double}'}, {'name': 'ID{t}'}, {'name': 'Float{6.06}'}]}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{t}'}, {'name': 'Char{0}'}]}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{t}'}, {'name': 'Int{0}'}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{t}'}, {'name': 'Binary{*}', '_children': [{'name': 'ID{pi}'}, {'name': 'ID{f}'}]}]}]}]}]}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'Ass{=}', '_children': [{'name': 'ID{t}'}, {'name': 'Int{1}'}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{t}'}, {'name': 'Ass{=}', '_children': [{'name': 'ID{a}'}, {'name': 'Unary{-}{ID{j}}'}]}]}, {'name': 'Ternary', '_children': [{'name': 'Int{1}'}, {'name': '?'}, {'name': 'Int{2}'}, {'name': ':'}, {'name': 'Int{3}'}]}, {'name': 'Ternary', '_children': [{'name': 'ID{t}'}, {'name': '?'}, {'name': 'Ternary', '_children': [{'name': 'Int{1}'}, {'name': '?'}, {'name': 'Int{2}'}, {'name': ':'}, {'name': 'Int{3}'}]}, {'name': ':'}, {'name': 'Int{4}'}]}, {'name': 'Ternary', '_children': [{'name': 'Int{0}'}, {'name': '?'}, {'name': 'Int{2}'}, {'name': ':'}, {'name': 'Ternary', '_children': [{'name': 'Int{3}'}, {'name': '?'}, {'name': 'Ternary', '_children': [{'name': 'ID{t}'}, {'name': '?'}, {'name': 'Int{4}'}, {'name': ':'}, {'name': 'Int{5}'}]}, {'name': ':'}, {'name': 'Int{6}'}]}]}, {'name': 'Binary{||}', '_children': [{'name': 'Binary{&&}', '_children': [{'name': 'Int{1}'}, {'name': 'Int{2}'}]}, {'name': 'Binary{&&}', '_children': [{'name': 'Int{3}'}, {'name': 'Int{4}'}]}]}, {'name': 'Binary{||}', '_children': [{'name': 'Int{1}'}, {'name': 'Binary{&&}', '_children': [{'name': 'Binary{||}', '_children': [{'name': 'ID{t}'}, {'name': 'Int{3}'}]}, {'name': 'Int{4}'}]}]}, {'name': 'Binary{^}', '_children': [{'name': 'ID{e}'}, {'name': 'ID{e}'}]}, {'name': 'Binary{|}', '_children': [{'name': 'Binary{|}', '_children': [{'name': 'Binary{&}', '_children': [{'name': 'ID{t}'}, {'name': 'ID{e}'}]}, {'name': 'Binary{^}', '_children': [{'name': 'Int{3}'}, {'name': 'Int{5}'}]}]}, {'name': 'Binary{|}', '_children': [{'name': 'ID{j}'}, {'name': 'ID{e}'}]}]}, {'name': 'Binary{==}', '_children': [{'name': 'ID{t}'}, {'name': 'Int{1}'}]}, {'name': 'Binary{>=}', '_children': [{'name': 'ID{e}'}, {'name': 'Char{a}'}]}, {'name': 'Binary{!=}', '_children': [{'name': 'Binary{==}', '_children': [{'name': 'Int{1}'}, {'name': 'Binary{<}', '_children': [{'name': 'Int{2}'}, {'name': 'Int{3}'}]}]}, {'name': 'Binary{>=}', '_children': [{'name': 'Binary{>}', '_children': [{'name': 'Binary{<=}', '_children': [{'name': 'Int{4}'}, {'name': 'Int{5}'}]}, {'name': 'Int{6}'}]}, {'name': 'Int{7}'}]}]}, {'name': 'Binary{>>}', '_children': [{'name': 'ID{a}'}, {'name': 'Int{10}'}]}, {'name': 'Binary{<<}', '_children': [{'name': 'Binary{>>}', '_children': [{'name': 'Int{2}'}, {'name': 'Int{3}'}]}, {'name': 'Int{4}'}]}, {'name': 'Binary{+}', '_children': [{'name': 'ID{i}'}, {'name': 'Int{1}'}]}, {'name': 'Binary{+}', '_children': [{'name': 'Int{100}'}, {'name': 'Binary{/}', '_children': [{'name': 'Int{30}'}, {'name': 'Float{4.0}'}]}]}, {'name': 'Unary{~}{ID{a}}'}, {'name': 'Unary{-}{Int{100}}'}, {'name': 'Unary{Type{int}}{Unary{!}{Binary{+}}}', '_children': [{'name': 'Unary{*}{Binary{+}}', '_children': [{'name': 'Binary{+}', '_children': [{'name': 'Unary{&}{ID{t}}'}, {'name': 'Unary{+}{Int{1}}'}]}, {'name': 'Unary{-}{Int{1}}'}]}, {'name': 'Unary{*}{Ass{=}}', '_children': [{'name': 'ID{str}'}, {'name': 'Binary{+}', '_children': [{'name': 'ID{str}'}, {'name': 'Int{1}'}]}]}]}, {'name': 'Binary{||}', '_children': [{'name': 'Int{1}'}, {'name': 'Binary{&&}', '_children': [{'name': 'Int{0}'}, {'name': 'Binary{==}', '_children': [{'name': 'Int{4}'}, {'name': 'Binary{>=}', '_children': [{'name': 'Int{3}'}, {'name': 'Binary{-}', '_children': [{'name': 'Int{2}'}, {'name': 'Binary{*}', '_children': [{'name': 'Int{1}'}, {'name': 'Unary{-}{Int{1}}'}]}]}]}]}]}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{e}'}, {'name': 'Ternary', '_children': [{'name': 'Binary{<}', '_children': [{'name': 'ID{i}'}, {'name': 'ID{t}'}]}, {'name': '?'}, {'name': 'Ass{=}', '_children': [{'name': 'ID{a}'}, {'name': 'Binary{+}', '_children': [{'name': 'ID{a}'}, {'name': 'Int{1}'}]}]}, {'name': ':'}, {'name': 'Binary{&&}', '_children': [{'name': 'ID{a}'}, {'name': 'ID{t}'}]}]}]}, {'name': 'Ass{=}', '_children': [{'name': 'ArrSub', '_children': [{'name': 'ID{da}'}, {'name': 'Int{2}'}]}, {'name': 'Binary{+}', '_children': [{'name': 'ArrSub', '_children': [{'name': 'ID{da}'}, {'name': 'Int{2}'}]}, {'name': 'Int{1}'}]}]}, {'name': 'Ret{Int{0}}'}]}]}, {'name': 'Func', '_children': [{'name': 'Type{void}'}, {'name': 'ID{PrintHello}'}, {'name': 'Block', '_children': [{'name': 'Call', '_children': [{'name': 'ID{printf}'}, {'name': 'String{Hello, Nano C!}'}]}, {'name': 'Ret{EmptyExp}'}]}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{max}'}, {'name': 'Param', '_children': [{'name': 'Type{int}'}, {'name': 'ID{a}'}]}, {'name': 'Param', '_children': [{'name': 'Type{int}'}, {'name': 'ID{b}'}]}, {'name': 'Block{Ret{Ternary}}', '_children': [{'name': 'Binary{>}', '_children': [{'name': 'ID{a}'}, {'name': 'ID{b}'}]}, {'name': '?'}, {'name': 'ID{a}'}, {'name': ':'}, {'name': 'ID{b}'}]}]}], 'size': [2111.1111111111113, 911.1111111111111], 'filename': 'samples/ParserTest.c'}
+   ```
+
+   This structed tree is in `json` format and is sent to our server to create a visualized and interactive AST on the webpage.
+
+3. **Visualized AST** (partial)
+
+   The visualized AST is too long to be screenshotted in a single page. You may see the complete version of the fancy-visualized AST in [Introduction of Visitor](#§5.2 Introduction of Visitor).
+
+   <img src="readme.assets/test/yacc-2.png" alt="yacc-2" style="zoom: 67%;" />
+
+Obtaining the above results with enough complexity, we carefully examined each one of the output. It turned out that **all nodes were parsed as desired**, with satisfying orders and precedence. **We can conclude that our parser passed the test.**
 
 ### §7.3 IR Generation and Execution
 
