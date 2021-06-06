@@ -940,7 +940,7 @@ Finally, (8) returns from the function with the result named by %4, and (9) defi
 
 To generate the IR mentioned above, we use a visitor class named `NanoVisitor`. Given an abstarct syntax tree like the above figure, the visitor will first visit the ProgNode which is marked as root. Then the visitor will well groundedly travel the childs of root. 
 
-#### §5.3 Design Pattern: Reflection
+#### Design Pattern: Reflection
 
 One problem in traveling step is that visitor does not know the type of node and thus can not do specific actions depending on the type of node. To solve this problem, we use the design pattern of reflection. That is, the visitor will call the `accept` method of class node. The derived classes of `Node` will override the `accept` method to their own visiting procedure. So, the calling flow is just like `Visitor->Node->Visitor` which can be interpreted as reflection. A piece of sample code is shown as below:
 
@@ -966,7 +966,47 @@ class FuncNode(Node):
 # ...
 ```
 
-#### §5.4 Attributes
+#### Attributes
+
+During the IR generation, or in the other words, travelly visiting the AST, we need to set some attributes which may be referenced afterwards. Several key attributes in the visitor are shown as below:
+
++ cur_module: a `llvmlite.ir.Module` object. This obj provides the IR generation environment, we can do nothing without it.
+
++ cur_func_name: a `str` object. Mark which function is currently processed, initialized with empty string.
+
++ builder_stack: a `llvmlite.ir.IRBuilder` object. This obj is used to insert IR instructions after the blocks.
+
++ scope_stack: a `list` object. Each element in the stack is of type `dict`. This obj denotes the symbol table and scopes. The procedure of getting an identifier in the current scope just work like below:
+
+  ```python
+      def _get_identifier(self, name):
+          for d in self.scope_stack[::-1]:  # reversing the scope_block
+              if name in d:
+                  return d[name]['ref']
+          return None
+  ```
+
++ loop_exit_stack & loop_entr_stack: a `list` object. Since we support nested loop statements, continue and break statements, we need to remember the last entrance/exit point(usually interpreted as the beginning of a block). The next time we analysis break or continue, we can pop the exit stack or entrance stack and branch there.
+
++ in_global:  a `bool` object. Mark whether the visitor is currently at the global scope. If it is, the declared variable will be allocated in the global space.
+
+```python
+class NanoVisitor(Visitor):
+    def __init__(self):
+        # we do not need list since we only support single filre compiling
+        self.cur_module = None
+        # we do not need list since we do not support sub-procedure
+        self.cur_func_name = ''
+        self.builder_stack = []
+        self.block_stack = []
+        self.scope_stack = []
+        self.loop_exit_stack = []
+        self.loop_entr_stack = []
+        self.in_global = True
+        # ...
+```
+
+
 
 ## Chapter 6 - Compilation
 
