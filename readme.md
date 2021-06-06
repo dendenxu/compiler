@@ -1,12 +1,67 @@
 # Nano C Compiler
 
-The C programming language compiler with extremely limited functionality.
-
-We'd only implement a subset of a subset of C. Don't even expect preprocessing.
-
-And **do remember to delete these lines after this repo goes public**
+The C programming language compiler with extremely limited functionality:smile:
 
 Visit [the tree visualizer](http://neon-cubes.xyz:8000/src/nanoast.html) to see what abstract tree the developer is lately developing.
+
+
+
+
+
+
+
+Usage:
+
+```shell
+# This will: read the source code, get tokens, generate parse tree, generate AST, send AST to server, emit IR, store IR to file, compile IR to Assembly, compile Assembly to Executable
+python src/nanoirgen.py -i <input_file_path> -o <output_IR_path> -g
+# Executable/Assemble file names/path are derived from <output_IR_path>
+```
+
+Example:
+
+```shell
+# under folder: compiler
+python src/nanoirgen.py -i samples/quicksort.c -o results/quicksort.ll -g -e .exe
+# executable saved at: ./results/
+
+# run the executable
+./results/quicksort.exe
+
+# check output (in return values)
+echo $lastExitCode
+
+# if you see 1, the code works (see ./samples/quicksort.c)
+# if you see 0, the code failed to quicksort
+```
+
+More usage about `nanoirgen.py` and `nanoyacc.py`
+
+```shell
+# python src/nanoirgen.py -h
+usage: nanoirgen.py [-h] [-input INPUT] [-output OUTPUT] [-target TARGET] [-url URL] [-tree TREE] [-generate] [-ext EXT]
+
+optional arguments:
+  -h, --help      show this help message and exit
+  -input INPUT
+  -output OUTPUT
+  -target TARGET
+  -url URL
+  -tree TREE
+  -generate       Whether to generate the target machine code
+  -ext EXT        Executable file extension
+```
+
+```shell
+# python src/nanoyacc.py -h
+usage: nanoyacc.py [-h] [-input INPUT] [-tree TREE] [-url URL]
+
+optional arguments:
+  -h, --help    show this help message and exit
+  -input INPUT
+  -tree TREE
+  -url URL
+```
 
 <center><strong style="font-size: 1.8em">If You're Viewing the PDF Format of This File</strong></center>
 
