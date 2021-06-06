@@ -187,13 +187,13 @@ class NanoVisitor(Visitor):
         func_args = list(func_ref.ftype.args)
         if len(func_ref.ftype.args) != len(call_func_args):
             self.n_errors += 1
-            print(str(IArgsLenUnmatchFatal(len(call_func_args),len(func_ref.ftype.args))) + f" at position (line {node._lineno}, col {node._colno})")
+            print(str(IArgsLenUnmatchFatal(len(call_func_args), len(func_ref.ftype.args))) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
         else:
             for i in range(len(call_func_args)):
                 if exp_type(node.params[i]) != str(func_args[i]):
                     self.n_errors += 1
-                    print(str(IArgsUnmatchFatal(exp_type(node.params[i]),str(func_args[i]))) + f" at position (line {node._lineno}, col {node._colno})")
+                    print(str(IArgsUnmatchFatal(exp_type(node.params[i]), str(func_args[i]))) + f" at position (line {node._lineno}, col {node._colno})")
                     self._exit()
         node.value = self._get_builder().call(func_ref, tuple(call_func_args))
         node.exp_type = str(func_ref.ftype.return_type)
@@ -703,7 +703,7 @@ if __name__ == '__main__':
         visitor.visitProgNode(root)
         ir = str(root.module).replace('unknown-unknown-unknown',
                                       args.target)
-        print(colored(f"LLVM IR:", "yellow", attrs=["bold"]))
+        print(colored(f"LLVM Intermediate Representation:", "yellow", attrs=["bold"]))
         print(f"{ir}")
 
     path, basename = os.path.split(args.output)
@@ -717,5 +717,11 @@ if __name__ == '__main__':
         exe = os.path.join(path, basenamenoext + args.ext)
 
         os.system(' '.join(["clang", args.output, "-S", "-o", ass]))
+
+        print(colored(f"Target Machine Assembly:", "yellow", attrs=["bold"]))
+
+        with open(ass, "r") as f:
+            print(f.read())
+
         os.system(' '.join(["clang", ass, "-o", exe]))
         print(colored(f"IR/Assembly/Executable stored at: {path}", "yellow", attrs=["bold"]))
