@@ -282,11 +282,7 @@ Firstly, let's take a comprehensive look at our grammar:
 
     4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as _left values_
 
-<<<<<<< Updated upstream
-       Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Lexical Analysis) sections
-=======
           Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Chapter 1 - Lexical Analysis) sections
->>>>>>> Stashed changes
 
        Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
     
