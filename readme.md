@@ -934,7 +934,7 @@ Next, at (2) we have the first instruction of the body of fac, which performs a 
 
 Finally, (8) returns from the function with the result named by %4, and (9) defines the main function of the program, which simply calls fac with a literal i64 argument.
 
-### §5.2 Implementation of Visitor
+### §5.2 Introduction of Visitor
 
 ![ir_ast_preview](readme.assets/ir_ast_preview.svg)
 
@@ -1006,7 +1006,229 @@ class NanoVisitor(Visitor):
         # ...
 ```
 
+### §5.3 Implementation of Visitor
 
+We select several visiting examples to illustrate how visiting procedure generates IR.
+
+#### VisitBlockNode
+
+The special point of the BlockNode is that, we need to create a new scope every time we enter the block.
+
+```python
+    def visitBlockNode(self, node: BlockNode, scope=None):
+        self._push_scope(scope)
+        for stmt in node.stmts:
+            stmt.accept(self)
+        return self._pop_scope()
+```
+
+for every statements in this block, it will call accept method and generates their own part IR.
+
+#### VisitIfStmtNode
+
+For the IfStmtNode, we will first evaluate the condition:
+
+```python
+    def visitIfStmtNode(self, node: IfStmtNode):
+		node.cond.accept(self)
+        pred = self._get_builder().icmp_signed('!=',
+                                               val(node.cond),
+                                               ir.Constant(int32, 0))
+        if type(node.ifbody) == EmptyStmtNode:
+            return
+    	#...
+```
+
+And then generate IR in `then` and `otherwise` part:
+
+```python
+    	if type(node.elsebody) == EmptyStmtNode:
+            with self._get_builder().if_then(pred) as then:
+                self._push_scope()
+                node.ifbody.accept(self)
+                self._pop_scope()
+        else:
+            with self._get_builder().if_else(pred) as (then, othrewise):
+                with then:
+                    # ifbody
+                    self._push_scope()
+                    node.ifbody.accept(self)
+                    self._pop_scope()
+                with othrewise:
+                    # elsebody
+                    self._push_scope()
+                    node.elsebody.accept(self)
+                    self._pop_scope()
+```
+
+Notice that we use the APIs of llvmlite which are `IRBuilder.if_then` and `IRBuilder.if_else`. The former will yield a basic block, and we can generate `then` part IR in this block. The latter will yield two context managers, we can use keyword `with` to set at the begining of that block and generate `then/otherwise` part IR in them. The generating IR work is recursively done in the accept calling.
+
+#### VisitLoopNode
+
+We support three loop statements: `for`, `while` and `do-while`. Their procedure of generating IR are somewhat different. This is because the difference of their loop structures which are illustrated as below:
+
+```txt
+for:
+	pre: EmptyStmtNode / DecNode
+	cond: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
+	body: BlockNode
+	post: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
+while:
+	pre: EmptyStmtNode
+	cond: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
+	body: BlockNode
+	post: EmptyStmtNode
+do-while:
+	pre: EmptyStmtNode()
+	cond: EmptyExpNode / subclass of EmptyExpNode / subclass of EmptyLiteralNode / IDNode
+	body: BlockNode()
+	post: EmptyStmtNode()
+```
+
+Based on above analysis, we divide the loop statements into two cases:
+
++ `for` and `while`:
+
+  ```python
+              """ do-while
+                  ...
+                  branch body_block
+              body_block:
+                  body...
+                  branch cond_block
+              cond_block [continue target]:
+                  cond...
+                  branch(cond, body_block, tail_block)
+              tail_block [break target]:
+                  ...
+              """
+  ```
+
++ `do-while`:
+
+  ```python
+              """ for & while
+                  ...
+                  pre...
+                  branch cond_block
+              cond_block:
+                  cond...
+                  branch(cond, body_block, tail_block)
+              body_block:
+                  body...
+                  branch post_block
+              post_block [continue target]:
+                  post...
+                  branch cond_block
+              tail_block [break target]:
+                  ...
+              """
+  ```
+
+In addition, to support the declaration in the for statements like `for(int i=0;i<n;i++)`, we adopt the scope creating/deleting procedure like this:
+
+```txt
+                ...scope_original...
+        /======================scope_new_0===/
+        /  pre -> cond <----|                /
+        /  /=========|======|==scope_new_1===/
+        /  /        body    |                /
+        /  /=========|======|================/
+        /           post----|                /
+        /====================================/
+```
+
+We show the for/while IR generation below, for more details pleased refer to our source code.
+
+```python
+            cond_block = self._get_builder().append_basic_block()
+            body_block = self._get_builder().append_basic_block()
+            post_block = self._get_builder().append_basic_block()
+            tail_block = self._get_builder().append_basic_block()
+            self.loop_entr_stack.append(post_block)
+            self.loop_exit_stack.append(tail_block)
+
+            # scope_new_0
+            self._push_scope()
+            if type(node.pre) != EmptyStmtNode:
+                node.pre.accept(self)
+            self._get_builder().branch(cond_block)
+
+            # entrance
+            self._get_builder().position_at_start(cond_block)
+            if type(node.cond) != EmptyExpNode:
+                node.cond.accept(self)
+                cond = self._get_builder().icmp_signed('!=',
+                                                       val(node.cond),
+                                                       ir.Constant(int32, 0))
+            else:
+                cond = int1(1)
+            self._get_builder().cbranch(cond, body_block, tail_block)
+
+            # scope_new_1 auto created when visitBlockNode
+            self._get_builder().position_at_start(body_block)
+            node.body.accept(self)
+            self._get_builder().branch(post_block)
+
+            # return to scope 0
+            self._get_builder().position_at_start(post_block)
+            if type(node.post) != EmptyStmtNode:
+                node.post.accept(self)
+            self._get_builder().branch(cond_block)
+            self._pop_scope()
+
+            # after
+            self._get_builder().position_at_start(tail_block)
+
+            self.loop_entr_stack.pop()
+            self.loop_exit_stack.pop()
+```
+
+#### VisitBinopNode
+
+The generation of binary operation IR is very simple, it only calls some APIs of llvmlite. The used APIs are: `llvm.ir.IRBuilder.add`, `llvm.ir.IRBuilder.sub`, `llvm.ir.IRBuilder.mul`, `llvm.ir.IRBuilder.sdiv`, `llvm.ir.IRBuilder.srem`, `llvm.ir.IRBuilder.shl`, `llvm.ir.IRBuilder.ashr`, `llvm.ir.IRBuilder.icmp_signed`, `llvm.ir.IRBuilder.fadd`, `llvm.ir.IRBuilder.fsub`, `llvm.ir.IRBuilder.fmul`, `llvm.ir.IRBuilder.fdiv`, `llvm.ir.IRBuilder.frem`, `llvm.ir.IRBuilder.fcmp_ordered`, etc.
+
+For example, the addition IR of two floating point number is generated by:
+
+```python
+            if node.op == '+':
+                node.value = self._get_builder().fadd(
+                    val(node.left),
+                    val(node.right))
+```
+
+where the fadd method will automatically write an IR correspoing to floating point number addition into the whole IR module.
+
+#### VisitUnaryNode
+
+The unary operations are quite like binary operations. However, the differences are that some of unary operations like `*` and `&` are related to addressed and pointers which make them more complicated. For example, if we do `UnaryNode(*, IDNode(a))`, we need to first guarantee identifier is previously decalared and is a pointer type; Then we get the reference of a which is `ref(a):=&a` and then load the value which is `val(a):=load(ref(a))` and finally do the start operation `ref(*a):=val(a)`. The next time we need to load the value, we just `val(*a)=load(ref(*a))` and in the other case, store the value into `*a`, we use `store(value, ref(*a))`.
+
+Some code is shown as below:
+
+```python
+        #...
+    	elif node.op == '*':
+            node.ref = val(node.node)
+        elif node.op == '&':
+            node.value = ref(node.node)
+        #...
+```
+
+#### VisitArrSubNode
+
+Since we support array type, we need to support getting value by indices like `arr[i][j][k]`. In LLVM IR, reference of `arr` is stored as pointer to its memory, and the type is `[i x [j x [k x int32]]]*`. In our AST, this expression is interpreted as `ArrSubNode(ArrSubNode(ArrSubNode(IDNode(arr), IDNode(i)), IDNode(j)), IDNode(k))`. So we can iteratively get the pointer use `llvmlite.ir.IRBuilder.gep`:
+
+```python
+    def visitArrSubNode(self, node: ArrSubNode):
+        node.subee.accept(self)
+        node.suber.accept(self)
+        node.ref = self._get_builder().gep(ref(node.subee),
+                                           [ir.Constant(int32, 0),
+                                            val(node.suber), ])
+        node.exp_type = str(node.ref.type.pointee)
+```
+
+Notice that every time we do indexing, we need to pass one extral 0 value. This is because when the gep method is returned, the return value will be wrapped by as pointer type. We need a 0 index to get rid of this wrapping.
 
 ## Chapter 6 - Compilation
 
