@@ -117,9 +117,9 @@ t_ignore_SING_COMMENT = r'//.*?\n'
 t_ignore_MULT_COMMENT = r'/\*(\*(?!\/)|[^*])*\*\/'
 ```
 
-We used the `ply` (Python Lex Yacc) to help better recognize regular expressions and BNF grammars to make our life easier.
+We used the `PLY` (Python Lex Yacc) to help better recognize regular expressions and BNF grammars to make our life easier.
 
-We only need to import the "lexer" from the ply module using `from ply import lex`
+We only need to import the "lexer" from the PLY module using `from ply import lex`
 
 And build it with `lex.build`, passing specific module into the build function.
 
@@ -146,7 +146,7 @@ t_ignore = ' \t'
 
 #### Line Number Memory
 
-To help the user pinpoint what's gone wrong the tokenization process, `ply` "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
+To help the user pinpoint what's gone wrong the tokenization process, `PLY` "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
 
 Specifically, we used `r'\n+'` to indicate newline(s)
 
@@ -190,11 +190,11 @@ Firstly, let's take a comprehensive look at our grammar:
 
 1. We _don't_ implement preprocessing like **macros** and **includes**
 
-   - You cannot `#define` or `#include`
+   - You **cannot** `#define` or `#include`
 
 2. We _don't_ implement multi-file compilation, as a direct cause of the first rule
 
-   - You cannot `python nanoirgen.py a.c b.c c.c -o a.out`
+   - You **cannot** `python nanoirgen.py a.c b.c c.c -o a.out`
 
 3. Thus we want a program to define the whole program (a single C source file)
 
@@ -202,9 +202,9 @@ Firstly, let's take a comprehensive look at our grammar:
 
 5. This program should also contain some **function definitions**
 
-6. We _don't_ support **external linkage** variable definition due to rule number one
+6. We _don't_ support **external linkage** variable definitions due to rule number one
 
-7. We _don't_ support function/global variable **declaration** since it won't be of much use in this setup.
+7. We _don't_ support function/global variable **declaration**s since it won't be of much use in this setup.
 
 8. Every valid statement should be
 
@@ -236,7 +236,7 @@ Firstly, let's take a comprehensive look at our grammar:
 
          You can do crazy things as long as you remember you're writing out one single statement
 
-         `while (1) while(0)while(controller) do p = "inside while loop"; while ( condition == "OK" );`
+         `while (1) while(0) while(controller) do p = "inside while loop"; while ( condition == "OK" );`
 
       7. Every control flow has its own block whether it's wrapped within the brackets, or just a **valid single statement** mentioned above
 
@@ -278,7 +278,7 @@ Firstly, let's take a comprehensive look at our grammar:
 
        _This optimization would be later illustrated in better detail in the next section_
 
-    3. **Ternary Operation(s)**: currently only supporting `?:` as ternary operators
+    3. **Ternary Operation**(s): currently only supporting `?:` as ternary operators
 
     4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as _left values_
 
@@ -421,7 +421,7 @@ Productions used in the parser:
 """
 ```
 
-As mentioned above, we used the `ply` package for token/syntax recognition
+As mentioned above, we used the `PLY` package for token/syntax recognition
 
 With a well-defined grammar, the next step is to parse corresponding production into a well-organized **Abstract Syntax Tree**, which will be illustrated in more detail in the following section
 
@@ -865,7 +865,15 @@ There's an ugly solution to this:
 
 ## Chapter 7 - Test Cases
 
-### §7.1 
+### §7.1 Unit Tests
+
+
+
+### §7.2 Integrated Tests
+
+
+
+### §7.3 System Tests
 
 
 
