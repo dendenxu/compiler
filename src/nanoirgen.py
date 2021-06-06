@@ -38,7 +38,7 @@ class NanoVisitor(Visitor):
         self.is_func_body = False
         self.n_errors = 0
         self.n_warnings = 0
-    
+
     def _exit(self):
         print(f"{self.n_errors}"+colored(" error(s)", "red")+f", {self.n_warnings}"+colored(" warning(s)", "yellow"))
         exit(-1)
@@ -88,7 +88,7 @@ class NanoVisitor(Visitor):
             return None
         if name in self.scope_stack[-1]:
             return None
-        self.scope_stack[-1][name] = {'ref':reference, 'typ':type}
+        self.scope_stack[-1][name] = {'ref': reference, 'typ': type}
         return self.scope_stack[-1][name]
 
     def _get_identifier(self, name):
@@ -96,7 +96,7 @@ class NanoVisitor(Visitor):
             if name in d:
                 return d[name]['ref']
         return None
-    
+
     def _get_id_type(self, name):
         for d in self.scope_stack[::-1]:  # reversing the scope_block
             if name in d:
@@ -142,11 +142,11 @@ class NanoVisitor(Visitor):
             self.n_errors += 1
             print(str(IRedecFatal(nam(node))) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
-            
+
         node.ref = ir.Function(self.module, typ(node), name=nam(node))
         self._add_func(nam(node), node.ref)
         self.cur_func_name = nam(node.id)
-        
+
         self._push_block()
         self._push_builder()
 
@@ -261,7 +261,7 @@ class NanoVisitor(Visitor):
     def visitIntNode(self, node: IntNode):
         node.value = ir.Constant(int32, node.value)
         node.type = int32
-    
+
     def visitFloatNode(self, node: FloatNode):
         node.value = ir.Constant(flpt, node.value)
         node.type = flpt
@@ -579,7 +579,7 @@ class NanoVisitor(Visitor):
                     val(node.right))
             else:
                 raise NotImplementedError
-        elif exp_type(node.left) in ('i32','i1') and exp_type(node.right) in ('i32','i1'):
+        elif exp_type(node.left) in ('i32', 'i1') and exp_type(node.right) in ('i32', 'i1'):
             if node.op == '+':
                 node.value = self._get_builder().add(
                     val(node.left),
@@ -598,6 +598,14 @@ class NanoVisitor(Visitor):
                     val(node.right))
             elif node.op == '%':
                 node.value = self._get_builder().srem(
+                    val(node.left),
+                    val(node.right))
+            elif node.op == '<<':
+                node.value = self._get_builder().shl(
+                    val(node.left),
+                    val(node.right))
+            elif node.op == '>>':
+                node.value = self._get_builder().ashr(
                     val(node.left),
                     val(node.right))
             elif node.op == '<':
@@ -657,6 +665,7 @@ class NanoVisitor(Visitor):
             self._exit()
             raise NotImplementedError
 
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
@@ -691,17 +700,19 @@ if __name__ == '__main__':
 
         # global tp_visitor
         visitor = ntp.tp_visitor = NanoVisitor()
-        
+
         visitor.visitProgNode(root)
         ir = str(root.module).replace('unknown-unknown-unknown',
                                       args.target)
         print(colored(f"LLVM IR:", "yellow", attrs=["bold"]))
         print(f"{ir}")
+
+    path, basename = os.path.split(args.output)
+    os.makedirs(path, exist_ok=True)
     with open(args.output, 'w') as I:
         I.write(ir)
 
     if args.generate:
-        path, basename = os.path.split(args.output)
         basenamenoext = os.path.splitext(basename)[0]
         ass = os.path.join(path, basenamenoext + '.s')
         exe = os.path.join(path, basenamenoext + args.ext)
