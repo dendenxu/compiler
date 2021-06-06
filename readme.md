@@ -1884,9 +1884,703 @@ In conclusion, the program `nanolex.py` tokenized the input files as desired in 
 
 ### §7.2 Yacc
 
-The grammar productions used in Nano C is listed in [BNF Definition for the Nano C Language](#§2.2 BNF Definition for the Nano C Language). File `samples/ParserTest.c` is designed to test the parser implemented by yacc.
+The grammar productions used in Nano C is listed in [BNF Definition for the Nano C Language](#§2.2 BNF Definition for the Nano C Language). File `samples/ParserTest.c` contains **all grammar elements** which Nano C supports and is designed to test the parser implemented by yacc. To test the parser, simply use the command below:
+
+```bash
+$ python3 src/nanoyacc.py -i samples/ParserTest.c
+```
+
+The invocation of `nanoyacc.py` supports *command line options*. To learn how to use the options, you may do:
+
+```bash
+$ python3 src/nanoyacc.py -h
+```
 
 - **Input:** The file to be parsed.
-- **Output:**
+- **Output:** 
+  1. Abstract syntax tree (AST)
+  2. Structed AST
+  3. Visualized AST
+
+The testing file (`samples/ParserTest.c`) is as the following. And the purposes of each statement / expression is commented right above them.
+
+```c
+/* Multi-line Comment */
+/**
+ * @file    ParserTest.c
+ * @note    This file gives test cases to all language elements
+ *          (statements, expressions, etc.) in our parser. Each test 
+ *          case is marked by a one-line comment.
+ */
+
+
+/* Program */
+/* Global Declarations */
+int a = 0;
+long l = 9999999;
+double pi = 3.141592;
+float f = 0.03;
+// declaration list
+char ch = 'a', b = '1', e;
+// pointer
+char * str;
+// array
+char thisIsAnArray[19][20][21];
+
+
+// Function 1
+int main() {
+    double pi2 = pi * 2;
+    double da[10];
+    int i, j, t, controller = 1, condition = 0;
+
+
+    /**
+     *  @note   Statements, Control Flows, Scopes
+     **/
+
+    /* For Loop */
+    for ( int i = 0 ; i < 10 ; i++ )
+        /* Block of single statementm && Array Substitution */
+        da[i] = i * pi;
+
+    /* Empty Loops */
+    while (1);
+    do { ; } while (0);
+    for ( ; ; ) { ; }
+
+    /* Nested Loop */
+    while ( 1 ) 
+        for ( int n = 100; n >= 0; n-- )
+            while ( controller ) 
+                do str = "inside while loop"; 
+                while ( condition == "OK" );
+
+
+    for ( j = 0; j < 10; j++ ) {
+        /* If-else Statement */
+        if ( da[j] < 10 )
+            // continue control
+            continue;
+        else {
+            /* Function Call */
+            PrintHello();
+            // break control
+            break;
+        }
+    }
+
+    /* Dangling If */
+    if ( 1 ) 
+        if ( 2 ) l = 222;
+        else l = 223;
+    else if ( 3 ) l = 333;
+    else l = 444;
+
+    /* Nested Scopes */
+    {   double t = 6.06;
+        {   char t = '0';
+            {   int t = 0;
+                t = pi * f;
+            }
+        }
+    }
+
+    /* Empty Statements */
+    ;;;;;;
+
+    
+    /**
+     *  @note   Expressions
+     **/
+
+    /* Operators & Nested */
+    // assignment
+    t = 1;
+    t = a = -j;
+    // t <<= a;
+    // t &= 0;
+    // t ^= b;
+    // t += ch;
+    // t *= 20;
+    // t %= j;
+    // conditional (ternary op)
+    1 ? 2 : 3;
+    t ? 1 ? 2 : 3 : 4;
+    0 ? 2 : 3 ? t ? 4 : 5 : 6;
+    // logical
+    1 && 2 || 3 && 4;
+    1 || (t || 3) && 4; 
+    // bitwise
+    e ^ e;
+    t & e | 3 ^ 5 | (j | e);
+    // comparison
+    t == 1;
+    e >= 'a';
+    1 == 2 < 3 != 4 <= 5 > 6 >= 7;
+    // shift
+    a >> 10;
+    2 >> 3 << 4;
+    // arithmetic
+    i + 1;
+    100 + 30 / 4.0;
+    // unary
+    ~a;
+    -100;
+    (int)!( *(&t + +1 + -1) + *++str );     // p++ is treated the same as ++p
+    
+    /* Operator Precedence */
+    1 || 0 && 4 == 3 >= 2 - 1 * -1;
+    e = i < t ? ++a : a && t;               // e = ( ((a < t) ? (a++) : a) = t )
+    // a ? t : e = ch;                      // ERROR, assignment must have a unary lvalue.
+    ++da[2];                                // (da[2])++
+
+    
+    return 0;
+}
+
+
+/* Function 2, void Return Value, void Parameter */
+void PrintHello(void) {
+    /* Function Call */
+    printf("Hello, Nano C!");
+    /* Empty Return */
+    return;
+}
+
+
+/* Function 3, Typed Return Value */
+int max(int a, int b) {
+    // return exp
+    return a > b ? a : b;
+}
+```
+
+Output after parsing the testing file:
+
+1. CLI-printed **Abstract Syntax Tree (AST)** (partial)
+
+   <img src="readme.assets/test/yacc-1.png" alt="yacc-1" style="zoom: 67%;" />
+
+2. **Structed AST**
+
+   ```
+   {'name': 'Prog', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{a}'}, {'name': 'Int{0}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{long}'}, {'name': 'ID{l}'}, {'name': 'Int{9999999}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{double}'}, {'name': 'ID{pi}'}, {'name': 'Float{3.141592}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{float}'}, {'name': 'ID{f}'}, {'name': 'Float{0.03}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{ch}'}, {'name': 'Char{a}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{b}'}, {'name': 'Char{1}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{e}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{Type{char}}'}, {'name': 'ID{str}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{thisIsAnArray}'}, {'name': '19'}, {'name': '20'}, {'name': '21'}, {'name': 'None'}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{main}'}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{double}'}, {'name': 'ID{pi2}'}, {'name': 'Binary{*}', '_children': [{'name': 'ID{pi}'}, {'name': 'Int{2}'}]}]}, {'name': 'Dec', '_children': [{'name': 'Type{double}'}, {'name': 'ID{da}'}, {'name': '10'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{i}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{j}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{t}'}, {'name': 'None'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{controller}'}, {'name': 'Int{1}'}]}, {'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{condition}'}, {'name': 'Int{0}'}]}, {'name': 'Loop', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{i}'}, {'name': 'Int{0}'}]}, {'name': 'Binary{<}', '_children': [{'name': 'ID{i}'}, {'name': 'Int{10}'}]}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ArrSub', '_children': [{'name': 'ID{da}'}, {'name': 'ID{i}'}]}, {'name': 'Binary{*}', '_children': [{'name': 'ID{i}'}, {'name': 'ID{pi}'}]}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{i}'}, {'name': 'Binary{+}', '_children': [{'name': 'ID{i}'}, {'name': 'Int{1}'}]}]}]}, {'name': 'Loop', '_children': [{'name': 'EmptyStmt'}, {'name': 'Int{1}'}, {'name': 'Block{EmptyStmt}'}, {'name': 'EmptyStmt'}]}, {'name': 'Loop', '_children': [{'name': 'Block{EmptyStmt}'}, {'name': 'while'}, {'name': 'Int{0}'}, {'name': 'EmptyStmt'}]}, {'name': 'Loop', '_children': [{'name': 'EmptyExp'}, {'name': 'EmptyExp'}, {'name': 'Block{EmptyStmt}'}, {'name': 'EmptyExp'}]}, {'name': 'Loop', '_children': [{'name': 'EmptyStmt'}, {'name': 'Int{1}'}, {'name': 'Block{Loop}', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{n}'}, {'name': 'Int{100}'}]}, {'name': 'Binary{>=}', '_children': [{'name': 'ID{n}'}, {'name': 'Int{0}'}]}, {'name': 'Block{Loop}', '_children': [{'name': 'EmptyStmt'}, {'name': 'ID{controller}'}, {'name': 'Block{Loop}', '_children': [{'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{str}'}, {'name': 'String{inside while loop}'}]}, {'name': 'while'}, {'name': 'Binary{==}', '_children': [{'name': 'ID{condition}'}, {'name': 'String{OK}'}]}, {'name': 'EmptyStmt'}]}, {'name': 'EmptyStmt'}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{n}'}, {'name': 'Binary{-}', '_children': [{'name': 'ID{n}'}, {'name': 'Int{1}'}]}]}]}, {'name': 'EmptyStmt'}]}, {'name': 'Loop', '_children': [{'name': 'Ass{=}', '_children': [{'name': 'ID{j}'}, {'name': 'Int{0}'}]}, {'name': 'Binary{<}', '_children': [{'name': 'ID{j}'}, {'name': 'Int{10}'}]}, {'name': 'Block{IfStmt}', '_children': [{'name': 'Binary{<}', '_children': [{'name': 'ArrSub', '_children': [{'name': 'ID{da}'}, {'name': 'ID{j}'}]}, {'name': 'Int{10}'}]}, {'name': 'Block{Continue}'}, {'name': 'Block', '_children': [{'name': 'Call', '_children': [{'name': 'ID{PrintHello}'}]}, {'name': 'Break'}]}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{j}'}, {'name': 'Binary{+}', '_children': [{'name': 'ID{j}'}, {'name': 'Int{1}'}]}]}]}, {'name': 'IfStmt', '_children': [{'name': 'Int{1}'}, {'name': 'Block{IfStmt}', '_children': [{'name': 'Int{2}'}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{l}'}, {'name': 'Int{222}'}]}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{l}'}, {'name': 'Int{223}'}]}]}, {'name': 'Block{IfStmt}', '_children': [{'name': 'Int{3}'}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{l}'}, {'name': 'Int{333}'}]}, {'name': 'Block{Ass{=}}', '_children': [{'name': 'ID{l}'}, {'name': 'Int{444}'}]}]}]}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{double}'}, {'name': 'ID{t}'}, {'name': 'Float{6.06}'}]}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{char}'}, {'name': 'ID{t}'}, {'name': 'Char{0}'}]}, {'name': 'Block', '_children': [{'name': 'Dec', '_children': [{'name': 'Type{int}'}, {'name': 'ID{t}'}, {'name': 'Int{0}'}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{t}'}, {'name': 'Binary{*}', '_children': [{'name': 'ID{pi}'}, {'name': 'ID{f}'}]}]}]}]}]}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'EmptyStmt'}, {'name': 'Ass{=}', '_children': [{'name': 'ID{t}'}, {'name': 'Int{1}'}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{t}'}, {'name': 'Ass{=}', '_children': [{'name': 'ID{a}'}, {'name': 'Unary{-}{ID{j}}'}]}]}, {'name': 'Ternary', '_children': [{'name': 'Int{1}'}, {'name': '?'}, {'name': 'Int{2}'}, {'name': ':'}, {'name': 'Int{3}'}]}, {'name': 'Ternary', '_children': [{'name': 'ID{t}'}, {'name': '?'}, {'name': 'Ternary', '_children': [{'name': 'Int{1}'}, {'name': '?'}, {'name': 'Int{2}'}, {'name': ':'}, {'name': 'Int{3}'}]}, {'name': ':'}, {'name': 'Int{4}'}]}, {'name': 'Ternary', '_children': [{'name': 'Int{0}'}, {'name': '?'}, {'name': 'Int{2}'}, {'name': ':'}, {'name': 'Ternary', '_children': [{'name': 'Int{3}'}, {'name': '?'}, {'name': 'Ternary', '_children': [{'name': 'ID{t}'}, {'name': '?'}, {'name': 'Int{4}'}, {'name': ':'}, {'name': 'Int{5}'}]}, {'name': ':'}, {'name': 'Int{6}'}]}]}, {'name': 'Binary{||}', '_children': [{'name': 'Binary{&&}', '_children': [{'name': 'Int{1}'}, {'name': 'Int{2}'}]}, {'name': 'Binary{&&}', '_children': [{'name': 'Int{3}'}, {'name': 'Int{4}'}]}]}, {'name': 'Binary{||}', '_children': [{'name': 'Int{1}'}, {'name': 'Binary{&&}', '_children': [{'name': 'Binary{||}', '_children': [{'name': 'ID{t}'}, {'name': 'Int{3}'}]}, {'name': 'Int{4}'}]}]}, {'name': 'Binary{^}', '_children': [{'name': 'ID{e}'}, {'name': 'ID{e}'}]}, {'name': 'Binary{|}', '_children': [{'name': 'Binary{|}', '_children': [{'name': 'Binary{&}', '_children': [{'name': 'ID{t}'}, {'name': 'ID{e}'}]}, {'name': 'Binary{^}', '_children': [{'name': 'Int{3}'}, {'name': 'Int{5}'}]}]}, {'name': 'Binary{|}', '_children': [{'name': 'ID{j}'}, {'name': 'ID{e}'}]}]}, {'name': 'Binary{==}', '_children': [{'name': 'ID{t}'}, {'name': 'Int{1}'}]}, {'name': 'Binary{>=}', '_children': [{'name': 'ID{e}'}, {'name': 'Char{a}'}]}, {'name': 'Binary{!=}', '_children': [{'name': 'Binary{==}', '_children': [{'name': 'Int{1}'}, {'name': 'Binary{<}', '_children': [{'name': 'Int{2}'}, {'name': 'Int{3}'}]}]}, {'name': 'Binary{>=}', '_children': [{'name': 'Binary{>}', '_children': [{'name': 'Binary{<=}', '_children': [{'name': 'Int{4}'}, {'name': 'Int{5}'}]}, {'name': 'Int{6}'}]}, {'name': 'Int{7}'}]}]}, {'name': 'Binary{>>}', '_children': [{'name': 'ID{a}'}, {'name': 'Int{10}'}]}, {'name': 'Binary{<<}', '_children': [{'name': 'Binary{>>}', '_children': [{'name': 'Int{2}'}, {'name': 'Int{3}'}]}, {'name': 'Int{4}'}]}, {'name': 'Binary{+}', '_children': [{'name': 'ID{i}'}, {'name': 'Int{1}'}]}, {'name': 'Binary{+}', '_children': [{'name': 'Int{100}'}, {'name': 'Binary{/}', '_children': [{'name': 'Int{30}'}, {'name': 'Float{4.0}'}]}]}, {'name': 'Unary{~}{ID{a}}'}, {'name': 'Unary{-}{Int{100}}'}, {'name': 'Unary{Type{int}}{Unary{!}{Binary{+}}}', '_children': [{'name': 'Unary{*}{Binary{+}}', '_children': [{'name': 'Binary{+}', '_children': [{'name': 'Unary{&}{ID{t}}'}, {'name': 'Unary{+}{Int{1}}'}]}, {'name': 'Unary{-}{Int{1}}'}]}, {'name': 'Unary{*}{Ass{=}}', '_children': [{'name': 'ID{str}'}, {'name': 'Binary{+}', '_children': [{'name': 'ID{str}'}, {'name': 'Int{1}'}]}]}]}, {'name': 'Binary{||}', '_children': [{'name': 'Int{1}'}, {'name': 'Binary{&&}', '_children': [{'name': 'Int{0}'}, {'name': 'Binary{==}', '_children': [{'name': 'Int{4}'}, {'name': 'Binary{>=}', '_children': [{'name': 'Int{3}'}, {'name': 'Binary{-}', '_children': [{'name': 'Int{2}'}, {'name': 'Binary{*}', '_children': [{'name': 'Int{1}'}, {'name': 'Unary{-}{Int{1}}'}]}]}]}]}]}]}, {'name': 'Ass{=}', '_children': [{'name': 'ID{e}'}, {'name': 'Ternary', '_children': [{'name': 'Binary{<}', '_children': [{'name': 'ID{i}'}, {'name': 'ID{t}'}]}, {'name': '?'}, {'name': 'Ass{=}', '_children': [{'name': 'ID{a}'}, {'name': 'Binary{+}', '_children': [{'name': 'ID{a}'}, {'name': 'Int{1}'}]}]}, {'name': ':'}, {'name': 'Binary{&&}', '_children': [{'name': 'ID{a}'}, {'name': 'ID{t}'}]}]}]}, {'name': 'Ass{=}', '_children': [{'name': 'ArrSub', '_children': [{'name': 'ID{da}'}, {'name': 'Int{2}'}]}, {'name': 'Binary{+}', '_children': [{'name': 'ArrSub', '_children': [{'name': 'ID{da}'}, {'name': 'Int{2}'}]}, {'name': 'Int{1}'}]}]}, {'name': 'Ret{Int{0}}'}]}]}, {'name': 'Func', '_children': [{'name': 'Type{void}'}, {'name': 'ID{PrintHello}'}, {'name': 'Block', '_children': [{'name': 'Call', '_children': [{'name': 'ID{printf}'}, {'name': 'String{Hello, Nano C!}'}]}, {'name': 'Ret{EmptyExp}'}]}]}, {'name': 'Func', '_children': [{'name': 'Type{int}'}, {'name': 'ID{max}'}, {'name': 'Param', '_children': [{'name': 'Type{int}'}, {'name': 'ID{a}'}]}, {'name': 'Param', '_children': [{'name': 'Type{int}'}, {'name': 'ID{b}'}]}, {'name': 'Block{Ret{Ternary}}', '_children': [{'name': 'Binary{>}', '_children': [{'name': 'ID{a}'}, {'name': 'ID{b}'}]}, {'name': '?'}, {'name': 'ID{a}'}, {'name': ':'}, {'name': 'ID{b}'}]}]}], 'size': [2111.1111111111113, 911.1111111111111], 'filename': 'samples/ParserTest.c'}
+   ```
+
+   This structed tree is in `json` format and is sent to our server to create a visualized and interactive AST on the webpage.
+
+3. **Visualized AST** (partial)
+
+   The visualized AST is too long to be screenshotted in a single page. You may see the complete version of the fancy-visualized AST in [Introduction of Visitor](#§5.2 Introduction of Visitor).
+
+   <img src="readme.assets/test/yacc-2.png" alt="yacc-2" style="zoom: 67%;" />
+
+Obtaining the above results with enough complexity, we carefully examined each one of the output. It turned out that **all nodes were parsed as desired**, with satisfying orders and precedence. **We can conclude that our parser passed the test.**
 
 ### §7.3 IR Generation and Execution
+
+#### checkpoint 1
+
+```c
+/**
+ * checkpoint 1
+ * feature:
+ *      single function & directly return
+ * expected output: 0
+ */
+int main() {
+    return 0;
+}
+```
+
+![image-20210606214039710](./readme.assets/image-20210606214039710.png)
+
+#### checkpoint 2
+
+```c
+/**
+ * checkpoint 2
+ * feature:
+ *      single function
+ *      single type variable declarations
+ * expected output: 0
+ */
+int main() {
+    int a;
+    int b;
+    int c;
+    return 0;
+}
+```
+
+![image-20210606214029210](./readme.assets/image-20210606214029210.png)
+
+#### checkpoint 3
+
+```c
+/**
+ * checkpoint 3
+ * feature:
+ *      single function
+ *      initilizers & declaration list
+ *      assignment expressions
+ * expected output: 6
+ */
+int main() {
+    int a = 0, b = 1, c = 2, d = 3;
+    a = b*c*d;
+    return a;
+}
+```
+
+![image-20210606214018531](./readme.assets/image-20210606214018531.png)
+
+#### checkpoint 4
+
+```c
+/**
+ * checkpoint 4
+ * feature:
+ *      single function
+ *      initilizers & declaration list
+ *      assignment expressions
+ *      more complicated expression
+ *      implicit type casting from int1 to int32
+ * expected output: 3
+ */
+int main() {
+    int a = 0, b = 1, c = 2, d = 3;
+    a = ((b*c*d) && (a*d)) + (((c+b)/d) || a) + b*c;
+    return a;
+}
+```
+
+![image-20210606214006372](./readme.assets/image-20210606214006372.png)
+
+#### checkpoint 5
+
+```c
+/**
+ * checkpoint 5
+ * feature:
+ *      integer type
+ *      multiple functions & function call
+ * expected output: 2
+ */
+int two() { return 2; }
+int main() {
+    return two();
+}
+```
+
+![image-20210606213956059](./readme.assets/image-20210606213956059.png)
+
+#### checkpoint 6
+
+```c
+/**
+ * checkpoint 6
+ * feature:
+ *      integer type
+ *      multiple functions & function call
+ *      if-else statements
+ *      loop statements
+ * expected output: 20
+ */
+int sum_up_to(int a) {
+    int sum = 0;
+    for (int i=0;i<a;i=i+1)
+        sum = sum + i;
+    return sum;
+}
+int main() {
+    int a = 5;
+    if (a % 2) return 2*sum_up_to(a);
+    else return sum_up_to(a);
+}
+```
+
+![image-20210606213945661](./readme.assets/image-20210606213945661.png)
+
+#### checkpoint 7
+
+```c
+/**
+ * checkpoint 7
+ * feature:
+ *      integer type
+ *      multiple functions & function call
+ *      nested if-else statements
+ *      recursion functions
+ * expected output: 8
+ */
+int fib(int n) {
+    if (n <= 0) return 0;
+    else if (n == 1) return 1;
+    else if (n == 2) return 1;
+    else return fib(n - 1) + fib(n - 2);
+}
+int main() {
+    int a = 6;
+    return fib(a);
+}
+```
+
+![image-20210606213930583](./readme.assets/image-20210606213930583.png)
+
+#### checkpoint 8
+
+```c
+/**
+ * checkpoint 8
+ * feature:
+ *      integer type
+ *      multiple functions & function call
+ *      nested if-else statements
+ *      recursion functions
+ *      nested loop statements
+ *      break & continue
+ * expected output: 595
+ */
+int fib(int n) {
+    // 1 1 2 3 5 8 13 21 34
+    if (n <= 0) return 0;
+    else if (n == 1) return 1;
+    else if (n == 2) return 1;
+    else return fib(n - 1) + fib(n - 2);
+}
+int main() {
+    int sum = 0;
+    for (int a = 4; a < 10; a++) {
+        if (a == 6) continue;
+        else if (fib(a) % 2 == 0) {
+            for (int b = fib(a); b > 0; b=b-1)
+                sum = sum + b;
+            break;
+        }
+    }
+    return sum;
+}
+```
+
+![image-20210606213902148](./readme.assets/image-20210606213902148.png)
+
+#### checkpoint 9
+
+```c
+/**
+ * checkpoint 9
+ * feature:
+ *      void return type
+ *      integer type & pointer type
+ *      & and * operator
+ *      value swap with pointers
+ * expected output: 2
+ */
+void swap(int *a, int *b) {
+    int c = *a;
+    *a = *b;
+    *b = c;
+}
+int main() {
+    int a=1, b=2;
+    int *c = &a;
+    int *d = &b;
+    swap(c,d);
+    return a;
+}
+```
+
+![image-20210606213817850](./readme.assets/image-20210606213817850.png)
+
+#### checkpoint 10
+
+```c
+/**
+ * checkpoint 10
+ * feature:
+ *      integer type & pointer type
+ *      array type
+ *      & and * operator
+ *      value swap with pointers
+ * expected output: 7
+ */
+void swap(int* a, int* b) {
+    int c = *a;
+    *a = *b;
+    *b = c;
+}
+int main() {
+    int a[3][3];
+    a[0][0] = 0; a[0][1] = 1; a[0][2] = 2;
+    a[1][0] = 3; a[1][1] = 4; a[1][2] = 5;
+    a[2][0] = 6; a[2][1] = 7; a[2][2] = 8;
+    int b=1, c=2;
+    int *ptr_to_b = &b;
+    int *ptr_to_c = &c;
+    swap(ptr_to_b,ptr_to_c);
+    return a[b][c];
+}
+```
+
+![image-20210606213801033](./readme.assets/image-20210606213801033.png)
+
+#### checkpoint 11
+
+```c
+/**
+ * checkpoint 11
+ * feature:
+ *      integer type & float type & void type
+ *      pointer type & array type
+ *      & and * operator
+ *      type casting:
+ *          xd array -> pointer
+ *          int <-> float
+ *      gloabl variables
+ *      multi-scopes
+ *      calculations:
+ *          *(pointer + integer)
+ * expected output: 12
+ */
+
+int n = 10;
+int a[10][10];
+
+int main() {
+    int i = 3, j = 3;
+    for (int i=0; i<n;i=i+1) {
+        for (int j=0; j<n; j=j+1) {
+            a[i][j] = i+j;
+        }
+    }
+    int * arr_ptr = (int*)a;
+    *(arr_ptr + i*n + j) = 2 * *(arr_ptr + i*n + j);
+    return a[i][j];
+}
+```
+
+![image-20210606213745784](./readme.assets/image-20210606213745784.png)
+
+#### checkpoint 12
+
+```c
+/**
+ * checkpoint 12
+ * feature:
+ *      integer type & float type & void type
+ *      pointer type & array type
+ *      & and * operator
+ *      type casting:
+ *          xd array -> pointer
+ *          int <-> float
+ *      calculations:
+ *          *(pointer + integer)
+ *      quicksort
+ *      random integer generation
+ * expected output: 1
+ */
+
+int qsort(int * a, int l, int r)
+{
+    int i = l;
+    int j = r;
+    int p = *(a + ((l + r)/2));
+    int flag = 1;
+    while (i <= j) {
+        while (*(a+i) < p) i = i + 1;
+        while (*(a+j) > p) j = j - 1;
+        if (i > j) break;
+        int u = *(a+i);
+        *(a+i) = *(a+j);
+        *(a+j) = u;
+        i = i + 1;
+        j = j - 1;
+    }
+    if (i < r) qsort(a, i, r);
+    if (j > l) qsort(a, l, j);
+    return 0;
+}
+
+// random floating point number distributed uniformly in [0,1]
+float rand(float *r) {
+    float base=256.0;
+    float a=17.0;
+    float b=139.0;
+    float temp1=a*(*r)+b;
+    float temp2=(float)(int)(temp1/base);
+    float temp3=temp1-temp2*base;
+    *r=temp3;
+    float p=*r/base;
+    return p;
+}
+
+int initArr(int* a, int n)
+{
+    float state = 114514.0;
+    int i =0;
+    while (i < n) {
+        *(a + i) = (int)(255*rand(&state));
+        i = i + 1;
+    }
+}
+
+int isSorted(int *a, int n)
+{
+    int i = 0;
+    while (i < n - 1) {
+        if ( (*(a+i)) > (*(a+i+1)))
+            return 0;
+        i = i + 1;
+    }
+    return 1;
+}
+
+int main()
+{
+    int n = 100;
+    int arr[100];
+    int * a = (int*)arr;
+    initArr(a, n);
+    qsort(a, 0, n - 1);
+    return isSorted(a, n);
+}
+```
+
+![image-20210606213723061](./readme.assets/image-20210606213723061.png)
+
+#### checkpoint 13
+
+```c
+/**
+ * checkpoint 13
+ * feature:
+ *      integer type & float type & void type
+ *      pointer type & array type
+ *      & and * operator
+ *      type casting:
+ *          xd array -> pointer
+ *          int <-> float
+ *      calculations:
+ *          *(pointer + integer)
+ *      multiplication of matrix
+ * expected output: 0
+ */
+
+int mulMatrix(int n, int *a, int *b, int *c) {
+    int i; int j; int k;
+    i = 0;
+    while (i < n) {
+        j = 0;
+        while (j < n) {
+            *(c + i*n + j) = 0;
+            k = 0;
+            while (k < n) {
+                int old = *(c + i*n + j);
+                *(c + i*n + j) = old + *(a+i*n + k) * (*(b+k*n + j));
+                k = k + 1;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+
+int initMatrix(int n, int *a) {
+int i; int j; int k;
+    k = 0;
+    i = 0;
+    while (i < 2) {
+        j = 0;
+        while (j < 2) {
+            k = k + 1;
+            *(a + i*n + j) = k;
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+
+int a[2][2]; int b[2][2]; int c[2][2];
+int main() {
+    initMatrix(2, (int*)a);
+    mulMatrix(2, (int*)a, (int*)a, (int*)b);
+    mulMatrix(2, (int*)b, (int*)b, (int*)c);
+    if (c[0][0] != 199)
+        return 1;
+    if (c[0][1] != 290)
+        return 2;
+    if (c[1][0] != 435)
+        return 3;
+    if (c[1][1] != 634)
+        return 4;
+    return 0;
+}
+```
+
+![image-20210606213708636](./readme.assets/image-20210606213708636.png)
+
+#### checkpoint 14
+
+```c
+
+/**
+ * checkpoint 13
+ * feature:
+ *      dijkstar shortest path algorithm
+ * expected output: 17
+ */
+
+int main(void)
+{
+    int e[10][10], dis[10], book[10], i, j, m, n, t1, t2, t3, u, v, min;
+    n = 6;
+    m = 9;
+    int inf = 99999;
+    for (i = 1; i <= n; i++)
+        for (j = 1; j <= n; j++)
+            e[i][j] = inf;
+    e[1][2] = 1;
+    e[1][3] = 12;
+    e[2][3] = 9;
+    e[2][4] = 3;
+    e[3][5] = 5;
+    e[4][3] = 4;
+    e[4][5] = 13;
+    e[4][6] = 15;
+    e[5][6] = 4;
+    for (i = 1; i <= n; i++)
+        dis[i] = e[1][i];  //初始化dis数组，表示1号顶点到其他顶点的距离
+    for (i = 1; i <= n; i++)
+        book[i] = 0;
+    book[i] = 1;  //记录当前已知第一个顶点的最短路径
+    for (i = 1; i <= n - 1; i++)
+        for (i = 1; i <= n - 1; i++) {  //找到离一号顶点最近的点
+            min = inf;
+            for (j = 1; j <= n; j++) {
+                if (book[j] == 0 && dis[j] < min) {
+                    min = dis[j];
+                    u = j;
+                }
+            }
+            book[u] = 1;  //记录当前已知离第一个顶点最近的顶点
+            for (v = 1; v <= n; v++) {
+                if (e[u][v] < inf) {
+                    if (dis[v] > dis[u] + e[u][v])
+                        dis[v] = dis[u] + e[u][v];
+                }
+            }
+        }
+    //0 1 8 4 13 17
+    return dis[6];
+}
+```
+
+![image-20210606213651435](./readme.assets/image-20210606213651435.png)
+
+
+## References
+
+- [PyCParser](https://github.com/eliben/pycparser)
+- `MiniDecaf`
