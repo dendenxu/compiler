@@ -337,12 +337,14 @@ shrink.addEventListener("click", () => {
   update(root);
 });
 
-download.addEventListener("click", () => {
+download.addEventListener("click", async () => {
   console.log(svgelement[0][0]);
   todownload = svgelement[0][0].cloneNode(true);
 
-  style = $("<style>").load("./style.css")[0];
+  content = await $.get("./style.css");
+  style = $("<style>").html(content)[0];
   console.log(style);
+  // console.log(style.outerHTML);
 
   todownload.insertBefore(style, todownload.firstChild);
   todownload.setAttribute("xmlns", "http://www.w3.org/2000/svg");
