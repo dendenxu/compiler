@@ -1,14 +1,27 @@
+
+
+![校标](readme.assets/校标.svg)
+
+<center><strong style="font-size: 1.8em">Zhejiang Unversity Experiment Report</strong></center>
+
+
+
+- **Course Name:** Compiler Principle
+- **Student Name:** Feng Xiang, Wang Junzhe, Xu Zhen
+- **Student ID:** 3180103426, 3180103011, 3180105504
+- **Department:** Computer Science
+- **Major:** Computer Science
+- **Instructor:** Feng Yan
+
+
+
+[toc]
+
 # Nano C Compiler
 
 The C programming language compiler with extremely limited functionality:smile:
 
 Visit [the tree visualizer](http://neon-cubes.xyz:8000/src/nanoast.html) to see what abstract tree the developer is lately developing.
-
-
-
-
-
-
 
 Usage:
 
@@ -69,7 +82,7 @@ optional arguments:
 
 ==IMPORTANT: The visualizer is hosted at: [my server](http://neon-cubes.xyz:8000/src/nanoast.html)==
 
-[toc]
+
 
 ## Chapter 1 - Lexical Analysis
 
@@ -1877,8 +1890,3 @@ The grammar productions used in Nano C is listed in [BNF Definition for the Nano
 - **Output:**
 
 ### §7.3 IR Generation and Execution
-
-## References
-
-- [PyCParser](https://github.com/eliben/pycparser)
-- `MiniDecaf`
