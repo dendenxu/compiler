@@ -871,9 +871,7 @@ Specifically, We have
   - `AssNode` for assignment expressions
   - `ArrSubNode` for subscription of an array/pointer
 
-### §3.2 Tree Traversal
-
-### §3.3 Tree Visualization and Interaction
+### §3.2 Tree Visualization and Interaction
 
 ==IMPORTANT: To better grasp the ability of our Abstract Syntax Tree visualizer, go to the [GitHub](https://github.com/dendenxu/compiler) of this repo to see for yourself.==
 
@@ -916,7 +914,7 @@ You're also able to download a fully viewable tree from the server directly (or 
 
 You'll see similar **SVG** embedded in our report later in the Code Generation section.
 
-### §3.4 Optimization Considerations
+### §3.3 Optimization Considerations
 
 #### Better Debugging Interface
 
@@ -961,6 +959,97 @@ int main()
 ```
 
 ![image-20210606203509676](readme.assets/image-20210606203509676.png)
+
+Correct warning location during later phases:
+
+This is the source for a simple quicksort algorithm
+
+```c
+/**
+ * feature:
+ *      integer type & float type & void type
+ *      pointer type & array type
+ *      & and * operator
+ *      type casting:
+ *          xd array -> pointer
+ *          int <-> float
+ *      calculations:
+ *          *(pointer + integer)
+ *      quicksort
+ *      random integer generation
+ * expected output: 1
+ */
+
+int qsort(int *a, int l, int r)
+{
+    int i = l;
+    int j = r;
+    int p = *(a + ((l + r) / 2));
+    int flag = 1;
+    while (i <= j) {
+        while (*(a + i) < p) i++;
+        while (*(a + j) > p) j--;
+        if (i > j) break;
+        int u = *(a + i);
+        *(a + i) = *(a + j);
+        *(a + j) = u;
+        i++;
+        j--;
+    }
+    if (i < r) qsort(a, i, r);
+    if (j > l) qsort(a, l, j);
+    return 0;
+}
+
+// random floating point number distributed uniformly in [0,1]
+float rand(float *r)
+{
+    float base = 256.0;
+    float a = 17.0;
+    float b = 139.0;
+    float temp1 = a * (*r) + b;
+    float temp2 = (float)(int)(temp1 / base);
+    float temp3 = temp1 - temp2 * base;
+    *r = temp3;
+    float p = *r / base;
+    return p;
+}
+
+int initArr(int *a, int n)
+{
+    float state = 114514.0;
+    int i = 0;
+    while (i < n) {
+        *(a + i) = (int)(255 * rand(&state));
+        i += 1;
+    }
+}
+
+int isSorted(int *a, int n)
+{
+    int i = 0;
+    while (i < n - 1) {
+        if ((*(a + i)) > (*(a + i + 1)))
+            return 0;
+        i += 1;
+    }
+    return 1;
+}
+
+int main()
+{
+    int n = 100;
+    int arr[100];
+    int *a = (int *)arr;
+    initArr(a, n);
+    qsort(a, 0, n - 1);
+    return isSorted(a, n);
+}
+```
+
+With the help of carefully designed line number/column memory and the help of a tracking parser, it's easy for the user to locate the erroneous code.
+
+![image-20210606211234698](readme.assets/image-20210606211234698.png)
 
 #### Better Coding
 
