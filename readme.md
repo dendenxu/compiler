@@ -705,31 +705,47 @@ Thus a simple `AssNode` (meaning, `Assignment Node`) can take care of all of the
 This is implemented as:
 
 ```python
-#############################################################
-#                           Assignment                      #
-#############################################################
-
 def p_assignment(self, p):
     '''
     assignment          : unary EQUALS expression
+                        | unary TIMESEQUAL expression
+                        | unary DIVEQUAL expression
+                        | unary MODEQUAL expression
+                        | unary PLUSEQUAL expression
+                        | unary MINUSEQUAL expression
+                        | unary LSHIFTEQUAL expression
+                        | unary RSHIFTEQUAL expression
+                        | unary ANDEQUAL expression
+                        | unary XOREQUAL expression
+                        | unary OREQUAL expression
     unary               : PLUSPLUS unary
                         | MINUSMINUS unary
     postfix             : postfix PLUSPLUS
                         | postfix MINUSMINUS
-    '''
-    if len(p) == 4:  # true assignment
-        p[0] = AssNode(p[1], p[3])
-    elif p[1] == "++":
-        p[0] = AssNode(p[2], BinaryNode('+', p[2], IntNode(1)))
-    elif p[1] == "--":
-        p[0] = AssNode(p[2], BinaryNode('-', p[2], IntNode(1)))
-    elif p[2] == "++":
-        p[0] = AssNode(p[1], BinaryNode('+', p[1], IntNode(1)))
-    elif p[2] == "--":
-        p[0] = AssNode(p[1], BinaryNode('-', p[1], IntNode(1)))
-```
 
-- [ ] Assignment
+    '''
+    if len(p) == 4:
+        if len(p[2]) == 1:  # true assignment
+            p[0] = AssNode(p[1], p[3])
+        else:
+            if len(p[2]) == 3:
+                op = p[2][:2]
+            else:
+                op = p[2][:1]
+            p[0] = AssNode(p[1], BinaryNode(op, p[1], p[3]))
+
+    else:
+        if p[1] == "++":
+            p[0] = AssNode(p[2], BinaryNode('+', p[2], IntNode(1)))
+        elif p[1] == "--":
+            p[0] = AssNode(p[2], BinaryNode('-', p[2], IntNode(1)))
+        elif p[2] == "++":
+            p[0] = AssNode(p[1], BinaryNode('+', p[1], IntNode(1)))
+        elif p[2] == "--":
+            p[0] = AssNode(p[1], BinaryNode('-', p[1], IntNode(1)))
+        p[0].exp.update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
+    p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
+```
 
 
 
