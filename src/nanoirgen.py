@@ -600,6 +600,14 @@ class NanoVisitor(Visitor):
                 node.value = self._get_builder().srem(
                     val(node.left),
                     val(node.right))
+            elif node.op == '<<':
+                node.value = self._get_builder().shl(
+                    val(node.left),
+                    val(node.right))
+            elif node.op == '>>':
+                node.value = self._get_builder().ashr(
+                    val(node.left),
+                    val(node.right))
             elif node.op == '<':
                 node.value = self._get_builder().icmp_signed(
                     '<',

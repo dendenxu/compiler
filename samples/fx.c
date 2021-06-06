@@ -7,6 +7,7 @@ int k(int a) {
 }
 int main(int a, int b) {
     int a=1, b=2;
-    a = b = 3;
-    return a;
+    a = 255;
+    b = 4;
+    return a>>b;
 }
