@@ -33,19 +33,7 @@ def traverse(node: Node):
         ctree = traverse(attr)
         tree[NAME] += f"{{{ctree[NAME]}}}"
     elif isinstance(node, AssNode):
-        # ctree = traverse(attr)
-        # tree[NAME] += f"{{{ctree[NAME]}}}"
         tree[NAME] += f"{{=}}"
-    # elif isinstance(node, DecNode):
-    #     t = attrnames[0]
-    #     del attrnames[0]
-    #     i = attrnames[0]
-    #     del attrnames[0]
-    #     t = getattr(node, t)
-    #     i = getattr(node, i)
-    #     ttree = traverse(t)
-    #     itree = traverse(i)
-    #     tree[NAME] += f"{{{ttree[NAME]}{itree[NAME]}}}"
 
     if len(attrnames) == 1:
         attr = getattr(node, attrnames[0])

@@ -153,7 +153,6 @@ class ProgNode(Node):
     # A simple Abstract Syntax Tree for the whole program
     # currently, the program only supports a function
     def __init__(self, *args):
-        # assert func.id.name == "main", "No main function defined for program"
         super().__init__()
         self.funcs = [*args]
 
@@ -181,7 +180,6 @@ class EmptyExpNode(Node):
 class ArrSubNode(Node):
     def __init__(self, subee: UnaryNode, suber: UnaryNode):
         super().__init__()
-        # self.subee, self.suber = subee, suber
         self.subee, self.suber = subee, suber
 
     def __str__(self):
