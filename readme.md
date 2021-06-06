@@ -6,6 +6,14 @@ We'd only implement a subset of a subset of C. Don't even expect preprocessing.
 
 And **do remember to delete these lines after this repo goes public**
 
+Visit [the tree visualizer](http://neon-cubes.xyz:8000/src/nanoast.html) to see what abstract tree the developer is lately developing.
+
+<center><strong style="font-size: 1.8em">If You're Viewing the PDF Format of This File</strong></center>
+
+==IMPORTANT: To better grasp the ability of our Abstract Syntax Tree visualizer, go to the [GitHub](https://github.com/dendenxu/compiler) of this repo to see for yourself.==
+
+==IMPORTANT: The visualizer is hosted at: [my server](http://neon-cubes.xyz:8000/src/nanoast.html)==
+
 [toc]
 
 ## Chapter 1 - Lexical Analysis
@@ -833,30 +841,6 @@ There's an ugly solution to this:
 
 We adopted the OOP design pattern to make life easier for `pylance`, the type checking utility and auto-complete functionality of the developer's IDE
 
-Before, you might need to check whether a node is valid by comparing some raw string:
-
-```python
-if node.name == "StmtNode": pass
-```
-
-This design makes the compiler writer get trapped in the pitfall of **typos**.
-
-Now you only need to do
-
-```python
-if isinstance(node, StmtNode): pass
-```
-
-or
-
-```python
-if type(node) == StmtNode: pass
-```
-
-Writing things out explicitly makes the checker's life, and your life much easier by providing richer error messages.
-
-I believe you've all had that afternoon spent digging into your code trying to find which tiny typo crashed your delicate, complex, strong program.
-
 `Node` is defined to be the base class of every node and this type can be used to distinguish an actual `NanoAST` node from some string/number literals and original python literals like `list`s or `dict`s.
 
 Specifically, We have
@@ -889,9 +873,124 @@ Specifically, We have
 
 ### §3.2 Tree Traversal
 
-### §3.3 Side Note: Python Hosted Server
+### §3.3 Tree Visualization and Interaction
 
-### §3.4 Tree Visualization and Interaction
+==IMPORTANT: To better grasp the ability of our Abstract Syntax Tree visualizer, go to the [GitHub](https://github.com/dendenxu/compiler) of this repo to see for yourself.==
+
+==IMPORTANT: The visualizer is hosted at: [my server](http://neon-cubes.xyz:8000/src/nanoast.html)==
+
+On the hosted server mentioned above, we have a nice little html (including some `javascript`) to display the abstract syntax tree in an understandable and **interactive** manner.
+
+If you're able to see the moving GIF, I don't think I need to explain more.
+
+If you're seeing a static image, please read the `IMPORTANT` message a few lines above.
+
+![ast](readme.assets/ast.gif)
+
+The server is also designed to accept incoming compilation, so you can basically update what to display to everyone by uploading the `tree.json` traversed to the server.
+
+Implementation:
+
+```python
+tree = traverse(root)
+addinfo(tree, args.input)
+# Print Struct Tree (data sent to server)
+print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
+print(tree)
+payload = json.dumps(tree)
+
+if args.tree:
+    with open(args.tree, 'w') as f:
+        f.write(payload)
+        print(colored(f"Saved Structrued Tree to {args.tree}", 'yellow', attrs=['bold']))
+
+r = requests.post(url=args.url, data=payload)
+print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))
+```
+
+![ast_compile](readme.assets/ast_compile.gif)
+
+You're also able to download a fully viewable tree from the server directly (or rather, from the `nanoast.html` you're visiting)
+
+![download_svg](readme.assets/download_svg.gif)
+
+You'll see similar **SVG** embedded in our report later in the Code Generation section.
+
+### §3.4 Optimization Considerations
+
+#### Better Debugging Interface
+
+When designing the base class of all nodes, we considered the need to pretty print all things from command-line, thus a `indentLevel` is added and all `__str__` methods of nodes are designed to recursively do a depth first search on the abstract syntax tree to produce some human readable parsing results (with formats!)
+
+```python
+class Node(object):
+    # A simple Abstract Syntax Tree node
+    TABSTR = '|   '
+
+    def __init__(self):
+        self._indentLevel = 0
+        self._lineno = self._colno = 0
+
+    def update_pos(self, line: int, col: int):
+        self._lineno = line
+        self._colno = col
+
+    def accept(self, visitor: NanoVisitor):
+        pass
+```
+
+![image-20210606202857114](readme.assets/image-20210606202857114.png)
+
+Also, with error message in mind, we printed detailed line numbering and column to help the compiler user location where things might have gone wrong as early as possible.
+
+```c
+int main()
+{
+    { ret
+    }
+}
+```
+
+![image-20210606203341832](readme.assets/image-20210606203341832.png)
+
+```c
+int main()
+{
+    if (if)
+}
+```
+
+![image-20210606203509676](readme.assets/image-20210606203509676.png)
+
+#### Better Coding
+
+We adopted the OOP design pattern to make life easier for `pylance`, the type checking utility and auto-complete functionality of the developer's IDE
+
+Before, you might need to check whether a node is valid by comparing some raw string:
+
+```python
+if node.name == "StmtNode": pass
+```
+
+This design makes the compiler writer get trapped in the pitfall of **typos**.
+
+Now you only need to do
+
+```python
+if isinstance(node, StmtNode): pass
+```
+
+or
+
+```python
+if type(node) == StmtNode: pass
+```
+
+Writing things out explicitly makes the checker's life, and your life much easier by providing richer error messages.
+
+I believe you've all had that afternoon spent digging into your code trying to find which tiny typo crashed your delicate, complex, strong program.
+
+`Node` is defined to be the base class of every node and this type can be used to distinguish an actual `NanoAST` node from some string/number literals and original python literals like `list`s or `dict`s.
 
 ## Chapter 4 - Semantic Analysis
 
@@ -1052,17 +1151,17 @@ allowed_casting = [
 
 ## Chapter 5 - Code Generation
 
-In the previous part, we have already obtained an abstract syntax tree. Then, we need to visit this tree to generate the target code. Of course we can directly generate target code like assmebly language from this AST. However, on the consideration of scalability, we will first generate intermediate representation(IR) of this abstarct syntax tree and then synthesize target code from this intermediate representation. 
+In the previous part, we have already obtained an abstract syntax tree. Then, we need to visit this tree to generate the target code. Of course we can directly generate target code like assembly language from this AST. However, on the consideration of scalability, we will first generate intermediate representation(IR) of this abstract syntax tree and then synthesize target code from this intermediate representation.
 
-As for the generation of intermediate representation, we use a python package named llvmlite. LLVMlite is a small subset of the LLVM IR that we will be using throughout the course as the intermediate representation in our compiler. Conceptually, it is either an abstract assembly-like language or a even lower-level C-like language that is convenient to manipulate programatically.
+As for the generation of intermediate representation, we use a python package named `llvmlite`. `LLVMlite` is a small subset of the LLVM IR that we will be using throughout the course as the intermediate representation in our compiler. Conceptually, it is either an abstract assembly-like language or a even lower-level C-like language that is convenient to manipulate programmatically.
 
 ### §5.1 LLVM Intermediate Representation
 
-To give you a sense of structure of LLVMlite programs and the most basic features, the following is our running example, the simple recursive factorial function written in the concrete syntax of the LLVMlite IR.
+To give you a sense of structure of `LLVMlite` programs and the most basic features, the following is our running example, the simple recursive factorial function written in the concrete syntax of the `LLVMlite` IR.
 
 ```assembly
     define i64 @fac(i64 %n) {              ; (1)
-      %1 = icmp sle i64 %n, 0              ; (2) 
+      %1 = icmp sle i64 %n, 0              ; (2)
       br i1 %1, label %ret, label %rec     ; (3)
     ret:                                   ; (4)
       ret i64 1
@@ -1075,13 +1174,13 @@ To give you a sense of structure of LLVMlite programs and the most basic feature
 
     define i64 @main() {                   ; (9)
       %1 = call i64 @fac(i64 6)
-      ret i64 %1                           
+      ret i64 %1
     }
 ```
 
-First, notice the function definition at (1). The i64 annotations declare the return type and the type of the argument n. The argument is prefixed with "%" to indicate that it's an identifier local to the function, while fac is prefixed with "@" to indicate that it is in scope in the entire compilation unit.
+First, notice the function definition at (1). The i64 annotations declare the return type and the type of the argument n. The argument is prefixed with "%" to indicate that it's an identifier local to the function, while `fac` is prefixed with "@" to indicate that it is in scope in the entire compilation unit.
 
-Next, at (2) we have the first instruction of the body of fac, which performs a signed comparison of the argument %n and 0 and assigns the result to the temporary %1. The instruction at (3) is a "terminator", and marks the end of the current block. It will transfer control to either ret at (4) or rec at (5). The labels at (4) and (5) each indicate the beginning of a new block of instructions. Notice that the entry block starting at (2) is not labeled: in LLVM it is illegal to jump back to the entry block of a function body. Moving on, (6) performs a subtraction and names the result %2. The i64 annotation indicates that both operands are 64-bit integers. The function fac is called at (7), and the result named %3. Again, the i64 annotations indicate that the single argument and the returned value are 64-bit integers.
+Next, at (2) we have the first instruction of the body of `fac`, which performs a signed comparison of the argument %n and 0 and assigns the result to the temporary %1. The instruction at (3) is a "terminator", and marks the end of the current block. It will transfer control to either ret at (4) or rec at (5). The labels at (4) and (5) each indicate the beginning of a new block of instructions. Notice that the entry block starting at (2) is not labeled: in LLVM it is illegal to jump back to the entry block of a function body. Moving on, (6) performs a subtraction and names the result %2. The i64 annotation indicates that both operands are 64-bit integers. The function `fac` is called at (7), and the result named %3. Again, the i64 annotations indicate that the single argument and the returned value are 64-bit integers.
 
 Finally, (8) returns from the function with the result named by %4, and (9) defines the main function of the program, which simply calls fac with a literal i64 argument.
 
@@ -1089,9 +1188,17 @@ Finally, (8) returns from the function with the result named by %4, and (9) defi
 
 ![ir_ast_preview](readme.assets/ir_ast_preview.svg)
 
-To generate the IR mentioned above, we use a visitor class named `NanoVisitor`. Given an abstarct syntax tree like the above figure, the visitor will first visit the ProgNode which is marked as root. Then the visitor will well groundedly travel the childs of root. 
+To generate the IR mentioned above, we use a visitor class named `NanoVisitor`. Given an abstract syntax tree like the above figure, the visitor will first visit the `ProgNode` which is marked as root. Then the visitor will well grounded travel the children of root.
+
+<<<<<<< HEAD
+
+### §5.3 Design Pattern: Reflection
+
+=======
 
 #### Design Pattern: Reflection
+
+> > > > > > > 6e2d9cfb0ae6167e07e85259869ad37810043584
 
 One problem in traveling step is that visitor does not know the type of node and thus can not do specific actions depending on the type of node. To solve this problem, we use the design pattern of reflection. That is, the visitor will call the `accept` method of class node. The derived classes of `Node` will override the `accept` method to their own visiting procedure. So, the calling flow is just like `Visitor->Node->Visitor` which can be interpreted as reflection. A piece of sample code is shown as below:
 
@@ -1117,17 +1224,17 @@ class FuncNode(Node):
 # ...
 ```
 
-#### Attributes
+### §5.4 Attributes
 
 During the IR generation, or in the other words, travelly visiting the AST, we need to set some attributes which may be referenced afterwards. Several key attributes in the visitor are shown as below:
 
-+ cur_module: a `llvmlite.ir.Module` object. This obj provides the IR generation environment, we can do nothing without it.
+- cur_module: a `llvmlite.ir.Module` object. This obj provides the IR generation environment, we can do nothing without it.
 
-+ cur_func_name: a `str` object. Mark which function is currently processed, initialized with empty string.
+- cur_func_name: a `str` object. Mark which function is currently processed, initialized with empty string.
 
-+ builder_stack: a `llvmlite.ir.IRBuilder` object. This obj is used to insert IR instructions after the blocks.
+- builder_stack: a `llvmlite.ir.IRBuilder` object. This obj is used to insert IR instructions after the blocks.
 
-+ scope_stack: a `list` object. Each element in the stack is of type `dict`. This obj denotes the symbol table and scopes. The procedure of getting an identifier in the current scope just work like below:
+- scope_stack: a `list` object. Each element in the stack is of type `dict`. This obj denotes the symbol table and scopes. The procedure of getting an identifier in the current scope just work like below:
 
   ```python
       def _get_identifier(self, name):
@@ -1137,9 +1244,9 @@ During the IR generation, or in the other words, travelly visiting the AST, we n
           return None
   ```
 
-+ loop_exit_stack & loop_entr_stack: a `list` object. Since we support nested loop statements, continue and break statements, we need to remember the last entrance/exit point(usually interpreted as the beginning of a block). The next time we analysis break or continue, we can pop the exit stack or entrance stack and branch there.
+- loop_exit_stack & loop_entr_stack: a `list` object. Since we support nested loop statements, continue and break statements, we need to remember the last entrance/exit point(usually interpreted as the beginning of a block). The next time we analysis break or continue, we can pop the exit stack or entrance stack and branch there.
 
-+ in_global:  a `bool` object. Mark whether the visitor is currently at the global scope. If it is, the declared variable will be allocated in the global space.
+- in_global: a `bool` object. Mark whether the visitor is currently at the global scope. If it is, the declared variable will be allocated in the global space.
 
 ```python
 class NanoVisitor(Visitor):
@@ -1238,7 +1345,7 @@ do-while:
 
 Based on above analysis, we divide the loop statements into two cases:
 
-+ `for` and `while`:
+- `for` and `while`:
 
   ```python
               """ do-while
@@ -1255,7 +1362,7 @@ Based on above analysis, we divide the loop statements into two cases:
               """
   ```
 
-+ `do-while`:
+- `do-while`:
 
   ```python
               """ for & while
@@ -1406,4 +1513,4 @@ Notice that every time we do indexing, we need to pass one extral 0 value. This 
 ## References
 
 - [PyCParser](https://github.com/eliben/pycparser)
-- ...
+- `MiniDecaf`
