@@ -314,6 +314,171 @@ Firstly, let's take a comprehensive look at our grammar:
 
      *This optimization would be later illustrated in better detail in the next section*
 
+### BNF Definition for the Nano C Language
+
+According to the above grammar specification, we define the following BNF grammars to recognize the specific token patterns
+
+1. We used the careful ordering of grammar production to support complex precedence
+2. We inherited the line number and column identification from **tokens** to give some comprehensive error message
+3. BNF are written in a nest-able form, allowing for easy recognition of recursively nested grammar
+
+```python
+"""
+Grammars written here is for you (the human reading this) to have a comprehensive understanding of the NanoC language. They're written in BNF for better copy-pasting compability for the parser, and it should be just the same as the ones used in the parser to build the AST.
+
+Productions used in the parser:
+
+        program             : program function
+                            | program declaration
+                            |
+        function            : type id LPAREN param_list RPAREN curl_block
+        param_list          : type id comma_paramters
+                            | VOID
+                            |
+        comma_params        : comma_params COMMA type id
+                            |
+        block               : block curl_block
+                            | block statement
+                            | 
+        id                  : ID
+        type                : INT
+                            | VOID
+                            | LONG
+                            | FLOAT
+                            | DOUBLE
+                            | CHAR
+                            | type TIMES
+        statement           : expression SEMI
+                            | declaration
+                            | IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
+                            | IF LPAREN expression RPAREN ctrl_block
+                            | FOR LPAREN for_init RPAREN ctrl_block
+                            | WHILE LPAREN expression RPAREN ctrl_block
+                            | DO ctrl_block WHILE LPAREN expression RPAREN SEMI
+                            | RETURN empty_or_exp SEMI
+                            | BREAK SEMI
+                            | CONTINUE SEMI
+                            | SEMI
+        for_init            : empty_or_exp SEMI empty_or_exp SEMI empty_or_exp
+                            | declaration empty_or_exp SEMI empty_or_exp
+        exp_list            : expression comma_exps
+                            |
+        comma_exps          : comma_exps COMMA expression
+                            |
+        empty_or_exp        : expression
+                            | 
+        ctrl_block          : curl_block
+                            | statement
+        curl_block          : LBRACE block RBRACE
+        declaration         : type dec_list SEMI
+        dec_list            : dec_list COMMA id array_list typeinit
+                            | id array_list typeinit
+        typeinit            : EQUALS expression
+                            | 
+        array_list          : array_list LBRACKET INT_CONST_DEC RBRACKET
+                            |
+        expression          : assignment
+        assignment          : conditional
+                            | unary EQUALS expression
+        conditional         : logical_or
+                            | logical_or CONDOP expression COLON conditional
+        logical_or          : logical_and
+                            | logical_or LOR logical_and
+        logical_and         : bitwise_or
+                            | logical_and LAND bitwise_or
+        bitwise_or          : bitwise_xor
+                            | bitwise_or OR bitwise_xor
+        bitwise_xor         : bitwise_and
+                            | bitwise_xor XOR bitwise_and
+        bitwise_and         : equality
+                            | bitwise_and AND equality
+        equality            : relational
+                            | equality (EQ|NE) relational
+        relational          : shiftable
+                            | relational (LT|GT|LE|GE) shiftable
+        shiftable           : additive
+                            | shiftable (LSHIFT|RSHIFT) additive
+        additive            : multiplicative
+                            | additive (PLUS|MINUS) multiplicative
+        multiplicative      : unary
+                            | multiplicative (TIMES|DEVIDE|MOD) unary
+        unary               : postfix
+                            | (PLUS|MINUS|NOT|LNOT|TIMES|AND|PLUSPLUS|MINUSMINUS) unary
+                            | LPAREN type RPAREN unary
+        postfix             : primary
+                            | id LPAREN exp_list RPAREN
+                            | postfix LBRACKET expression RBRACKET
+                            | id PLUSPLUS
+                            | id MINUSMINUS
+        primary             : INT_CONST_DEC
+                            | FLOAT_CONST
+                            | CHAR_CONST
+                            | STRING_LITERAL
+                            | id
+                            | LPAREN expression RPAREN
+"""
+```
+
+As mentioned above, we used the `ply` package for token/syntax recognition
+
+With a well-defined grammar, the next step is to parse corresponding production into a well-organized **Abstract Syntax Tree**, which will be illustrated in more detail in the following section
+
+Being an **abstract** syntax tree, a large portion of the parsing is simply to define which production results in which kind of tree node, and how those nodes are to be organized correctly
+
+```python
+#############################################################
+#                  Arithmetic/Logical Operations            #
+#############################################################
+
+def p_binary_operators(self, p):
+    '''
+    logical_or          : logical_or LOR logical_and
+    logical_and         : logical_and LAND bitwise_or
+    bitwise_or          : bitwise_or OR bitwise_xor
+    bitwise_xor         : bitwise_xor XOR bitwise_and
+    bitwise_and         : bitwise_and AND equality
+    equality            : equality EQ relational
+                        | equality NE relational
+    relational          : relational LT shiftable
+                        | relational GT shiftable
+                        | relational GE shiftable
+                        | relational LE shiftable
+    shiftable           : shiftable LSHIFT additive
+                        | shiftable RSHIFT additive
+    additive            : additive PLUS multiplicative
+                        | additive MINUS multiplicative
+    multiplicative      : multiplicative TIMES unary
+                        | multiplicative DIVIDE unary
+                        | multiplicative MOD unary
+    '''
+    p[0] = BinaryNode(p[2], p[1], p[3])
+
+```
+
+Take this binary operation parsing as an example:
+
+- The precedence are defined within the grammar itself
+
+- The actual operator takes similar form (a string of one/two special character indicating a specific operation)
+
+- Nested parenthesis pairs and the actual positioning (where these operations should appear) of those operations are well defined into the **tree-structure** (*the parse tree*)
+
+- Boiling down to the AST building, all we have to do is construct the AST node and store it for later (upper in the parse tree)
+
+    ```python
+    p[0] = BinaryNode(p[2], p[1], p[3])
+    ```
+
+Thanks to the parse tree, `p[1]`, `p[2]`, `p[3]` are already valid elements of the AST (constructed in the parsing process before this one and saved to the **parsed object `p[0]`**)
+
+For example, some consecutive parsing of binary operations (`LPAREN` and `RPAREN` taken care of, omitted here) might be flattened like this:
+
+```python
+p[0] = BinaryNode(BinaryNode(BinaryNode(p[2], p[1], BinaryNode(p[2], p[1], p[3])), p[1], p[3]), p[1], BinaryNode(BinaryNode(p[2], p[1], p[3]), p[1], BinaryNode(p[2], p[1], p[3])))
+```
+
+
+
 
 
 ### Specific Optimizations
