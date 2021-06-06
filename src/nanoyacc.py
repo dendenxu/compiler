@@ -644,9 +644,9 @@ class NanoParser():
 
     def p_error(self, p):
         # with a syntax error, the token should contain corresponding location
-        errLine = p.lineno(0)
-        errCol = self._find_tok_column(p.lexpos(0))
-        print(colored(f"Error {errLine, errCol}:", "red") + "Syntax error when parsing " + str(p))
+        # errLine = p.lineno(0)
+        # errCol = self._find_tok_column(p.lexpos(0))
+        print(colored(f"Error: ", "red") + "Syntax error when parsing " + str(p))
 
     #############################################################
     #                      External Functions                   #
@@ -684,10 +684,10 @@ if __name__ == '__main__':
         print(root)
 
         tree = traverse(root)
-        # Print Struct Tree (data sent to server)
-        # print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
-        # print(tree)
         addinfo(tree, args.input)
+        # Print Struct Tree (data sent to server)
+        print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
+        print(tree)
         payload = json.dumps(tree)
 
         if args.tree:
