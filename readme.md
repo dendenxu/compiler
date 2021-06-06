@@ -1468,7 +1468,10 @@ In conclusion, the program `nanolex.py` tokenized the input files as desired in 
 
 ### §7.2 Yacc
 
+The grammar productions used in Nano C is listed in [BNF Definition for the Nano C Language](#§2.2 BNF Definition for the Nano C Language). File `samples/ParserTest.c` is designed to test the parser implemented by yacc.
 
+- **Input:** The file to be parsed.
+- **Output:** 
 
 ### §7.3 IR Generation and Execution
 
