@@ -765,19 +765,78 @@ def p_assignment(self, p):
 
 ## Chapter 5 - Code Generation
 
-In the previous part, we have already obtained an abstract syntax tree. Then, we need to visit this tree to generate the target code. Of course we can directly generate target code like assmebly language from this AST. However, on the consideration of scalability, we will first generate intermediate representation of out As for code generation, we use a python package named llvmlite to 
+In the previous part, we have already obtained an abstract syntax tree. Then, we need to visit this tree to generate the target code. Of course we can directly generate target code like assmebly language from this AST. However, on the consideration of scalability, we will first generate intermediate representation(IR) of this abstarct syntax tree and then synthesize target code from this intermediate representation. 
+
+As for the generation of intermediate representation, we use a python package named llvmlite. LLVMlite is a small subset of the LLVM IR that we will be using throughout the course as the intermediate representation in our compiler. Conceptually, it is either an abstract assembly-like language or a even lower-level C-like language that is convenient to manipulate programatically.
 
 ### LLVM Intermediate Representation
 
+To give you a sense of structure of LLVMlite programs and the most basic features, the following is our running example, the simple recursive factorial function written in the concrete syntax of the LLVMlite IR.
 
+```assembly
+    define i64 @fac(i64 %n) {              ; (1)
+      %1 = icmp sle i64 %n, 0              ; (2) 
+      br i1 %1, label %ret, label %rec     ; (3)
+    ret:                                   ; (4)
+      ret i64 1
+    rec:                                   ; (5)
+      %2 = sub i64 %n, 1                   ; (6)
+      %3 = call i64 @fac(i64 %2)           ; (7)
+      %4 = mul i64 %n, %3
+      ret i64 %4                           ; (8)
+    }
 
+    define i64 @main() {                   ; (9)
+      %1 = call i64 @fac(i64 6)
+      ret i64 %1                           
+    }
+```
 
+First, notice the function definition at (1). The i64 annotations declare the return type and the type of the argument n. The argument is prefixed with "%" to indicate that it's an identifier local to the function, while fac is prefixed with "@" to indicate that it is in scope in the entire compilation unit.
+
+Next, at (2) we have the first instruction of the body of fac, which performs a signed comparison of the argument %n and 0 and assigns the result to the temporary %1. The instruction at (3) is a "terminator", and marks the end of the current block. It will transfer control to either ret at (4) or rec at (5). The labels at (4) and (5) each indicate the beginning of a new block of instructions. Notice that the entry block starting at (2) is not labeled: in LLVM it is illegal to jump back to the entry block of a function body. Moving on, (6) performs a subtraction and names the result %2. The i64 annotation indicates that both operands are 64-bit integers. The function fac is called at (7), and the result named %3. Again, the i64 annotations indicate that the single argument and the returned value are 64-bit integers.
+
+Finally, (8) returns from the function with the result named by %4, and (9) defines the main function of the program, which simply calls fac with a literal i64 argument.
 
 ### Implementation of Visitor
 
-### Specific Optimization
+![ir_ast_preview](readme.assets/ir_ast_preview.svg)
+
+To generate the IR mentioned above, we use a visitor class named `NanoVisitor`. Given an abstarct syntax tree like the above figure, the visitor will first visit the ProgNode which is marked as root. Then the visitor will well groundedly travel the childs of root. 
+
+#### Design Pattern: Reflection
+
+One problem in traveling step is that visitor does not know the type of node and thus can not do specific actions depending on the type of node. To solve this problem, we use the design pattern of reflection. That is, the visitor will call the `accept` method of class node. The derived classes of `Node` will override the `accept` method to their own visiting procedure. So, the calling flow is just like `Visitor->Node->Visitor` which can be interpreted as reflection. A piece of sample code is shown as below:
+
+```python
+class NanoVisitor(Visitor):
+    # ...
+    def visitProgNode(self, node: ProgNode):
+        # ...
+        for func in node.funcs:
+            func.accept(self)
+        # ...
+```
+
+```python
+class ProgNode(Node):
+    # ...
+    def accept(self, visitor: NanoVisitor):
+        return visitor.visitProgNode(self)
+class FuncNode(Node):
+    # ...
+    def accept(self, visitor: NanoVisitor):
+        return visitor.visitFuncNode(self)
+# ...
+```
+
+#### Attributes
 
 
+
+
+
+### Specific 
 
 ## Chapter 6 - Compilation
 
