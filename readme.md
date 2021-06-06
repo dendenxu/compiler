@@ -1085,7 +1085,186 @@ I believe you've all had that afternoon spent digging into your code trying to f
 
 ### §4.1 Name Resolution
 
+During compilation, our compiler associates identifiers such as the name of a variable with an address (memory location), datatype, or actual value. This process is called _binding_. The association lasts through all subsequent executions until a recompilation occurs, which might cause a rebinding. Before binding the names, our compiler must resolve all references to them in the compilation unit. This process is called _name resolution_ Cour compiler considers all names to be in the same namespace. So, one declaration or definition in an inner scope can hide another in an outer scope.
+
+#### Scope Checking
+
+```python
+    def _get_identifier(self, name):
+        for d in self.scope_stack[::-1]:  # reversing the scope_block
+            if name in d:
+                return d[name]['ref']
+        return None
+```
+
+We use a scope stack to store the different symbol tables. We will recursively checking the scope from the last created scope to the oldest scope which is known as most recent variable matching rule.
+
+#### Binding Reference With Name
+
+```python
+def _add_identifier(self, name, reference, type):
+        if self.scope_stack == []:
+            return None
+        if name in self.scope_stack[-1]:
+            return None
+        self.scope_stack[-1][name] = {'ref': reference, 'typ': type}
+        return self.scope_stack[-1][name]
+```
+
+As we already have a scope stack, we can set the binding between name and reference by a python `dict` object and add the key-value to the latest scope.
+
 ### §4.2 Type Checking (L value Checking)
+
+Type checking happens at many places and operations.
+
+BinaryOperation:
+
+```python
+binCompatDict = {
+    #left       right      op       ret_type
+    ('i32',     'i32',     '+' ):   'i32',
+    ('i32',     'i32',     '-' ):   'i32',
+    ('i32',     'i32',     '*' ):   'i32',
+    ('i32',     'i32',     '/' ):   'i32',
+    ('i32',     'i32',     '%' ):   'i32',
+    ('i32',     'i32',     '<<'):   'i32',
+    ('i32',     'i32',     '>>'):   'i32',
+    ('i32',     'i32',     '!='):   'i1',
+    ('i32',     'i32',     '=='):   'i1',
+    ('i32',     'i32',     '<' ):   'i1',
+    ('i32',     'i32',     '>' ):   'i1',
+    ('i32',     'i32',     '<='):   'i1',
+    ('i32',     'i32',     '>='):   'i1',
+    ('i32',     'i32',     '||'):   'i1',
+    ('i32',     'i32',     '&&'):   'i1',
+    ('float',   'float',   '+' ):   'float',
+    ('float',   'float',   '-' ):   'float',
+    ('float',   'float',   '*' ):   'float',
+    ('float',   'float',   '/' ):   'float',
+    ('float',   'float',   '%' ):   'float',
+    ('float',   'float',   '!='):   'i1',
+    ('float',   'float',   '=='):   'i1',
+    ('float',   'float',   '<' ):   'i1',
+    ('float',   'float',   '>' ):   'i1',
+    ('float',   'float',   '<='):   'i1',
+    ('float',   'float',   '>='):   'i1',
+    ('float',   'float',   '||'):   'i1',
+    ('float',   'float',   '&&'):   'i1',
+    ('i1',      'i1',      '+' ):   'i32',
+    ('i1',      'i1',      '-' ):   'i32',
+    ('i1',      'i1',      '*' ):   'i32',
+    ('i1',      'i1',      '/' ):   'i32',
+    ('i1',      'i1',      '%' ):   'i32',
+    ('i1',      'i1',      '!='):   'i1',
+    ('i1',      'i1',      '=='):   'i1',
+    ('i1',      'i1',      '<' ):   'i1',
+    ('i1',      'i1',      '>' ):   'i1',
+    ('i1',      'i1',      '<='):   'i1',
+    ('i1',      'i1',      '>='):   'i1',
+    ('i1',      'i1',      '||'):   'i1',
+    ('i1',      'i1',      '&&'):   'i1',
+    ('i32',     'i1',      '+' ):   'i32',
+    ('i32',     'i1',      '-' ):   'i32',
+    ('i32',     'i1',      '*' ):   'i32',
+    ('i32',     'i1',      '/' ):   'i32',
+    ('i32',     'i1',      '%' ):   'i32',
+    ('i32',     'i1',      '!='):   'i1',
+    ('i32',     'i1',      '=='):   'i1',
+    ('i32',     'i1',      '<' ):   'i1',
+    ('i32',     'i1',      '>' ):   'i1',
+    ('i32',     'i1',      '<='):   'i1',
+    ('i32',     'i1',      '>='):   'i1',
+    ('i32',     'i1',      '||'):   'i1',
+    ('i32',     'i1',      '&&'):   'i1',
+    ('i1',      'i32',     '+' ):   'i32',
+    ('i1',      'i32',     '-' ):   'i32',
+    ('i1',      'i32',     '*' ):   'i32',
+    ('i1',      'i32',     '/' ):   'i32',
+    ('i1',      'i32',     '%' ):   'i32',
+    ('i1',      'i32',     '!='):   'i1',
+    ('i1',      'i32',     '=='):   'i1',
+    ('i1',      'i32',     '<' ):   'i1',
+    ('i1',      'i32',     '>' ):   'i1',
+    ('i1',      'i32',     '<='):   'i1',
+    ('i1',      'i32',     '>='):   'i1',
+    ('i1',      'i32',     '||'):   'i1',
+    ('i1',      'i32',     '&&'):   'i1',
+    ('float',   'i32',     '+' ):   'float',
+    ('float',   'i32',     '-' ):   'float',
+    ('float',   'i32',     '*' ):   'float',
+    ('float',   'i32',     '/' ):   'float',
+    ('float',   'i32',     '%' ):   'float',
+    ('float',   'i32',     '!='):   'i1',
+    ('float',   'i32',     '=='):   'i1',
+    ('float',   'i32',     '<' ):   'i1',
+    ('float',   'i32',     '>' ):   'i1',
+    ('float',   'i32',     '<='):   'i1',
+    ('float',   'i32',     '>='):   'i1',
+    ('float',   'i32',     '||'):   'i1',
+    ('float',   'i32',     '&&'):   'i1',
+    ('i32',     'float',   '+' ):   'float',
+    ('i32',     'float',   '-' ):   'float',
+    ('i32',     'float',   '*' ):   'float',
+    ('i32',     'float',   '/' ):   'float',
+    ('i32',     'float',   '%' ):   'float',
+    ('i32',     'float',   '!='):   'i1',
+    ('i32',     'float',   '=='):   'i1',
+    ('i32',     'float',   '<' ):   'i1',
+    ('i32',     'float',   '>' ):   'i1',
+    ('i32',     'float',   '<='):   'i1',
+    ('i32',     'float',   '>='):   'i1',
+    ('i32',     'float',   '||'):   'i1',
+    ('i32',     'float',   '&&'):   'i1',
+    ('i1',      'float',   '+' ):   'float',
+    ('i1',      'float',   '-' ):   'float',
+    ('i1',      'float',   '*' ):   'float',
+    ('i1',      'float',   '/' ):   'float',
+    ('i1',      'float',   '%' ):   'float',
+    ('i1',      'float',   '!='):   'i1',
+    ('i1',      'float',   '=='):   'i1',
+    ('i1',      'float',   '<' ):   'i1',
+    ('i1',      'float',   '>' ):   'i1',
+    ('i1',      'float',   '<='):   'i1',
+    ('i1',      'float',   '>='):   'i1',
+    ('i1',      'float',   '||'):   'i1',
+    ('i1',      'float',   '&&'):   'i1',
+    ('float',   'i1',      '+' ):   'float',
+    ('float',   'i1',      '-' ):   'float',
+    ('float',   'i1',      '*' ):   'float',
+    ('float',   'i1',      '/' ):   'float',
+    ('float',   'i1',      '%' ):   'float',
+    ('float',   'i1',      '!='):   'i1',
+    ('float',   'i1',      '=='):   'i1',
+    ('float',   'i1',      '<' ):   'i1',
+    ('float',   'i1',      '>' ):   'i1',
+    ('float',   'i1',      '<='):   'i1',
+    ('float',   'i1',      '>='):   'i1',
+    ('float',   'i1',      '||'):   'i1',
+    ('float',   'i1',      '&&'):   'i1',
+    ('i32*',    'i32',     '+' ):   'i32*',
+    ('i32',     'i32*',    '+' ):   'i32*',
+    ('float*',  'i32',     '+' ):   'float*',
+    ('i32',     'float*',  '+' ):   'float*',
+}
+```
+
+TypeCasting:
+
+```python
+allowed_casting = [
+    ('i1'    , 'i32'  ),
+    ('i32'   , 'float'),
+    ('i1'    , 'float'),
+    ('float' , 'i1'   ),
+    ('float' , 'i32'  ),
+    ('[@ x i32]*'  , 'i32*'  ),
+    ('[@ x float]*', 'float*'),
+    ('[@ x [@ x i32]]*'  , 'i32*'  ),
+    ('[@ x [@ x float]]*', 'float*'),
+    ('[@ x [@ x [@ x i32]]]*'  , 'i32*'  ),
+    ('[@ x [@ x [@ x float]]]*', 'float*'),
+]
+```
 
 ## Chapter 5 - Code Generation
 
@@ -1128,15 +1307,7 @@ Finally, (8) returns from the function with the result named by %4, and (9) defi
 
 To generate the IR mentioned above, we use a visitor class named `NanoVisitor`. Given an abstract syntax tree like the above figure, the visitor will first visit the `ProgNode` which is marked as root. Then the visitor will well grounded travel the children of root.
 
-<<<<<<< HEAD
-
-### §5.3 Design Pattern: Reflection
-
-=======
-
 #### Design Pattern: Reflection
-
-> > > > > > > 6e2d9cfb0ae6167e07e85259869ad37810043584
 
 One problem in traveling step is that visitor does not know the type of node and thus can not do specific actions depending on the type of node. To solve this problem, we use the design pattern of reflection. That is, the visitor will call the `accept` method of class node. The derived classes of `Node` will override the `accept` method to their own visiting procedure. So, the calling flow is just like `Visitor->Node->Visitor` which can be interpreted as reflection. A piece of sample code is shown as below:
 
@@ -1438,7 +1609,14 @@ This process can be executed by a the LLVM static compiler `llc` or just `clang`
 
 If using clang, we should use `clang irgen.ll -S -o irgen.s` to produce the assembly for viewing
 
+```shell
+clang <input_llvm_ir_file> -S -o <output_asm_file>
+```
+
 In our implementation, we used the `os` package to call a system program and generate the result for us
+shell:
+
+python:
 
 ```python
 os.system(' '.join(["clang", args.output, "-S", "-o", ass]))
@@ -1456,11 +1634,18 @@ File content of `irgen.s`
 
 With the assembly, we can simple use a compiler like `gcc` or `clang` to produce the final executable machine code
 
+```shell
+clang <input_asm_file> -o <output_exec_file>
+```
+
 This can be done with `clang irgen.s -o irgen`
 
 or `gcc irgen.s -o irgen`
 
 In our implementation, we used the `os` package to call a system program and generate the result for us
+shell:
+
+python:
 
 ```python
 os.system(' '.join(["clang", ass, "-o", exe]))
@@ -1468,11 +1653,135 @@ os.system(' '.join(["clang", ass, "-o", exe]))
 
 ## Chapter 7 - Test Cases
 
-### §7.1 Unit Tests
+### §7.1 Lexer
 
-### §7.2 Integrated Tests
+As the token list is defined in the [Token Definition](#§1.2 Token Definition) section, we wrote a file including all possible tokens (which is listed below) to test our lexer (`src/nanolex.py`). To run the lexer, use the command:
 
-### §7.3 System Tests
+```bash
+$ python3 src/nanolex.py samples/LexTest.txt
+```
+
+- **Input:** The file to be tokenized.
+- **Output:** Tokens (in the format of `LexToken(<type>,<value>,<lineno>,<lexpos>)`).
+
+Test cases:
+
+1. **Keywords**
+
+   Input:
+
+   ```
+   int float char void
+   if else
+   else if
+   do while
+   for
+   continue break
+   return
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-1.png" alt="lex-1" style="zoom:80%;" />
+
+2. **Identifiers**
+
+   Input:
+
+   ```
+   thisIsAnIdentifier
+   these are four Identifiers
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-2.png" alt="lex-2" style="zoom:80%;" />
+
+3. **Constants**
+
+   Input:
+
+   ```
+   999 -233
+   0.618 -6.666666
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-3.png" alt="lex-3" style="zoom:80%;" />
+
+4. **Operators**
+
+   Input:
+
+   ```
+   + - * / %
+   | & ~ ^ << >>
+   || && !
+   < <= > >= == !=
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-4.png" alt="lex-4" style="zoom:80%;" />
+
+5. **Assignments**
+
+   Input:
+
+   ```
+   =
+   *= /= %=
+   += -=
+   <<= >>= &= ^= |=
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-5.png" alt="lex-5" style="zoom:80%;" />
+
+6. **Increment & Decrement**
+
+   Input:
+
+   ```
+   ++ --
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-6.png" alt="lex-6" style="zoom:80%;" />
+
+7. **Conditional Operator & Delimeters**
+
+   Input:
+
+   ```
+   // Conditional Operator
+   ?
+
+   // Delimeters
+   ( )
+   [ ]
+   { }
+   . ,
+   ; :
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-7.png" alt="lex-7" style="zoom:80%;" />
+
+In conclusion, the program `nanolex.py` tokenized the input files as desired in all the test cases. Test passed.
+
+### §7.2 Yacc
+
+The grammar productions used in Nano C is listed in [BNF Definition for the Nano C Language](#§2.2 BNF Definition for the Nano C Language). File `samples/ParserTest.c` is designed to test the parser implemented by yacc.
+
+- **Input:** The file to be parsed.
+- **Output:**
+
+### §7.3 IR Generation and Execution
 
 ## References
 
