@@ -733,7 +733,7 @@ def p_assignment(self, p):
     p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 ```
 
-#### Trick for Solving `Dangling-Else`
+#### Trick for Solving the Dangling Else Problem
 
 The dangling else problem in grammar syntax parsing appears when no restriction is applied on the end of if statement
 
@@ -830,6 +830,64 @@ There's an ugly solution to this:
 ## Abstract Syntax Tree
 
 ### Node Design
+
+We adopted the OOP design pattern to make life easier for `pylance`, the type checking utility and auto-complete functionality of the developer's IDE
+
+Before, you might need to check whether a node is valid by comparing some raw string:
+
+```python
+if node.name == "StmtNode": pass
+```
+
+This design makes the compiler writer get trapped in the pitfall of **typos**.
+
+Now you only need to do
+
+```python
+if isinstance(node, StmtNode): pass
+```
+
+or
+
+```python
+if type(node) == StmtNode: pass
+```
+
+Writing things out explicitly makes the checker's life, and your life much easier by providing richer error messages.
+
+I believe you've all had that afternoon spent digging into your code trying to find which tiny typo crashed your delicate, complex, strong program.
+
+`Node` is defined to be the base class of every node and this type can be used to distinguish an actual `NanoAST` node from some string/number literals and original python literals like `list`s or `dict`s.
+
+Specifically, We have
+
+- A base class `Node` for all AST nodes
+
+- A base class `EmptyStmtNode` sub-classing `Node`, acting as base class of all primitive statements, including
+
+    - `IfStmtNode`
+    - `LoopNode` for all looping including
+        - `FOR` loop
+        - `WHILE` loop
+        - `DO-WHILE` loop
+    - `DecNode`
+    - `RetNode`
+    - `BlockNode` for aggregating all other statements
+    - `BreakNode`
+    - `ContinueNode`
+
+    Note that an `Expression` followed by a `SEMI` (semicolon) is also a valid statement, but for **abstraction**, we extract that to be able to be directly embedded in `BlockNode`
+
+- A base class `EmptyExpNode` sub-classing `Node`, acting as base class of all primitive expressions, including
+
+    - `CallNode` for function call
+    - `UnaryNode` for unary operations
+    - `BinaryNode` for binary operations
+    - `TernaryNode` for ternary operations
+    - `AssNode` for assignment expressions
+    - `ArrSubNode` for subscription of an array/pointer
+
+
 
 ### Tree Traversal
 
