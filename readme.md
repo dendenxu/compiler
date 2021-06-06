@@ -477,7 +477,93 @@ For example, some consecutive parsing of binary operations (`LPAREN` and `RPAREN
 p[0] = BinaryNode(BinaryNode(BinaryNode(p[2], p[1], BinaryNode(p[2], p[1], p[3])), p[1], p[3]), p[1], BinaryNode(BinaryNode(p[2], p[1], p[3]), p[1], BinaryNode(p[2], p[1], p[3])))
 ```
 
+A nice visualization of this might be like:
 
+
+
+
+
+### Actual Implementation
+
+```python
+#############################################################
+#                      Syntax Error Rules                   #
+#############################################################
+
+def p_error(self, p):
+    # with a syntax error, the token should contain corresponding location
+    print(colored("Error: ", "red")+"Syntax error when parsing "+str(p))
+
+#############################################################
+#                      External Functions                   #
+#############################################################
+
+def parse(self, input, **kwargs) -> Node:
+    try:
+        return self.parser.parse(input, **kwargs)
+    except Exception as e:
+        traceback.print_exc()
+        print(colored("Error: ", "red")+f"{e}")
+
+def build(self, **kwargs):
+    self.parser = yacc.yacc(module=self, **kwargs)
+
+tokens = NanoLexer.tokens
+```
+
+Similar to the lexer, `yacc` needs to be specifically built for using.
+
+We pass in `module=self` to make YACC track production definition in current object scope using object reflection.
+
+```python
+tokens = NanoLexer.tokens
+```
+
+is needed to define valid tokens to recognize for (usually marked UPPER CASE CHARACTER).
+
+
+
+To make the parsing process more visible and viable, we defined the main function of the `nanoyacc.py` program as this:
+
+```python
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-input", default="samples/fx.c", type=str)
+    parser.add_argument("-tree", type=str)
+    parser.add_argument("-url", default="http://neon-cubes.xyz:8000/src/tree.json", type=str)
+    args = parser.parse_args()
+
+    with open(args.input, 'r', encoding='utf-8') as f:
+        content = f.read()
+        lexer = NanoLexer()
+        lexer.build()
+        parser = NanoParser()
+        parser.build()
+        root = parser.parse(content, debug=0)
+        print(colored(f"Abstract Syntax Tree:", "yellow", attrs=["bold"]))
+        print(root)
+
+        tree = traverse(root)
+        print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
+        print(tree)
+        addinfo(tree, args.input)
+        payload = json.dumps(tree)
+
+        if args.tree:
+            with open(args.tree, 'w') as f:
+                f.write(payload)
+            print(colored(f"Saved Structrued Tree to {args.tree}", 'yellow', attrs=['bold']))
+
+        r = requests.post(url=args.url, data=payload)
+        print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))
+```
+
+1. `argparse` exists so we have a friendly command-line interface for the **nanoparser**
+2. `lexer` is built and automatically stored in a safe position (a global variable `ply.lex.lexer`)
+3. `parser` is also built and automatically stored in a safe position `ply.yacc.parser`
+4. `root` is returned by the parser as the root of the AST, to be used by the intermediate representation generator
+5. `tree` is the simplified version (ready to be displayed with good visual look)
 
 
 
