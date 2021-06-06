@@ -188,7 +188,7 @@ We carefully optimized the **order** in which each regular expression is provide
 
 ## Syntax Analysis
 
-### Context Free Grammar for Nano C language
+### Grammar Syntax for Nano C language
 
 Firstly, let's take a comprehensive look at our grammar:
 
@@ -251,44 +251,68 @@ Firstly, let's take a comprehensive look at our grammar:
 9. The variable definition takes traditional C form, with corresponding scope resolution
 
     1. `int a;` will define the variable `a` as uninitialized memory space
+
     2. `int a = 1;` will define the variable `a`, and initialize it to `1`
+
     3. `int a = 1, b = 2` will define both `a` and `b` and individually initialize them as specified by the user
+
+        On a grammar level, this is expanded to be a bunch of variable definition and initialization to avoid a deep traversal into the actual AST
+
+        *This optimization would be later illustrated in better detail in the next section*
 
 10. Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
 
+    *This optimization would be later illustrated in better detail in the next section*
+
 11. An expression falls in the following group:
 
-    1. **Binary Operations**: left hand side and right hand size operated by the operator
+     1. **Binary Operations**: left hand side and right hand size operated by the operator
 
-    2. **Unary Operations**: operator acted upon some other expression
+     2. **Unary Operations**: a single operator acted upon some other expression
 
-    3. **Ternary Operation(s)**: currently only supporting `?:` as ternary operators
+         We use **assignment operation** to simplify the use of `++`, `--` unary operators
 
-    4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as *left values*
+         These're simply reconstructed to `a = a + 1` (with assignment operation returning the assigned values)
 
-        Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Lexical Analysis) sections
+         *This optimization would be later illustrated in better detail in the next section*
 
-        Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
+     3. **Ternary Operation(s)**: currently only supporting `?:` as ternary operators
 
-    5. **Function Calls** in the form of `ID(expression list)`
+     4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as *left values*
 
-        You can also specify **no parameter**
+         Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Lexical Analysis) sections
 
-    6. **Array Subscription** in the form of `ID[expression]`
+         Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
+
+         - Note that **compound assignment** operations can be easily comprehended as a corresponding expression with a regular assignment operation: `<<=` `+=` `-=`, etc.
+
+             *This optimization would be later illustrated in better detail in the next section*
+
+     5. **Function Calls** in the form of `ID(expression list)`
+
+         You can also specify **no parameter**
+
+     6. **Array Subscription** in the form of `ID[expression]`
+
+         In array definition (not an expression), you can also specify a set of empty bracket pairs, indicating a so-called "multidimensional array"
+
+         **Although they're expected to be allocated as a continuous blob in the runtime memory**
 
 12. Expressions can be grouped by `(` and `)` to indicate their correspondence
 
-    As long as the grammar is unambiguous in this section, the programmer should be able to define arbitrarily complex expressions
+     As long as the grammar is unambiguous in this section, the programmer should be able to define arbitrarily complex expressions
 
-13. Expressions should also be downgraded to some specific stuff:
+13. Expressions should also able to be downgraded to some specific stuff:
 
-    1. `ID` for identifiers, this can be variables or functions names
-    2. **integer constant** for some literal integers
-    3. **float constant** for some floating points
-    4. **character constant** wrapped with `''`
-    5. **string constant** wrapped with `""`
+     1. `ID` for identifiers, this can be variables or functions names
+     2. **integer constant** for some literal integers
+     3. **float constant** for some floating points
+     4. **character constant** wrapped with `''`
+     5. **string constant** wrapped with `""`
 
+14. We restrict that only **Unary Operation** can be used at the left side of an assignment. Though this restriction is far from achieving a true **valid left value** check, it would surely make the process of type checking less painful
 
+     *This optimization would be later illustrated in better detail in the next section*
 
 
 
