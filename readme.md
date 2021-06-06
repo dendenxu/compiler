@@ -1823,6 +1823,506 @@ The grammar productions used in Nano C is listed in [BNF Definition for the Nano
 
 ### §7.3 IR Generation and Execution
 
+#### checkpoint 1
+
+```c
+/**
+ * checkpoint 1
+ * feature:
+ *      single function & directly return
+ * expected output: 0
+ */
+int main() {
+    return 0;
+}
+```
+
+![image-20210606214039710](./readme.assets/image-20210606214039710.png)
+
+#### checkpoint 2
+
+```c
+/**
+ * checkpoint 2
+ * feature:
+ *      single function
+ *      single type variable declarations
+ * expected output: 0
+ */
+int main() {
+    int a;
+    int b;
+    int c;
+    return 0;
+}
+```
+
+![image-20210606214029210](./readme.assets/image-20210606214029210.png)
+
+#### checkpoint 3
+
+```c
+/**
+ * checkpoint 3
+ * feature:
+ *      single function
+ *      initilizers & declaration list
+ *      assignment expressions
+ * expected output: 6
+ */
+int main() {
+    int a = 0, b = 1, c = 2, d = 3;
+    a = b*c*d;
+    return a;
+}
+```
+
+![image-20210606214018531](./readme.assets/image-20210606214018531.png)
+
+#### checkpoint 4
+
+```c
+/**
+ * checkpoint 4
+ * feature:
+ *      single function
+ *      initilizers & declaration list
+ *      assignment expressions
+ *      more complicated expression
+ *      implicit type casting from int1 to int32
+ * expected output: 3
+ */
+int main() {
+    int a = 0, b = 1, c = 2, d = 3;
+    a = ((b*c*d) && (a*d)) + (((c+b)/d) || a) + b*c;
+    return a;
+}
+```
+
+![image-20210606214006372](./readme.assets/image-20210606214006372.png)
+
+#### checkpoint 5
+
+```c
+/**
+ * checkpoint 5
+ * feature:
+ *      integer type
+ *      multiple functions & function call
+ * expected output: 2
+ */
+int two() { return 2; }
+int main() {
+    return two();
+}
+```
+
+![image-20210606213956059](./readme.assets/image-20210606213956059.png)
+
+#### checkpoint 6
+
+```c
+/**
+ * checkpoint 6
+ * feature:
+ *      integer type
+ *      multiple functions & function call
+ *      if-else statements
+ *      loop statements
+ * expected output: 20
+ */
+int sum_up_to(int a) {
+    int sum = 0;
+    for (int i=0;i<a;i=i+1)
+        sum = sum + i;
+    return sum;
+}
+int main() {
+    int a = 5;
+    if (a % 2) return 2*sum_up_to(a);
+    else return sum_up_to(a);
+}
+```
+
+![image-20210606213945661](./readme.assets/image-20210606213945661.png)
+
+#### checkpoint 7
+
+```c
+/**
+ * checkpoint 7
+ * feature:
+ *      integer type
+ *      multiple functions & function call
+ *      nested if-else statements
+ *      recursion functions
+ * expected output: 8
+ */
+int fib(int n) {
+    if (n <= 0) return 0;
+    else if (n == 1) return 1;
+    else if (n == 2) return 1;
+    else return fib(n - 1) + fib(n - 2);
+}
+int main() {
+    int a = 6;
+    return fib(a);
+}
+```
+
+![image-20210606213930583](./readme.assets/image-20210606213930583.png)
+
+#### checkpoint 8
+
+```c
+/**
+ * checkpoint 8
+ * feature:
+ *      integer type
+ *      multiple functions & function call
+ *      nested if-else statements
+ *      recursion functions
+ *      nested loop statements
+ *      break & continue
+ * expected output: 595
+ */
+int fib(int n) {
+    // 1 1 2 3 5 8 13 21 34
+    if (n <= 0) return 0;
+    else if (n == 1) return 1;
+    else if (n == 2) return 1;
+    else return fib(n - 1) + fib(n - 2);
+}
+int main() {
+    int sum = 0;
+    for (int a = 4; a < 10; a++) {
+        if (a == 6) continue;
+        else if (fib(a) % 2 == 0) {
+            for (int b = fib(a); b > 0; b=b-1)
+                sum = sum + b;
+            break;
+        }
+    }
+    return sum;
+}
+```
+
+![image-20210606213902148](./readme.assets/image-20210606213902148.png)
+
+#### checkpoint 9
+
+```c
+/**
+ * checkpoint 9
+ * feature:
+ *      void return type
+ *      integer type & pointer type
+ *      & and * operator
+ *      value swap with pointers
+ * expected output: 2
+ */
+void swap(int *a, int *b) {
+    int c = *a;
+    *a = *b;
+    *b = c;
+}
+int main() {
+    int a=1, b=2;
+    int *c = &a;
+    int *d = &b;
+    swap(c,d);
+    return a;
+}
+```
+
+![image-20210606213817850](./readme.assets/image-20210606213817850.png)
+
+#### checkpoint 10
+
+```c
+/**
+ * checkpoint 10
+ * feature:
+ *      integer type & pointer type
+ *      array type
+ *      & and * operator
+ *      value swap with pointers
+ * expected output: 7
+ */
+void swap(int* a, int* b) {
+    int c = *a;
+    *a = *b;
+    *b = c;
+}
+int main() {
+    int a[3][3];
+    a[0][0] = 0; a[0][1] = 1; a[0][2] = 2;
+    a[1][0] = 3; a[1][1] = 4; a[1][2] = 5;
+    a[2][0] = 6; a[2][1] = 7; a[2][2] = 8;
+    int b=1, c=2;
+    int *ptr_to_b = &b;
+    int *ptr_to_c = &c;
+    swap(ptr_to_b,ptr_to_c);
+    return a[b][c];
+}
+```
+
+![image-20210606213801033](./readme.assets/image-20210606213801033.png)
+
+#### checkpoint 11
+
+```c
+/**
+ * checkpoint 11
+ * feature:
+ *      integer type & float type & void type
+ *      pointer type & array type
+ *      & and * operator
+ *      type casting:
+ *          xd array -> pointer
+ *          int <-> float
+ *      gloabl variables
+ *      multi-scopes
+ *      calculations:
+ *          *(pointer + integer)
+ * expected output: 12
+ */
+
+int n = 10;
+int a[10][10];
+
+int main() {
+    int i = 3, j = 3;
+    for (int i=0; i<n;i=i+1) {
+        for (int j=0; j<n; j=j+1) {
+            a[i][j] = i+j;
+        }
+    }
+    int * arr_ptr = (int*)a;
+    *(arr_ptr + i*n + j) = 2 * *(arr_ptr + i*n + j);
+    return a[i][j];
+}
+```
+
+![image-20210606213745784](./readme.assets/image-20210606213745784.png)
+
+#### checkpoint 12
+
+```c
+/**
+ * checkpoint 12
+ * feature:
+ *      integer type & float type & void type
+ *      pointer type & array type
+ *      & and * operator
+ *      type casting:
+ *          xd array -> pointer
+ *          int <-> float
+ *      calculations:
+ *          *(pointer + integer)
+ *      quicksort
+ *      random integer generation
+ * expected output: 1
+ */
+
+int qsort(int * a, int l, int r)
+{
+    int i = l;
+    int j = r;
+    int p = *(a + ((l + r)/2));
+    int flag = 1;
+    while (i <= j) {
+        while (*(a+i) < p) i = i + 1;
+        while (*(a+j) > p) j = j - 1;
+        if (i > j) break;
+        int u = *(a+i);
+        *(a+i) = *(a+j);
+        *(a+j) = u;
+        i = i + 1;
+        j = j - 1;
+    }
+    if (i < r) qsort(a, i, r);
+    if (j > l) qsort(a, l, j);
+    return 0;
+}
+
+// random floating point number distributed uniformly in [0,1]
+float rand(float *r) {
+    float base=256.0;
+    float a=17.0;
+    float b=139.0;
+    float temp1=a*(*r)+b;
+    float temp2=(float)(int)(temp1/base);
+    float temp3=temp1-temp2*base;
+    *r=temp3;
+    float p=*r/base;
+    return p;
+}
+
+int initArr(int* a, int n)
+{
+    float state = 114514.0;
+    int i =0;
+    while (i < n) {
+        *(a + i) = (int)(255*rand(&state));
+        i = i + 1;
+    }
+}
+
+int isSorted(int *a, int n)
+{
+    int i = 0;
+    while (i < n - 1) {
+        if ( (*(a+i)) > (*(a+i+1)))
+            return 0;
+        i = i + 1;
+    }
+    return 1;
+}
+
+int main()
+{
+    int n = 100;
+    int arr[100];
+    int * a = (int*)arr;
+    initArr(a, n);
+    qsort(a, 0, n - 1);
+    return isSorted(a, n);
+}
+```
+
+![image-20210606213723061](./readme.assets/image-20210606213723061.png)
+
+#### checkpoint 13
+
+```c
+/**
+ * checkpoint 13
+ * feature:
+ *      integer type & float type & void type
+ *      pointer type & array type
+ *      & and * operator
+ *      type casting:
+ *          xd array -> pointer
+ *          int <-> float
+ *      calculations:
+ *          *(pointer + integer)
+ *      multiplication of matrix
+ * expected output: 0
+ */
+
+int mulMatrix(int n, int *a, int *b, int *c) {
+    int i; int j; int k;
+    i = 0;
+    while (i < n) {
+        j = 0;
+        while (j < n) {
+            *(c + i*n + j) = 0;
+            k = 0;
+            while (k < n) {
+                int old = *(c + i*n + j);
+                *(c + i*n + j) = old + *(a+i*n + k) * (*(b+k*n + j));
+                k = k + 1;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+
+int initMatrix(int n, int *a) {
+int i; int j; int k;
+    k = 0;
+    i = 0;
+    while (i < 2) {
+        j = 0;
+        while (j < 2) {
+            k = k + 1;
+            *(a + i*n + j) = k;
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+
+int a[2][2]; int b[2][2]; int c[2][2];
+int main() {
+    initMatrix(2, (int*)a);
+    mulMatrix(2, (int*)a, (int*)a, (int*)b);
+    mulMatrix(2, (int*)b, (int*)b, (int*)c);
+    if (c[0][0] != 199)
+        return 1;
+    if (c[0][1] != 290)
+        return 2;
+    if (c[1][0] != 435)
+        return 3;
+    if (c[1][1] != 634)
+        return 4;
+    return 0;
+}
+```
+
+![image-20210606213708636](./readme.assets/image-20210606213708636.png)
+
+#### checkpoint 14
+
+```c
+
+/**
+ * checkpoint 13
+ * feature:
+ *      dijkstar shortest path algorithm
+ * expected output: 17
+ */
+
+int main(void)
+{
+    int e[10][10], dis[10], book[10], i, j, m, n, t1, t2, t3, u, v, min;
+    n = 6;
+    m = 9;
+    int inf = 99999;
+    for (i = 1; i <= n; i++)
+        for (j = 1; j <= n; j++)
+            e[i][j] = inf;
+    e[1][2] = 1;
+    e[1][3] = 12;
+    e[2][3] = 9;
+    e[2][4] = 3;
+    e[3][5] = 5;
+    e[4][3] = 4;
+    e[4][5] = 13;
+    e[4][6] = 15;
+    e[5][6] = 4;
+    for (i = 1; i <= n; i++)
+        dis[i] = e[1][i];  //初始化dis数组，表示1号顶点到其他顶点的距离
+    for (i = 1; i <= n; i++)
+        book[i] = 0;
+    book[i] = 1;  //记录当前已知第一个顶点的最短路径
+    for (i = 1; i <= n - 1; i++)
+        for (i = 1; i <= n - 1; i++) {  //找到离一号顶点最近的点
+            min = inf;
+            for (j = 1; j <= n; j++) {
+                if (book[j] == 0 && dis[j] < min) {
+                    min = dis[j];
+                    u = j;
+                }
+            }
+            book[u] = 1;  //记录当前已知离第一个顶点最近的顶点
+            for (v = 1; v <= n; v++) {
+                if (e[u][v] < inf) {
+                    if (dis[v] > dis[u] + e[u][v])
+                        dis[v] = dis[u] + e[u][v];
+                }
+            }
+        }
+    //0 1 8 4 13 17
+    return dis[6];
+}
+```
+
+![image-20210606213651435](./readme.assets/image-20210606213651435.png)
+
+
 ## References
 
 - [PyCParser](https://github.com/eliben/pycparser)
