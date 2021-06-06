@@ -35,7 +35,6 @@ class NanoVisitor(Visitor):
         self.defined_funcs = dict()
         self.func_params = dict()
         self.in_global = True
-        self.is_func_body = False
         self.n_errors = 0
         self.n_warnings = 0
 
