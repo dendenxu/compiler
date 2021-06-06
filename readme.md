@@ -1234,9 +1234,15 @@ Notice that every time we do indexing, we need to pass one extral 0 value. This 
 
 ### §6.1 IR to Assembly
 
+```python
+        os.system(' '.join(["clang", args.output, "-S", "-o", ass]))
+```
+
 ### §6.2 Assembling the Executable
 
-
+```python
+        os.system(' '.join(["clang", ass, "-o", exe]))
+```
 
 ## Chapter 7 - Test Cases
 
