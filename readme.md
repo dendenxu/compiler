@@ -833,30 +833,6 @@ There's an ugly solution to this:
 
 We adopted the OOP design pattern to make life easier for `pylance`, the type checking utility and auto-complete functionality of the developer's IDE
 
-Before, you might need to check whether a node is valid by comparing some raw string:
-
-```python
-if node.name == "StmtNode": pass
-```
-
-This design makes the compiler writer get trapped in the pitfall of **typos**.
-
-Now you only need to do
-
-```python
-if isinstance(node, StmtNode): pass
-```
-
-or
-
-```python
-if type(node) == StmtNode: pass
-```
-
-Writing things out explicitly makes the checker's life, and your life much easier by providing richer error messages.
-
-I believe you've all had that afternoon spent digging into your code trying to find which tiny typo crashed your delicate, complex, strong program.
-
 `Node` is defined to be the base class of every node and this type can be used to distinguish an actual `NanoAST` node from some string/number literals and original python literals like `list`s or `dict`s.
 
 Specifically, We have
@@ -893,6 +869,88 @@ Specifically, We have
 
 ### §3.4 Tree Visualization and Interaction
 
+### §3.5 Optimization Considerations
+
+#### Better Debugging Interface
+
+When designing the base class of all nodes, we considered the need to pretty print all things from command-line, thus a `indentLevel` is added and all `__str__` methods of nodes are designed to recursively do a depth first search on the abstract syntax tree to produce some human readable parsing results (with formats!)
+
+```python
+class Node(object):
+    # A simple Abstract Syntax Tree node
+    TABSTR = '|   '
+
+    def __init__(self):
+        self._indentLevel = 0
+        self._lineno = self._colno = 0
+
+    def update_pos(self, line: int, col: int):
+        self._lineno = line
+        self._colno = col
+
+    def accept(self, visitor: NanoVisitor):
+        pass
+```
+
+![image-20210606202857114](readme.assets/image-20210606202857114.png)
+
+
+
+Also, with error message in mind, we printed detailed line numbering and column to help the compiler user location where things might have gone wrong as early as possible.
+
+```c
+int main()
+{
+    { ret
+    }
+}
+```
+
+![image-20210606203341832](readme.assets/image-20210606203341832.png)
+
+```c
+int main()
+{
+    if (if)
+}
+```
+
+![image-20210606203509676](readme.assets/image-20210606203509676.png)
+
+
+
+### Better Coding
+
+We adopted the OOP design pattern to make life easier for `pylance`, the type checking utility and auto-complete functionality of the developer's IDE
+
+Before, you might need to check whether a node is valid by comparing some raw string:
+
+```python
+if node.name == "StmtNode": pass
+```
+
+This design makes the compiler writer get trapped in the pitfall of **typos**.
+
+Now you only need to do
+
+```python
+if isinstance(node, StmtNode): pass
+```
+
+or
+
+```python
+if type(node) == StmtNode: pass
+```
+
+Writing things out explicitly makes the checker's life, and your life much easier by providing richer error messages.
+
+I believe you've all had that afternoon spent digging into your code trying to find which tiny typo crashed your delicate, complex, strong program.
+
+`Node` is defined to be the base class of every node and this type can be used to distinguish an actual `NanoAST` node from some string/number literals and original python literals like `list`s or `dict`s.
+
+
+
 ## Chapter 4 - Semantic Analysis
 
 ### §4.1 Name Resolution
@@ -922,4 +980,4 @@ Specifically, We have
 ## References
 
 - [PyCParser](https://github.com/eliben/pycparser)
-- ...
+- `MiniDecaf`

@@ -644,9 +644,9 @@ class NanoParser():
 
     def p_error(self, p):
         # with a syntax error, the token should contain corresponding location
-        errLine = p.lineno(0)
-        errCol = self._find_tok_column(p.lexpos(0))
-        print(colored(f"Error {errLine, errCol}:", "red") + "Syntax error when parsing " + str(p))
+        # errLine = p.lineno(0)
+        # errCol = self._find_tok_column(p.lexpos(0))
+        print(colored(f"Error: ", "red") + "Syntax error when parsing " + str(p))
 
     #############################################################
     #                      External Functions                   #
