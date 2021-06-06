@@ -341,7 +341,7 @@ download.addEventListener("click", async () => {
   console.log(svgelement[0][0]);
   todownload = svgelement[0][0].cloneNode(true);
 
-  content = await $.get("./style.css");
+  content = await $.get("./nanoast.css");
   style = $("<style>").html(content)[0];
   console.log(style);
   // console.log(style.outerHTML);
