@@ -639,7 +639,6 @@ class NanoParser():
         """ Find the column of the given lexpos in its line.
             lexer.lexdata points to the input
         """
-        # last_cr = self.lexer.lexdata.rfind('\n', 0, token.lexpos)
         last_cr = lex.lexer.lexdata.rfind('\n', 0, lexpos)
         return lexpos - last_cr
 

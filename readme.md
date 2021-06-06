@@ -117,9 +117,9 @@ t_ignore_SING_COMMENT = r'//.*?\n'
 t_ignore_MULT_COMMENT = r'/\*(\*(?!\/)|[^*])*\*\/'
 ```
 
-We used the `ply` (Python Lex Yacc) to help better recognize regular expressions and BNF grammars to make our life easier.
+We used the `PLY` (Python Lex Yacc) to help better recognize regular expressions and BNF grammars to make our life easier.
 
-We only need to import the "lexer" from the ply module using `from ply import lex`
+We only need to import the "lexer" from the PLY module using `from ply import lex`
 
 And build it with `lex.build`, passing specific module into the build function.
 
@@ -144,11 +144,9 @@ By using `t_ignore` pattern or not returning the recognized token, we discard un
 t_ignore = ' \t'
 ```
 
-
-
 #### Line Number Memory
 
-To help the user pinpoint what's gone wrong the tokenization process, `ply` "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
+To help the user pinpoint what's gone wrong the tokenization process, `PLY` "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
 
 Specifically, we used `r'\n+'` to indicate newline(s)
 
@@ -176,8 +174,6 @@ def t_NEWLINE(self, t):
     self.update_lineno(t)
 ```
 
-
-
 #### Order of Regular Expression
 
 We carefully optimized the **order** in which each regular expression is provided to the lexer, to make sure some overlapping definitions don't get mixed up, for example:
@@ -186,21 +182,19 @@ We carefully optimized the **order** in which each regular expression is provide
 - `/*` for multi-line comment comes before `/` Operator
 - `ID` for identifier comes after other constants that may include characters and numbers (**char literal, string literal, int/float constant values**)
 
-
-
 ## Chapter 2 - Syntax Analysis
 
 ### §2.1 Grammar Syntax for Nano C language
 
 Firstly, let's take a comprehensive look at our grammar:
 
-1. We *don't* implement preprocessing like **macros** and **includes**
+1. We _don't_ implement preprocessing like **macros** and **includes**
 
-    - You cannot `#define` or `#include`
+   - You **cannot** `#define` or `#include`
 
-2. We *don't* implement multi-file compilation, as a direct cause of the first rule
+2. We _don't_ implement multi-file compilation, as a direct cause of the first rule
 
-    - You cannot `python nanoirgen.py a.c b.c c.c -o a.out`
+   - You **cannot** `python nanoirgen.py a.c b.c c.c -o a.out`
 
 3. Thus we want a program to define the whole program (a single C source file)
 
@@ -208,119 +202,119 @@ Firstly, let's take a comprehensive look at our grammar:
 
 5. This program should also contain some **function definitions**
 
-6. We *don't* support **external linkage** variable definition due to rule number one
+6. We _don't_ support **external linkage** variable definitions due to rule number one
 
-7. We *don't* support function/global variable **declaration** since it won't be of much use in this setup.
+7. We _don't_ support function/global variable **declaration**s since it won't be of much use in this setup.
 
-8. Every valid statement should be 
+8. Every valid statement should be
 
-    1. A **block of statements**
+   1. A **block of statements**
 
-        Wrapped within two paired curly brackets, namely `{`, `}`
+      Wrapped within two paired curly brackets, namely `{`, `}`
 
-        This block can **recursively contain other statements**
+      This block can **recursively contain other statements**
 
-        You can happily and inconsequently do `{{{{{;}}}}}`
+      You can happily and inconsequently do `{{{{{;}}}}}`
 
-    2. Some **control flows**
+   2. Some **control flows**
 
-        1. `for (int i = 0; i < 100 ; i++ ) {;}` for loops
+      1. `for (int i = 0; i < 100 ; i++ ) {;}` for loops
 
-        2. `while (1) {;}` while loops
+      2. `while (1) {;}` while loops
 
-        3. `do {;} while(1);` do-while loops
+      3. `do {;} while(1);` do-while loops
 
-        4. `if(1) {;} else if(2) {;} else {;}` if-else statements
+      4. `if(1) {;} else if(2) {;} else {;}` if-else statements
 
-        5. Note that we forbid empty block `{}`
+      5. Note that we forbid empty block `{}`
 
-        6. But **one single (non-blocked) statement will be valid**, for example: `if(1) print(1); else print(2);`
+      6. But **one single (non-blocked) statement will be valid**, for example: `if(1) print(1); else print(2);`
 
-            Actually, the nested `if` `else if` `else` block is implemented by viewing the second `if-else` block as a single statement
+         Actually, the nested `if` `else if` `else` block is implemented by viewing the second `if-else` block as a single statement
 
-            `if (1) {;} else { if (2) {;} else {;} }`
+         `if (1) {;} else { if (2) {;} else {;} }`
 
-            You can do crazy things as long as you remember you're writing out one single statement
+         You can do crazy things as long as you remember you're writing out one single statement
 
-            `while (1) while(0)while(controller) do p = "inside while loop"; while ( condition == "OK" );`
+         `while (1) while(0) while(controller) do p = "inside while loop"; while ( condition == "OK" );`
 
-        7. Every control flow has its own block whether it's wrapped within the brackets, or just a **valid single statement** mentioned above
+      7. Every control flow has its own block whether it's wrapped within the brackets, or just a **valid single statement** mentioned above
 
-            Since **blocks** are used for scope resolution
+         Since **blocks** are used for scope resolution
 
-    3. Or **ends with `;`**
+   3. Or **ends with `;`**
 
-        1. `return;` statement (you can return nothing)
-        2. **declaration** statement to be talked about below
-        3. `;` is also a valid statement
+      1. `return;` statement (you can return nothing)
+      2. **declaration** statement to be talked about below
+      3. `;` is also a valid statement
 
 9. The variable definition takes traditional C form, with corresponding scope resolution
 
-    1. `int a;` will define the variable `a` as uninitialized memory space
+   1. `int a;` will define the variable `a` as uninitialized memory space
 
-    2. `int a = 1;` will define the variable `a`, and initialize it to `1`
+   2. `int a = 1;` will define the variable `a`, and initialize it to `1`
 
-    3. `int a = 1, b = 2` will define both `a` and `b` and individually initialize them as specified by the user
+   3. `int a = 1, b = 2` will define both `a` and `b` and individually initialize them as specified by the user
 
-        On a grammar level, this is expanded to be a bunch of variable definition and initialization to avoid a deep traversal into the actual AST
+      On a grammar level, this is expanded to be a bunch of variable definition and initialization to avoid a deep traversal into the actual AST
 
-        *This optimization would be later illustrated in better detail in the next section*
-        
-    4. Note that type node should only be declared once in one declaration statement or declaration list, meaning `int * a, * b` is illegal, while `int *********** a, b, c=1, d` is OK 
+      _This optimization would be later illustrated in better detail in the next section_
 
-10. Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
+   4. Note that type node should only be declared once in one declaration statement or declaration list, meaning `int * a, * b` is illegal, while `int *********** a, b, c=1, d` is OK
 
-    *This optimization would be later illustrated in better detail in the next section*
+10. Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Chapter 5 - Code Generation) section
+
+    _This optimization would be later illustrated in better detail in the next section_
 
 11. An expression falls in the following group:
 
-      1. **Binary Operations**: left hand side and right hand size operated by the operator
+    1. **Binary Operations**: left hand side and right hand size operated by the operator
 
-      2. **Unary Operations**: a single operator acted upon some other expression
+    2. **Unary Operations**: a single operator acted upon some other expression
 
-          We use **assignment operation** to simplify the use of `++`, `--` unary operators
+       We use **assignment operation** to simplify the use of `++`, `--` unary operators
 
-          These're simply reconstructed to `a = a + 1` (with assignment operation returning the assigned values)
+       These're simply reconstructed to `a = a + 1` (with assignment operation returning the assigned values)
 
-          *This optimization would be later illustrated in better detail in the next section*
+       _This optimization would be later illustrated in better detail in the next section_
 
-      3. **Ternary Operation(s)**: currently only supporting `?:` as ternary operators
+    3. **Ternary Operation**(s): currently only supporting `?:` as ternary operators
 
-      4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as *left values*
+    4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as _left values_
 
-          Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Lexical Analysis) sections
+       Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Chapter 1 - Lexical Analysis) sections
 
-          Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
+       Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
 
-          - Note that **compound assignment** operations can be easily comprehended as a corresponding expression with a regular assignment operation: `<<=` `+=` `-=`, etc.
+       - Note that **compound assignment** operations can be easily comprehended as a corresponding expression with a regular assignment operation: `<<=` `+=` `-=`, etc.
 
-              *This optimization would be later illustrated in better detail in the next section*
+         _This optimization would be later illustrated in better detail in the next section_
 
-      5. **Function Calls** in the form of `ID(expression list)`
+    5. **Function Calls** in the form of `ID(expression list)`
 
-          You can also specify **no parameter**
+       You can also specify **no parameter**
 
-      6. **Array Subscription** in the form of `ID[expression]`
+    6. **Array Subscription** in the form of `ID[expression]`
 
-          In array definition (not an expression), you can also specify a set of empty bracket pairs, indicating a so-called "multidimensional array"
+       In array definition (not an expression), you can also specify a set of empty bracket pairs, indicating a so-called "multidimensional array"
 
-          **Although they're expected to be allocated as a continuous blob in the runtime memory**
+       **Although they're expected to be allocated as a continuous blob in the runtime memory**
 
 12. Expressions can be grouped by `(` and `)` to indicate their correspondence
 
-      As long as the grammar is unambiguous in this section, the programmer should be able to define arbitrarily complex expressions
+    As long as the grammar is unambiguous in this section, the programmer should be able to define arbitrarily complex expressions
 
 13. Expressions should also able to be downgraded to some specific stuff:
 
-      1. `ID` for identifiers, this can be variables or functions names
-      2. **integer constant** for some literal integers
-      3. **float constant** for some floating points
-      4. **character constant** wrapped with `''`
-      5. **string constant** wrapped with `""`
+    1. `ID` for identifiers, this can be variables or functions names
+    2. **integer constant** for some literal integers
+    3. **float constant** for some floating points
+    4. **character constant** wrapped with `''`
+    5. **string constant** wrapped with `""`
 
 14. We restrict that only **Unary Operation** can be used at the left side of an assignment. Though this restriction is far from achieving a true **valid left value** check, it would surely make the process of type checking less painful
 
-      *This optimization would be later illustrated in better detail in the next section*
+    _This optimization would be later illustrated in better detail in the next section_
 
 ### §2.2 BNF Definition for the Nano C Language
 
@@ -347,7 +341,7 @@ Productions used in the parser:
                             |
         block               : block curl_block
                             | block statement
-                            | 
+                            |
         id                  : ID
         type                : INT
                             | VOID
@@ -374,7 +368,7 @@ Productions used in the parser:
         comma_exps          : comma_exps COMMA expression
                             |
         empty_or_exp        : expression
-                            | 
+                            |
         ctrl_block          : curl_block
                             | statement
         curl_block          : LBRACE block RBRACE
@@ -382,7 +376,7 @@ Productions used in the parser:
         dec_list            : dec_list COMMA id array_list typeinit
                             | id array_list typeinit
         typeinit            : EQUALS expression
-                            | 
+                            |
         array_list          : array_list LBRACKET INT_CONST_DEC RBRACKET
                             |
         expression          : assignment
@@ -427,7 +421,7 @@ Productions used in the parser:
 """
 ```
 
-As mentioned above, we used the `ply` package for token/syntax recognition
+As mentioned above, we used the `PLY` package for token/syntax recognition
 
 With a well-defined grammar, the next step is to parse corresponding production into a well-organized **Abstract Syntax Tree**, which will be illustrated in more detail in the following section
 
@@ -469,13 +463,13 @@ Take this binary operation parsing as an example:
 
 - The actual operator takes similar form (a string of one/two special character indicating a specific operation)
 
-- Nested parenthesis pairs and the actual positioning (where these operations should appear) of those operations are well defined into the **tree-structure** (*the parse tree*)
+- Nested parenthesis pairs and the actual positioning (where these operations should appear) of those operations are well defined into the **tree-structure** (_the parse tree_)
 
 - Boiling down to the AST building, all we have to do is construct the AST node and store it for later (upper in the parse tree)
 
-    ```python
-    p[0] = BinaryNode(p[2], p[1], p[3])
-    ```
+  ```python
+  p[0] = BinaryNode(p[2], p[1], p[3])
+  ```
 
 Thanks to the parse tree, `p[1]`, `p[2]`, `p[3]` are already valid elements of the AST (constructed in the parsing process before this one and saved to the **parsed object `p[0]`**)
 
@@ -527,8 +521,6 @@ tokens = NanoLexer.tokens
 
 is needed to define valid tokens to recognize for (usually marked UPPER CASE CHARACTER).
 
-
-
 To make the parsing process more visible and viable, we defined the main function of the `nanoyacc.py` program as this:
 
 ```python
@@ -574,8 +566,6 @@ if __name__ == '__main__':
 7. `colored` from `termcolor` is applied extensively to give a visually pleasant command-line output
 8. `tree.json` will also be saved as a file for inspection
 
-
-
 ### §2.4 Specific Optimizations
 
 #### Flattening
@@ -584,30 +574,29 @@ We flatten declaration operations to make the actual IR generation a little bit 
 
 - Given a list of declarations, initialized or not, we flatten all declarations into individual statements, so the compiler backend can uniformly take care of them
 
-    `int a, b, c;` would initially produce a list of declaration as `[DecNode, DecNode, DecNode]`
+  `int a, b, c;` would initially produce a list of declaration as `[DecNode, DecNode, DecNode]`
 
-    When the outer block is encountered, those expressions are flattened out as
+  When the outer block is encountered, those expressions are flattened out as
 
-    `DecNode; DecNode; DecNode;`
+  `DecNode; DecNode; DecNode;`
 
 - This is implemented with the help of `BlockNode`
 
-    ```python
-    def p_block_stmt(self, p):
-        '''
-        block               : block curl_block
-                            | block statement
-        '''
-        if p[1] is None:
-            p[1] = BlockNode()
-        if isinstance(p[2], list):
-            for dec in p[2]:
-                p[1].append(dec)
-        else:
-            p[1].append(p[2])
-        p[0] = p[1]
-    ```
-
+  ```python
+  def p_block_stmt(self, p):
+      '''
+      block               : block curl_block
+                          | block statement
+      '''
+      if p[1] is None:
+          p[1] = BlockNode()
+      if isinstance(p[2], list):
+          for dec in p[2]:
+              p[1].append(dec)
+      else:
+          p[1].append(p[2])
+      p[0] = p[1]
+  ```
 
 The above implementation also illustrates other implementation of flattening listed grammar
 
@@ -625,74 +614,71 @@ Similar optimization occurs when we're parsing **expression list** of function c
 
 - **Expression List** in function call:
 
-    ```python
-    def p_exp_list(self, p):
-        '''
-        exp_list            : expression comma_exps
-        '''
-        if p[2] is None:
-            p[2] = []
-        p[2] = [p[1]] + p[2]
-        p[0] = p[2]
+  ```python
+  def p_exp_list(self, p):
+      '''
+      exp_list            : expression comma_exps
+      '''
+      if p[2] is None:
+          p[2] = []
+      p[2] = [p[1]] + p[2]
+      p[0] = p[2]
 
-    def p_comma_exp_list(self, p):
-        '''
-        comma_exps          : comma_exps COMMA expression
-        '''
-        if p[1] is None:
-            p[1] = []
-        p[1].append(p[3])
-        p[0] = p[1]
-    ```
+  def p_comma_exp_list(self, p):
+      '''
+      comma_exps          : comma_exps COMMA expression
+      '''
+      if p[1] is None:
+          p[1] = []
+      p[1].append(p[3])
+      p[0] = p[1]
+  ```
 
 - **Parameter List** in function definition
 
-    ```python
-    #############################################################
-    #                     Function Definition                   #
-    #############################################################
-    
-    def p_func_def(self, p):    
-        '''
-        function            : type id LPAREN param_list RPAREN curl_block
-        '''
-        p[0] = FuncNode(p[1], p[2], p[4], p[6])
-    
-    def p_params(self, p):
-        '''
-        param_list          : type id comma_params
-        '''
-        param = ParamNode(p[1], p[2])
-        if p[3] is None:
-            p[3] = []
-        p[3] = [param] + p[3]
-        p[0] = p[3]
-    
-    def p_comma_params(self, p):
-        '''
-        comma_params        : comma_params COMMA type id
-        '''
-        param = ParamNode(p[3], p[4])
-        if p[1] is None:
-            p[1] = []
-        p[1].append(param)
-        p[0] = p[1]
-    ```
+  ```python
+  #############################################################
+  #                     Function Definition                   #
+  #############################################################
 
+  def p_func_def(self, p):
+      '''
+      function            : type id LPAREN param_list RPAREN curl_block
+      '''
+      p[0] = FuncNode(p[1], p[2], p[4], p[6])
+
+  def p_params(self, p):
+      '''
+      param_list          : type id comma_params
+      '''
+      param = ParamNode(p[1], p[2])
+      if p[3] is None:
+          p[3] = []
+      p[3] = [param] + p[3]
+      p[0] = p[3]
+
+  def p_comma_params(self, p):
+      '''
+      comma_params        : comma_params COMMA type id
+      '''
+      param = ParamNode(p[3], p[4])
+      if p[1] is None:
+          p[1] = []
+      p[1].append(param)
+      p[0] = p[1]
+  ```
 
 #### Preparations for Scope Resolution
 
-Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
+Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Chapter 5 - Code Generation) section
 
-Note that `BlockNode` is ***ABSTRACT***, meaning with the total removal of it, the compiler should still be able to work properly. The purpose of the aggregated node is to indicate nested scope creation
+Note that `BlockNode` is **_ABSTRACT_**, meaning with the total removal of it, the compiler should still be able to work properly. The purpose of the aggregated node is to indicate nested scope creation
 
 - Thus, when parsing curly brackets pairs, we explicitly generate a `BlockNode` to mark the creation of a new scope
 
 - We also took care of `if-else-stmt` and `for-do-while-loop` statements, whose statement body is valid even when they've only got one individual statement
 
-    Those individual statement are also wrapped with an abstract `BlockNode`
-
-
+  Those individual statement are also wrapped with an abstract `BlockNode`
 
 #### Abstraction of Complex Syntax
 
@@ -747,21 +733,171 @@ def p_assignment(self, p):
     p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 ```
 
+#### Trick for Solving the Dangling Else Problem
 
+The dangling else problem in grammar syntax parsing appears when no restriction is applied on the end of if statement
 
+with a grammar definition like:
 
+```python
+ '''
+    statment                   : IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
+                               | IF LPAREN expression RPAREN ctrl_block
+ '''
+```
 
-## Abstract Syntax Tree
+and a program like this:
 
-### Node Design
+```python
+if (1) if (2) ; else ;
+```
 
-### Tree Traversal
+The else can be associated with the first `if` like with brackets:
 
-### Side Note: Python Hosted Server
+```python
+if (1) { if (2) ; } else ;
+```
 
-### Tree Visualization and Interaction
+Or the second `if`:
 
+```python
+if (1) { if (2) ; else ; }
+```
 
+**without violating the grammar definition**!
+
+This is commonly known as _the dangling else_ problem:
+
+- Whether and else statement should be paired with the outer most if statement or the inner most unpaired one?
+
+There's an ugly solution to this:
+
+- Define the grammar so that **only unmatched statement** can be associated with the if statement
+
+  ```python
+  '''
+  statement                : matched-stmt | unmatched-stmt
+  matched-stmt             : if  ( exp ) matched-stmt else matched-stmt
+                           | other
+  unmatched-stmt           : if  ( exp ) statement
+                           | if  ( exp ) matched-stmt else unmatched-stmt
+  exp                      : 0 | 1
+  '''
+  ```
+
+  > **This works by permitting** only a matched-statement to come before an else in an if-statement**, thus forcing all else-parts to be matched as soon as possible.**
+
+  But this solution would require some painful modification of the parser code
+
+- And another solution would be marking the end of the if-else block with some special token like `end-if`
+
+  ```python
+  if (1) ; else ; endif
+  ```
+
+  Effectively acting as a pair (pairs) of curly brackets
+
+  solving the ambiguity by make the programmer do more
+
+- The **most popular** solution is to actually leave the grammar be
+
+  Leave everything be and let the **LALR** parser **prefer shift over reduce** when there's a shift-reduce conflict
+
+  And this is also the solution that we used
+
+  ```plaintext
+  ...
+  ...
+  state 196
+
+      (17) statement -> IF LPAREN expression RPAREN ctrl_block .
+      (18) statement -> IF LPAREN expression RPAREN ctrl_block . ELSE ctrl_block
+
+    ! shift/reduce conflict for ELSE resolved as shift
+      ELSE            shift and go to state 202
+
+    ! ELSE            [ reduce using rule 17 (statement -> IF LPAREN expression RPAREN ctrl_block .) ]
+  ...
+  ...
+  WARNING:
+  WARNING: Conflicts:
+  WARNING:
+  WARNING: shift/reduce conflict for ELSE in state 196 resolved as shift
+  ```
+
+  > If the parser is produced by an SLR, LR(1) or LALR [LR parser](https://en.wikipedia.org/wiki/LR_parser) generator, the programmer will often rely on the generated parser feature of preferring shift over reduce whenever there is a conflict.[[2\]](https://en.wikipedia.org/wiki/Dangling_else#cite_note-Bison_Manual-2) Alternatively, the grammar can be rewritten to remove the conflict, at the expense of an increase in grammar size
+
+## Chapter 3 - Abstract Syntax Tree
+
+### §3.1 Node Design
+
+We adopted the OOP design pattern to make life easier for `pylance`, the type checking utility and auto-complete functionality of the developer's IDE
+
+Before, you might need to check whether a node is valid by comparing some raw string:
+
+```python
+if node.name == "StmtNode": pass
+```
+
+This design makes the compiler writer get trapped in the pitfall of **typos**.
+
+Now you only need to do
+
+```python
+if isinstance(node, StmtNode): pass
+```
+
+or
+
+```python
+if type(node) == StmtNode: pass
+```
+
+Writing things out explicitly makes the checker's life, and your life much easier by providing richer error messages.
+
+I believe you've all had that afternoon spent digging into your code trying to find which tiny typo crashed your delicate, complex, strong program.
+
+`Node` is defined to be the base class of every node and this type can be used to distinguish an actual `NanoAST` node from some string/number literals and original python literals like `list`s or `dict`s.
+
+Specifically, We have
+
+- A base class `Node` for all AST nodes
+
+- A base class `EmptyStmtNode` sub-classing `Node`, acting as base class of all primitive statements, including
+
+  - `IfStmtNode`
+  - `LoopNode` for all looping including
+    - `FOR` loop
+    - `WHILE` loop
+    - `DO-WHILE` loop
+  - `DecNode`
+  - `RetNode`
+  - `BlockNode` for aggregating all other statements
+  - `BreakNode`
+  - `ContinueNode`
+
+  Note that an `Expression` followed by a `SEMI` (semicolon) is also a valid statement, but for **abstraction**, we extract that to be able to be directly embedded in `BlockNode`
+
+- A base class `EmptyExpNode` sub-classing `Node`, acting as base class of all primitive expressions, including
+
+  - `CallNode` for function call
+  - `UnaryNode` for unary operations
+  - `BinaryNode` for binary operations
+  - `TernaryNode` for ternary operations
+  - `AssNode` for assignment expressions
+  - `ArrSubNode` for subscription of an array/pointer
+
+### §3.2 Tree Traversal
+
+### §3.3 Side Note: Python Hosted Server
+
+### §3.4 Tree Visualization and Interaction
+
+## Chapter 4 - Semantic Analysis
+
+### §4.1 Name Resolution
+
+### §4.2 Type Checking (L value Checking)
 
 ## Chapter 5 - Code Generation
 
@@ -769,7 +905,7 @@ In the previous part, we have already obtained an abstract syntax tree. Then, we
 
 As for the generation of intermediate representation, we use a python package named llvmlite. LLVMlite is a small subset of the LLVM IR that we will be using throughout the course as the intermediate representation in our compiler. Conceptually, it is either an abstract assembly-like language or a even lower-level C-like language that is convenient to manipulate programatically.
 
-### LLVM Intermediate Representation
+### §5.1 LLVM Intermediate Representation
 
 To give you a sense of structure of LLVMlite programs and the most basic features, the following is our running example, the simple recursive factorial function written in the concrete syntax of the LLVMlite IR.
 
@@ -798,13 +934,13 @@ Next, at (2) we have the first instruction of the body of fac, which performs a 
 
 Finally, (8) returns from the function with the result named by %4, and (9) defines the main function of the program, which simply calls fac with a literal i64 argument.
 
-### Implementation of Visitor
+### §5.2 Implementation of Visitor
 
 ![ir_ast_preview](readme.assets/ir_ast_preview.svg)
 
 To generate the IR mentioned above, we use a visitor class named `NanoVisitor`. Given an abstarct syntax tree like the above figure, the visitor will first visit the ProgNode which is marked as root. Then the visitor will well groundedly travel the childs of root. 
 
-#### Design Pattern: Reflection
+#### §5.3 Design Pattern: Reflection
 
 One problem in traveling step is that visitor does not know the type of node and thus can not do specific actions depending on the type of node. To solve this problem, we use the design pattern of reflection. That is, the visitor will call the `accept` method of class node. The derived classes of `Node` will override the `accept` method to their own visiting procedure. So, the calling flow is just like `Visitor->Node->Visitor` which can be interpreted as reflection. A piece of sample code is shown as below:
 
@@ -830,27 +966,21 @@ class FuncNode(Node):
 # ...
 ```
 
-#### Attributes
-
-
-
-
-
-### Specific 
+#### §5.4 Attributes
 
 ## Chapter 6 - Compilation
 
-### IR to Assembly
+### §6.1 IR to Assembly
 
-### Assembling the Executable
-
-
+### §6.2 Assembling the Executable
 
 ## Chapter 7 - Test Cases
 
+### §7.1 Unit Tests
 
+### §7.2 Integrated Tests
 
-
+### §7.3 System Tests
 
 ## References
 
