@@ -8,9 +8,9 @@ And **do remember to delete these lines after this repo goes public**
 
 [toc]
 
-## Lexical Analysis
+## Chapter 1 - Lexical Analysis
 
-### Token Specification
+### §1.1 Token Specification
 
 - Types: `int`, `long`, `double`, `float`, `char`, `void`, `[]`, **pointer**
 - Control Flow: `if`, `else`, `while`, `for`, `continue`, `break`, `do-while`
@@ -34,7 +34,7 @@ And **do remember to delete these lines after this repo goes public**
   1. `//` (one-line comment)
   2. `/* */` (multi-line comment)
 
-### Token Definition
+### §1.2 Token Definition
 
 Token List:
 
@@ -127,7 +127,7 @@ The lexer utilizes Python's object reflection (introspection) so it needs the cu
 
 It mainly recognize variables defined as `t_TOKEN_NAME`, the content of the variable corresponds to the regular expression, and the `TOKEN_NAME` part would be the token this RE recognizes for.
 
-### Specific Optimizations
+### §1.3 Specific Optimizations
 
 #### Token Removal
 
@@ -188,9 +188,9 @@ We carefully optimized the **order** in which each regular expression is provide
 
 
 
-## Syntax Analysis
+## Chapter 2 - Syntax Analysis
 
-### Grammar Syntax for Nano C language
+### §2.1 Grammar Syntax for Nano C language
 
 Firstly, let's take a comprehensive look at our grammar:
 
@@ -322,7 +322,7 @@ Firstly, let's take a comprehensive look at our grammar:
 
       *This optimization would be later illustrated in better detail in the next section*
 
-### BNF Definition for the Nano C Language
+### §2.2 BNF Definition for the Nano C Language
 
 According to the above grammar specification, we define the following BNF grammars to recognize the specific token patterns
 
@@ -489,7 +489,7 @@ A nice visualization of this might be like:
 
 ![binaryop](readme.assets/binaryop.svg)
 
-### Actual Implementation
+### §2.3 Actual Implementation
 
 ```python
 #############################################################
@@ -576,7 +576,7 @@ if __name__ == '__main__':
 
 
 
-### Specific Optimizations
+### §2.4 Specific Optimizations
 
 #### Flattening
 
@@ -651,13 +651,13 @@ Similar optimization occurs when we're parsing **expression list** of function c
     #############################################################
     #                     Function Definition                   #
     #############################################################
-
+    
     def p_func_def(self, p):    
         '''
         function            : type id LPAREN param_list RPAREN curl_block
         '''
         p[0] = FuncNode(p[1], p[2], p[4], p[6])
-
+    
     def p_params(self, p):
         '''
         param_list          : type id comma_params
@@ -667,7 +667,7 @@ Similar optimization occurs when we're parsing **expression list** of function c
             p[3] = []
         p[3] = [param] + p[3]
         p[0] = p[3]
-
+    
     def p_comma_params(self, p):
         '''
         comma_params        : comma_params COMMA type id
@@ -761,17 +761,29 @@ def p_assignment(self, p):
 
 ### Tree Visualization and Interaction
 
-## Code Generation
+
+
+## Chapter 5 - Code Generation
 
 ### LLVM Intermediate Representation
 
 ### Specific Optimization
 
-## Compilation
+
+
+## Chapter 6 - Compilation
 
 ### IR to Assembly
 
 ### Assembling the Executable
+
+
+
+## Chapter 7 - Test Cases
+
+
+
+
 
 ## References
 
