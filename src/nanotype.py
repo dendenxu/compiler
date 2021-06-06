@@ -1,6 +1,7 @@
-from argparse import RawDescriptionHelpFormatter
+from argparse import RawDescriptionHelpFormatter, RawTextHelpFormatter
 from llvmlite import ir, binding
 from nanoast import *
+import re
 
 make_ptr = ir.PointerType
 int32 = ir.IntType(32)
@@ -50,8 +51,11 @@ def ref(node: Node):
         return node.ref
     elif type(node) == ArrSubNode:
         return node.ref
+    elif type(node) == BinaryNode:
+        return node.value
     else:
         print(type(node))
+        print(node)
         raise NotImplementedError
 
 def val(node: Node):
@@ -196,6 +200,8 @@ binCompatDict = {
     ('float',   'i1',      '>='):   'i1',
     ('float',   'i1',      '||'):   'i1',
     ('float',   'i1',      '&&'):   'i1',
+    ('i32*',    'i32',     '+' ):   'i32*',
+    ('i32',     'i32*',    '+' ):   'i32*',
 }
 
 def binCompat(left: Node, right: Node, op: str):
@@ -242,13 +248,20 @@ allowed_casting = [
     ('i32'   , 'float'),
     ('i1'    , 'float'),
     ('float' , 'i1'   ),
-    ('float' , 'i32'  )   
+    ('float' , 'i32'  ),
+    ('[@ x i32]*', 'i32*'),
+    ('[@ x [@ x i32]]*', 'i32*'),
 ]
 
-def cast(value, tgt_type: str):
+def cast(value, tgt_type: str, ref=None):
     src_type = str(value.type)
     if not ((src_type, tgt_type) in allowed_casting):
-        raise RuntimeError("unable to cast from %s to %s"%(src_type, tgt_type))
+        if not src_type.find('x'):
+            raise RuntimeError("unable to cast from %s to %s"%(src_type, tgt_type))
+        src_type = re.sub(r'\[\d+', '[@', src_type)
+        src_type += '*'
+        if not ((src_type, tgt_type) in allowed_casting):
+            raise RuntimeError("unable to cast from %s to %s"%(src_type, tgt_type))
     if (src_type, tgt_type) == ('i1', 'i32'):
         return tp_visitor._get_builder().zext(value, int32)
     elif (src_type, tgt_type) == ('i32', 'float'):
@@ -259,3 +272,11 @@ def cast(value, tgt_type: str):
         return tp_visitor._get_builder().fptosi(value, int32)
     elif (src_type, tgt_type) == ('float', 'i1'):
         return tp_visitor._get_builder().fptoui(value, int1)
+    elif (src_type, tgt_type) == ('[@ x i32]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return val
+    elif (src_type, tgt_type) == ('[@ x [@ x i32]]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return tp_visitor._get_builder().bitcast(val, make_ptr(int32))

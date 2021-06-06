@@ -165,7 +165,10 @@ class NanoVisitor(Visitor):
         else:
             for i in range(len(call_func_args)):
                 if exp_type(node.params[i]) != str(func_args[i]):
+                    print(node.params[i])
+                    print(func_args[i])
                     print(exp_type(node.params[i]), str(func_args[i]))
+                    print(node)
                     raise RuntimeError("args mismatch")
         node.value = self._get_builder().call(func_ref, tuple(call_func_args))
         node.exp_type = str(func_ref.ftype.return_type)
@@ -242,13 +245,16 @@ class NanoVisitor(Visitor):
         elif node.op == '~':
             node.value = self._get_builder().not_(val(node.node))
         elif node.op == '*':
-            node.ref = self._get_builder().load(ref(node.node))
+            node.ref = val(node.node)
         elif node.op == '&':
             node.value = ref(node.node)
         elif type(node.op) == TypeNode:
             # type casting
             node.op.accept(self)
-            node.value = cast(val(node.node), exp_type(node.op))
+            try:
+                node.value = cast(val(node.node), exp_type(node.op), ref(node.node))
+            except Exception as e:
+                node.value = cast(val(node.node), exp_type(node.op))
         else:
             raise NotImplementedError
         node.exp_type = str(val(node).type)
@@ -257,7 +263,7 @@ class NanoVisitor(Visitor):
         node.type.accept(self)
         node.type = typ(node.type)
         if len(node.arr):
-            for a in reversed(node.arr):
+            for a in list(reversed(node.arr)):
                 node.type = ir.ArrayType(node.type, a)
         if self.in_global:
             node.item = ir.GlobalVariable(self.module, node.type, nam(node.id))
@@ -278,7 +284,8 @@ class NanoVisitor(Visitor):
         if exp_type(node.exp) != exp_type(node.unary):
             print(exp_type(node.unary), exp_type(node.exp))
             raise RuntimeError("type mismatch")
-        self._get_builder().store(val(node.exp), ref(node.unary))
+        node.value = val(node.exp)
+        self._get_builder().store(node.value, ref(node.unary))
 
     def visitContinueNode(self, node: ContinueNode):
         self._get_builder().branch(self.loop_entr_stack[-1])
@@ -614,6 +621,9 @@ class NanoVisitor(Visitor):
             else:
                 print(node)
                 raise NotImplementedError
+        elif exp_type(node.left) == 'i32*' and exp_type(node.right) == 'i32':
+            node.value = self._get_builder().gep(
+                val(node.left), [val(node.right)])
         else:
             print(node)
             raise NotImplementedError
