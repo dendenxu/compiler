@@ -1,68 +1,81 @@
-int n = 10;
-float a[10];
+/**
+ * checkpoint 12
+ * feature:
+ *      integer type & float type & void type
+ *      pointer type & array type
+ *      & and * operator
+ *      type casting:
+ *          xd array -> pointer
+ *          int <-> float
+ *      calculations:
+ *          *(pointer + integer)
+ *      quicksort
+ *      random integer generation
+ * expected output: 1
+ */
 
-int qsort(int l, int r)
+int qsort(int *a, int l, int r)
 {
     int i = l;
     int j = r;
-    float p = a[(l + r) / 2];
+    int p = *(a + ((l + r) / 2));
     int flag = 1;
     while (i <= j) {
-        while (a[i] < p) i = i + 1;
-        while (a[j] > p) j = j - 1;
+        while (*(a + i) < p) i++;
+        while (*(a + j) > p) j--;
         if (i > j) break;
-        float u = a[i];
-        a[i] = a[j];
-        a[j] = u;
-        i = i + 1;
-        j = j - 1;
+        int u = *(a + i);
+        *(a + i) = *(a + j);
+        *(a + j) = u;
+        i++;
+        j--;
     }
-    if (i < r) qsort(i, r);
-    if (j > l) qsort(l, j);
+    if (i < r) qsort(a, i, r);
+    if (j > l) qsort(a, l, j);
     return 0;
 }
 
-int rand(int *state)
+// random floating point number distributed uniformly in [0,1]
+float rand(float *r)
 {
-    *state = *state * 5000087 + 198250529;
-    return *state % 1000;
+    float base = 256.0;
+    float a = 17.0;
+    float b = 139.0;
+    float temp1 = a * (*r) + b;
+    float temp2 = (float)(int)(temp1 / base);
+    float temp3 = temp1 - temp2 * base;
+    *r = temp3;
+    float p = *r / base;
+    return p;
 }
 
-int initArr(int n)
+int initArr(int *a, int n)
 {
-    int state = 474230941;
+    float state = 114514.0;
     int i = 0;
     while (i < n) {
-        a[i] = (float)rand(&state);
-        i = i + 1;
+        *(a + i) = (int)(255 * rand(&state));
+        i += 1;
     }
 }
 
-int isSorted(int n)
+int isSorted(int *a, int n)
 {
     int i = 0;
     while (i < n - 1) {
-        if ((a[i]) > a[i + 1])
+        if ((*(a + i)) > (*(a + i + 1)))
             return 0;
-        i = i + 1;
+        i += 1;
     }
     return 1;
 }
 
-void nothing(void) {
-    return;
-}
-
 int main()
 {
-    // initArr(n);
-    for (int i=0;i<n;i=i+1) {
-        a[i] = (float)(n-i);
-    }
-    // int sorted_before = isSorted(n);
-    qsort(0, n - 1);
-    // int sorted_after = isSorted(n);
-    // if (!(sorted_before == 0 && sorted_after == 1))
-    // return 1;
-    return (int)a[3];
+    int n = 100;
+    int arr[100];
+    int *a = (int *)arr;
+    initArr(a, n);
+    qsort(a, 0, n - 1);
+    return isSorted(a, n);
 }

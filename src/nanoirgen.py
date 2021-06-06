@@ -673,7 +673,7 @@ if __name__ == '__main__':
         lexer.build()
         parser = NanoParser()
         parser.build()
-        root = parser.parse(content)
+        root = parser.parse(content, debug=0)
         print(colored(f"Abstract Syntax Tree:", "yellow", attrs=["bold"]))
         print(root)
 

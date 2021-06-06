@@ -67,6 +67,16 @@ Productions used in the parser:
         expression          : assignment
         assignment          : conditional
                             | unary EQUALS expression
+                            | unary TIMESEQUAL expression
+                            | unary DIVEQUAL expression
+                            | unary MODEQUAL expression
+                            | unary PLUSEQUAL expression
+                            | unary MINUSEQUAL expression
+                            | unary LSHIFTEQUAL expression
+                            | unary RSHIFTEQUAL expression
+                            | unary ANDEQUAL expression
+                            | unary XOREQUAL expression
+                            | unary OREQUAL expression
         conditional         : logical_or
                             | logical_or CONDOP expression COLON conditional
         logical_or          : logical_and
@@ -363,13 +373,32 @@ class NanoParser():
     def p_assignment(self, p):
         '''
         assignment          : unary EQUALS expression
+                            | unary TIMESEQUAL expression
+                            | unary DIVEQUAL expression
+                            | unary MODEQUAL expression
+                            | unary PLUSEQUAL expression
+                            | unary MINUSEQUAL expression
+                            | unary LSHIFTEQUAL expression
+                            | unary RSHIFTEQUAL expression
+                            | unary ANDEQUAL expression
+                            | unary XOREQUAL expression
+                            | unary OREQUAL expression
         unary               : PLUSPLUS unary
                             | MINUSMINUS unary
         postfix             : postfix PLUSPLUS
                             | postfix MINUSMINUS
+
         '''
-        if len(p) == 4:  # true assignment
-            p[0] = AssNode(p[1], p[3])
+        if len(p) == 4:
+            if len(p[2]) == 1:  # true assignment
+                p[0] = AssNode(p[1], p[3])
+            else:
+                if len(p[2]) == 3:
+                    op = p[2][:2]
+                else:
+                    op = p[2][:1]
+                p[0] = AssNode(p[1], BinaryNode(op, p[1], p[3]))
+
         else:
             if p[1] == "++":
                 p[0] = AssNode(p[2], BinaryNode('+', p[2], IntNode(1)))
