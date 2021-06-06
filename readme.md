@@ -1512,11 +1512,27 @@ Notice that every time we do indexing, we need to pass one extral 0 value. This 
 
 ### §6.1 IR to Assembly
 
+shell:
+
+```shell
+clang <input_llvm_ir_file> -S -o <output_asm_file>
+```
+
+python:
+
 ```python
         os.system(' '.join(["clang", args.output, "-S", "-o", ass]))
 ```
 
 ### §6.2 Assembling the Executable
+
+shell:
+
+```shell
+clang <input_asm_file> -o <output_exec_file>
+```
+
+python:
 
 ```python
         os.system(' '.join(["clang", ass, "-o", exe]))
