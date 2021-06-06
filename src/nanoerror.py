@@ -51,12 +51,6 @@ class IUndecFatal(EFatal):
             colored(self.name, "magenta") + \
             " was referenced before declared"
 
-class EUnhandledError(EError):
-    def __init__(self, msg):
-        self.name = msg
-    def __str__(self):
-        return colored("UnexpectedError: ", "red") + msg
-
 class IRedecError(EError):
     def __init__(self, name):
         self.name = name

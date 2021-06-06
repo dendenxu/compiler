@@ -117,9 +117,9 @@ t_ignore_SING_COMMENT = r'//.*?\n'
 t_ignore_MULT_COMMENT = r'/\*(\*(?!\/)|[^*])*\*\/'
 ```
 
-We used the `ply` (Python Lex Yacc) to help better recognize regular expressions and BNF grammars to make our life easier.
+We used the `PLY` (Python Lex Yacc) to help better recognize regular expressions and BNF grammars to make our life easier.
 
-We only need to import the "lexer" from the ply module using `from ply import lex`
+We only need to import the "lexer" from the PLY module using `from ply import lex`
 
 And build it with `lex.build`, passing specific module into the build function.
 
@@ -146,7 +146,7 @@ t_ignore = ' \t'
 
 #### Line Number Memory
 
-To help the user pinpoint what's gone wrong the tokenization process, `ply` "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
+To help the user pinpoint what's gone wrong the tokenization process, `PLY` "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
 
 Specifically, we used `r'\n+'` to indicate newline(s)
 
@@ -190,11 +190,11 @@ Firstly, let's take a comprehensive look at our grammar:
 
 1. We _don't_ implement preprocessing like **macros** and **includes**
 
-   - You cannot `#define` or `#include`
+   - You **cannot** `#define` or `#include`
 
 2. We _don't_ implement multi-file compilation, as a direct cause of the first rule
 
-   - You cannot `python nanoirgen.py a.c b.c c.c -o a.out`
+   - You **cannot** `python nanoirgen.py a.c b.c c.c -o a.out`
 
 3. Thus we want a program to define the whole program (a single C source file)
 
@@ -202,9 +202,9 @@ Firstly, let's take a comprehensive look at our grammar:
 
 5. This program should also contain some **function definitions**
 
-6. We _don't_ support **external linkage** variable definition due to rule number one
+6. We _don't_ support **external linkage** variable definitions due to rule number one
 
-7. We _don't_ support function/global variable **declaration** since it won't be of much use in this setup.
+7. We _don't_ support function/global variable **declaration**s since it won't be of much use in this setup.
 
 8. Every valid statement should be
 
@@ -236,7 +236,7 @@ Firstly, let's take a comprehensive look at our grammar:
 
          You can do crazy things as long as you remember you're writing out one single statement
 
-         `while (1) while(0)while(controller) do p = "inside while loop"; while ( condition == "OK" );`
+         `while (1) while(0) while(controller) do p = "inside while loop"; while ( condition == "OK" );`
 
       7. Every control flow has its own block whether it's wrapped within the brackets, or just a **valid single statement** mentioned above
 
@@ -262,7 +262,7 @@ Firstly, let's take a comprehensive look at our grammar:
 
    4. Note that type node should only be declared once in one declaration statement or declaration list, meaning `int * a, * b` is illegal, while `int *********** a, b, c=1, d` is OK
 
-10. Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
+10. Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Chapter 5 - Code Generation) section
 
     _This optimization would be later illustrated in better detail in the next section_
 
@@ -278,11 +278,11 @@ Firstly, let's take a comprehensive look at our grammar:
 
        _This optimization would be later illustrated in better detail in the next section_
 
-    3. **Ternary Operation(s)**: currently only supporting `?:` as ternary operators
+    3. **Ternary Operation**(s): currently only supporting `?:` as ternary operators
 
     4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as _left values_
 
-       Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Lexical Analysis) sections
+       Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Chapter 1 - Lexical Analysis) sections
 
        Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
 
@@ -421,7 +421,7 @@ Productions used in the parser:
 """
 ```
 
-As mentioned above, we used the `ply` package for token/syntax recognition
+As mentioned above, we used the `PLY` package for token/syntax recognition
 
 With a well-defined grammar, the next step is to parse corresponding production into a well-organized **Abstract Syntax Tree**, which will be illustrated in more detail in the following section
 
@@ -670,7 +670,7 @@ Similar optimization occurs when we're parsing **expression list** of function c
 
 #### Preparations for Scope Resolution
 
-Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
+Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Chapter 5 - Code Generation) section
 
 Note that `BlockNode` is **_ABSTRACT_**, meaning with the total removal of it, the compiler should still be able to work properly. The purpose of the aggregated node is to indicate nested scope creation
 
@@ -805,7 +805,7 @@ There's an ugly solution to this:
 
   And this is also the solution that we used
 
-  ```
+  ```plaintext
   ...
   ...
   state 196
@@ -827,9 +827,9 @@ There's an ugly solution to this:
 
   > If the parser is produced by an SLR, LR(1) or LALR [LR parser](https://en.wikipedia.org/wiki/LR_parser) generator, the programmer will often rely on the generated parser feature of preferring shift over reduce whenever there is a conflict.[[2\]](https://en.wikipedia.org/wiki/Dangling_else#cite_note-Bison_Manual-2) Alternatively, the grammar can be rewritten to remove the conflict, at the expense of an increase in grammar size
 
-## Abstract Syntax Tree
+## Chapter 3 - Abstract Syntax Tree
 
-### Node Design
+### §3.1 Node Design
 
 We adopted the OOP design pattern to make life easier for `pylance`, the type checking utility and auto-complete functionality of the developer's IDE
 
@@ -865,55 +865,59 @@ Specifically, We have
 
 - A base class `EmptyStmtNode` sub-classing `Node`, acting as base class of all primitive statements, including
 
-    - `IfStmtNode`
-    - `LoopNode` for all looping including
-        - `FOR` loop
-        - `WHILE` loop
-        - `DO-WHILE` loop
-    - `DecNode`
-    - `RetNode`
-    - `BlockNode` for aggregating all other statements
-    - `BreakNode`
-    - `ContinueNode`
+  - `IfStmtNode`
+  - `LoopNode` for all looping including
+    - `FOR` loop
+    - `WHILE` loop
+    - `DO-WHILE` loop
+  - `DecNode`
+  - `RetNode`
+  - `BlockNode` for aggregating all other statements
+  - `BreakNode`
+  - `ContinueNode`
 
-    Note that an `Expression` followed by a `SEMI` (semicolon) is also a valid statement, but for **abstraction**, we extract that to be able to be directly embedded in `BlockNode`
+  Note that an `Expression` followed by a `SEMI` (semicolon) is also a valid statement, but for **abstraction**, we extract that to be able to be directly embedded in `BlockNode`
 
 - A base class `EmptyExpNode` sub-classing `Node`, acting as base class of all primitive expressions, including
 
-    - `CallNode` for function call
-    - `UnaryNode` for unary operations
-    - `BinaryNode` for binary operations
-    - `TernaryNode` for ternary operations
-    - `AssNode` for assignment expressions
-    - `ArrSubNode` for subscription of an array/pointer
+  - `CallNode` for function call
+  - `UnaryNode` for unary operations
+  - `BinaryNode` for binary operations
+  - `TernaryNode` for ternary operations
+  - `AssNode` for assignment expressions
+  - `ArrSubNode` for subscription of an array/pointer
 
+### §3.2 Tree Traversal
 
+### §3.3 Side Note: Python Hosted Server
 
-### Tree Traversal
+### §3.4 Tree Visualization and Interaction
 
-### Side Note: Python Hosted Server
+## Chapter 4 - Semantic Analysis
 
-### Tree Visualization and Interaction
+### §4.1 Name Resolution
 
-## Semantic Analysis
-
-### Name Resolution
-
-### Type Checking (L value Checking)
+### §4.2 Type Checking (L value Checking)
 
 ## Chapter 5 - Code Generation
 
-### LLVM Intermediate Representation
+### §5.1 LLVM Intermediate Representation
 
-### Specific Optimization
+### §5.2 Specific Optimization
 
 ## Chapter 6 - Compilation
 
-### IR to Assembly
+### §6.1 IR to Assembly
 
-### Assembling the Executable
+### §6.2 Assembling the Executable
 
 ## Chapter 7 - Test Cases
+
+### §7.1 Unit Tests
+
+### §7.2 Integrated Tests
+
+### §7.3 System Tests
 
 ## References
 
