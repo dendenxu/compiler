@@ -763,7 +763,15 @@ def p_assignment(self, p):
 
 ## Code Generation
 
+In the previous part, we have already obtained an abstract syntax tree. Then, we need to visit this tree to generate the target code. Of course we can directly generate target code like assmebly language from this AST. However, on the consideration of scalability, we will first generate intermediate representation of out As for code generation, we use a python package named llvmlite to 
+
 ### LLVM Intermediate Representation
+
+
+
+
+
+### Implementation of Visitor
 
 ### Specific Optimization
 
