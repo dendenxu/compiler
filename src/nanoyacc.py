@@ -5,7 +5,6 @@ import traceback
 from nanotraverse import *
 from nanolex import *
 from nanoast import *
-from pprint import pprint
 import requests
 import json
 
@@ -222,8 +221,10 @@ class NanoParser():
         if isinstance(p[2], list):
             for dec in p[2]:
                 dec.type = p[1]
+                dec.update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
         else:
             p[2].type = p[1]
+            p[2].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
         p[0] = p[2]
 
     def p_dec_arr_list(self, p):
@@ -242,7 +243,7 @@ class NanoParser():
             p[1] = []
             p[1].append(dec)
         dec = DecNode(None, p[3], p[4], p[5])
-        dec.update_pos(p.lineno(3), self._find_tok_column(p.lexpos(3)))
+        dec.update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
         p[1].append(dec)
         p[0] = p[1]
 
@@ -660,7 +661,7 @@ class NanoParser():
             print(colored("Error: ", "red")+f"{e}")
 
     def build(self, **kwargs):
-        self.parser = yacc.yacc(module=self, start='program', **kwargs)
+        self.parser = yacc.yacc(module=self, **kwargs)
 
     tokens = NanoLexer.tokens
 
@@ -684,6 +685,7 @@ if __name__ == '__main__':
         print(root)
 
         tree = traverse(root)
+        # Print Struct Tree (data sent to server)
         # print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
         # print(tree)
         addinfo(tree, args.input)

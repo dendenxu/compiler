@@ -14,12 +14,12 @@ class Node(object):
     def __init__(self):
         self._indentLevel = 0
         self._lineno = self._colno = 0
-        self.lineno = self.colno = 0
+        # self.lineno = self.colno = 0
 
     def update_pos(self, line: int, col: int):
         self._lineno = line
         self._colno = col
-        self.lineno, self.colno = line, col
+        # self.lineno, self.colno = line, col
 
     def accept(self, visitor: NanoVisitor):
         pass
