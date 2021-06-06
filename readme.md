@@ -648,13 +648,13 @@ Similar optimization occurs when we're parsing **expression list** of function c
   #############################################################
   #                     Function Definition                   #
   #############################################################
-  
+
   def p_func_def(self, p):
       '''
       function            : type id LPAREN param_list RPAREN curl_block
       '''
       p[0] = FuncNode(p[1], p[2], p[4], p[6])
-  
+
   def p_params(self, p):
       '''
       param_list          : type id comma_params
@@ -664,7 +664,7 @@ Similar optimization occurs when we're parsing **expression list** of function c
           p[3] = []
       p[3] = [param] + p[3]
       p[0] = p[3]
-  
+
   def p_comma_params(self, p):
       '''
       comma_params        : comma_params COMMA type id
@@ -817,13 +817,13 @@ There's an ugly solution to this:
   ...
   ...
   state 196
-  
+
       (17) statement -> IF LPAREN expression RPAREN ctrl_block .
       (18) statement -> IF LPAREN expression RPAREN ctrl_block . ELSE ctrl_block
-  
+
     ! shift/reduce conflict for ELSE resolved as shift
       ELSE            shift and go to state 202
-  
+
     ! ELSE            [ reduce using rule 17 (statement -> IF LPAREN expression RPAREN ctrl_block .) ]
   ...
   ...
@@ -871,9 +871,7 @@ Specifically, We have
   - `AssNode` for assignment expressions
   - `ArrSubNode` for subscription of an array/pointer
 
-### §3.2 Tree Traversal
-
-### §3.3 Tree Visualization and Interaction
+### §3.2 Tree Visualization and Interaction
 
 ==IMPORTANT: To better grasp the ability of our Abstract Syntax Tree visualizer, go to the [GitHub](https://github.com/dendenxu/compiler) of this repo to see for yourself.==
 
@@ -916,7 +914,7 @@ You're also able to download a fully viewable tree from the server directly (or 
 
 You'll see similar **SVG** embedded in our report later in the Code Generation section.
 
-### §3.4 Optimization Considerations
+### §3.3 Optimization Considerations
 
 #### Better Debugging Interface
 
@@ -962,6 +960,97 @@ int main()
 
 ![image-20210606203509676](readme.assets/image-20210606203509676.png)
 
+Correct warning location during later phases:
+
+This is the source for a simple quicksort algorithm
+
+```c
+/**
+ * feature:
+ *      integer type & float type & void type
+ *      pointer type & array type
+ *      & and * operator
+ *      type casting:
+ *          xd array -> pointer
+ *          int <-> float
+ *      calculations:
+ *          *(pointer + integer)
+ *      quicksort
+ *      random integer generation
+ * expected output: 1
+ */
+
+int qsort(int *a, int l, int r)
+{
+    int i = l;
+    int j = r;
+    int p = *(a + ((l + r) / 2));
+    int flag = 1;
+    while (i <= j) {
+        while (*(a + i) < p) i++;
+        while (*(a + j) > p) j--;
+        if (i > j) break;
+        int u = *(a + i);
+        *(a + i) = *(a + j);
+        *(a + j) = u;
+        i++;
+        j--;
+    }
+    if (i < r) qsort(a, i, r);
+    if (j > l) qsort(a, l, j);
+    return 0;
+}
+
+// random floating point number distributed uniformly in [0,1]
+float rand(float *r)
+{
+    float base = 256.0;
+    float a = 17.0;
+    float b = 139.0;
+    float temp1 = a * (*r) + b;
+    float temp2 = (float)(int)(temp1 / base);
+    float temp3 = temp1 - temp2 * base;
+    *r = temp3;
+    float p = *r / base;
+    return p;
+}
+
+int initArr(int *a, int n)
+{
+    float state = 114514.0;
+    int i = 0;
+    while (i < n) {
+        *(a + i) = (int)(255 * rand(&state));
+        i += 1;
+    }
+}
+
+int isSorted(int *a, int n)
+{
+    int i = 0;
+    while (i < n - 1) {
+        if ((*(a + i)) > (*(a + i + 1)))
+            return 0;
+        i += 1;
+    }
+    return 1;
+}
+
+int main()
+{
+    int n = 100;
+    int arr[100];
+    int *a = (int *)arr;
+    initArr(a, n);
+    qsort(a, 0, n - 1);
+    return isSorted(a, n);
+}
+```
+
+With the help of carefully designed line number/column memory and the help of a tracking parser, it's easy for the user to locate the erroneous code.
+
+![image-20210606211234698](readme.assets/image-20210606211234698.png)
+
 #### Better Coding
 
 We adopted the OOP design pattern to make life easier for `pylance`, the type checking utility and auto-complete functionality of the developer's IDE
@@ -996,7 +1085,226 @@ I believe you've all had that afternoon spent digging into your code trying to f
 
 ### §4.1 Name Resolution
 
+During compilation, our compiler associates identifiers such as the name of a variable with an address (memory location), datatype, or actual value. This process is called _binding_. The association lasts through all subsequent executions until a recompilation occurs, which might cause a rebinding. Before binding the names, our compiler must resolve all references to them in the compilation unit. This process is called _name resolution_ Cour compiler considers all names to be in the same namespace. So, one declaration or definition in an inner scope can hide another in an outer scope.
+
+#### Scope Checking
+
+```python
+    def _get_identifier(self, name):
+        for d in self.scope_stack[::-1]:  # reversing the scope_block
+            if name in d:
+                return d[name]['ref']
+        return None
+```
+
+We use a scope stack to store the different symbol tables. We will recursively checking the scope from the last created scope to the oldest scope which is known as most recent variable matching rule.
+
+#### Binding Reference With Name
+
+```python
+def _add_identifier(self, name, reference, type):
+        if self.scope_stack == []:
+            return None
+        if name in self.scope_stack[-1]:
+            return None
+        self.scope_stack[-1][name] = {'ref': reference, 'typ': type}
+        return self.scope_stack[-1][name]
+```
+
+As we already have a scope stack, we can set the binding between name and reference by a python `dict` object and add the key-value to the latest scope.
+
 ### §4.2 Type Checking (L value Checking)
+
+Type checking happens at many places and operations. For binary operation, we need to check that the left type and the right type is compatible. We use a survey to illustrate compatible rules and return type:
+
+```python
+binCompatDict = {
+    #left       right      op       ret_type
+    ('i32',     'i32',     '+' ):   'i32',
+    ('i32',     'i32',     '-' ):   'i32',
+    ('i32',     'i32',     '*' ):   'i32',
+    ('i32',     'i32',     '/' ):   'i32',
+    ('i32',     'i32',     '%' ):   'i32',
+    ('i32',     'i32',     '<<'):   'i32',
+    ('i32',     'i32',     '>>'):   'i32',
+    ('i32',     'i32',     '!='):   'i1',
+    ('i32',     'i32',     '=='):   'i1',
+    ('i32',     'i32',     '<' ):   'i1',
+    ('i32',     'i32',     '>' ):   'i1',
+    ('i32',     'i32',     '<='):   'i1',
+    ('i32',     'i32',     '>='):   'i1',
+    ('i32',     'i32',     '||'):   'i1',
+    ('i32',     'i32',     '&&'):   'i1',
+    ('float',   'float',   '+' ):   'float',
+    ('float',   'float',   '-' ):   'float',
+    ('float',   'float',   '*' ):   'float',
+    ('float',   'float',   '/' ):   'float',
+    ('float',   'float',   '%' ):   'float',
+    ('float',   'float',   '!='):   'i1',
+    ('float',   'float',   '=='):   'i1',
+    ('float',   'float',   '<' ):   'i1',
+    ('float',   'float',   '>' ):   'i1',
+    ('float',   'float',   '<='):   'i1',
+    ('float',   'float',   '>='):   'i1',
+    ('float',   'float',   '||'):   'i1',
+    ('float',   'float',   '&&'):   'i1',
+    ('i1',      'i1',      '+' ):   'i32',
+    ('i1',      'i1',      '-' ):   'i32',
+    ('i1',      'i1',      '*' ):   'i32',
+    ('i1',      'i1',      '/' ):   'i32',
+    ('i1',      'i1',      '%' ):   'i32',
+    ('i1',      'i1',      '!='):   'i1',
+    ('i1',      'i1',      '=='):   'i1',
+    ('i1',      'i1',      '<' ):   'i1',
+    ('i1',      'i1',      '>' ):   'i1',
+    ('i1',      'i1',      '<='):   'i1',
+    ('i1',      'i1',      '>='):   'i1',
+    ('i1',      'i1',      '||'):   'i1',
+    ('i1',      'i1',      '&&'):   'i1',
+    ('i32',     'i1',      '+' ):   'i32',
+    ('i32',     'i1',      '-' ):   'i32',
+    ('i32',     'i1',      '*' ):   'i32',
+    ('i32',     'i1',      '/' ):   'i32',
+    ('i32',     'i1',      '%' ):   'i32',
+    ('i32',     'i1',      '!='):   'i1',
+    ('i32',     'i1',      '=='):   'i1',
+    ('i32',     'i1',      '<' ):   'i1',
+    ('i32',     'i1',      '>' ):   'i1',
+    ('i32',     'i1',      '<='):   'i1',
+    ('i32',     'i1',      '>='):   'i1',
+    ('i32',     'i1',      '||'):   'i1',
+    ('i32',     'i1',      '&&'):   'i1',
+    ('i1',      'i32',     '+' ):   'i32',
+    ('i1',      'i32',     '-' ):   'i32',
+    ('i1',      'i32',     '*' ):   'i32',
+    ('i1',      'i32',     '/' ):   'i32',
+    ('i1',      'i32',     '%' ):   'i32',
+    ('i1',      'i32',     '!='):   'i1',
+    ('i1',      'i32',     '=='):   'i1',
+    ('i1',      'i32',     '<' ):   'i1',
+    ('i1',      'i32',     '>' ):   'i1',
+    ('i1',      'i32',     '<='):   'i1',
+    ('i1',      'i32',     '>='):   'i1',
+    ('i1',      'i32',     '||'):   'i1',
+    ('i1',      'i32',     '&&'):   'i1',
+    ('float',   'i32',     '+' ):   'float',
+    ('float',   'i32',     '-' ):   'float',
+    ('float',   'i32',     '*' ):   'float',
+    ('float',   'i32',     '/' ):   'float',
+    ('float',   'i32',     '%' ):   'float',
+    ('float',   'i32',     '!='):   'i1',
+    ('float',   'i32',     '=='):   'i1',
+    ('float',   'i32',     '<' ):   'i1',
+    ('float',   'i32',     '>' ):   'i1',
+    ('float',   'i32',     '<='):   'i1',
+    ('float',   'i32',     '>='):   'i1',
+    ('float',   'i32',     '||'):   'i1',
+    ('float',   'i32',     '&&'):   'i1',
+    ('i32',     'float',   '+' ):   'float',
+    ('i32',     'float',   '-' ):   'float',
+    ('i32',     'float',   '*' ):   'float',
+    ('i32',     'float',   '/' ):   'float',
+    ('i32',     'float',   '%' ):   'float',
+    ('i32',     'float',   '!='):   'i1',
+    ('i32',     'float',   '=='):   'i1',
+    ('i32',     'float',   '<' ):   'i1',
+    ('i32',     'float',   '>' ):   'i1',
+    ('i32',     'float',   '<='):   'i1',
+    ('i32',     'float',   '>='):   'i1',
+    ('i32',     'float',   '||'):   'i1',
+    ('i32',     'float',   '&&'):   'i1',
+    ('i1',      'float',   '+' ):   'float',
+    ('i1',      'float',   '-' ):   'float',
+    ('i1',      'float',   '*' ):   'float',
+    ('i1',      'float',   '/' ):   'float',
+    ('i1',      'float',   '%' ):   'float',
+    ('i1',      'float',   '!='):   'i1',
+    ('i1',      'float',   '=='):   'i1',
+    ('i1',      'float',   '<' ):   'i1',
+    ('i1',      'float',   '>' ):   'i1',
+    ('i1',      'float',   '<='):   'i1',
+    ('i1',      'float',   '>='):   'i1',
+    ('i1',      'float',   '||'):   'i1',
+    ('i1',      'float',   '&&'):   'i1',
+    ('float',   'i1',      '+' ):   'float',
+    ('float',   'i1',      '-' ):   'float',
+    ('float',   'i1',      '*' ):   'float',
+    ('float',   'i1',      '/' ):   'float',
+    ('float',   'i1',      '%' ):   'float',
+    ('float',   'i1',      '!='):   'i1',
+    ('float',   'i1',      '=='):   'i1',
+    ('float',   'i1',      '<' ):   'i1',
+    ('float',   'i1',      '>' ):   'i1',
+    ('float',   'i1',      '<='):   'i1',
+    ('float',   'i1',      '>='):   'i1',
+    ('float',   'i1',      '||'):   'i1',
+    ('float',   'i1',      '&&'):   'i1',
+    ('i32*',    'i32',     '+' ):   'i32*',
+    ('i32',     'i32*',    '+' ):   'i32*',
+    ('float*',  'i32',     '+' ):   'float*',
+    ('i32',     'float*',  '+' ):   'float*',
+}
+```
+
+Notice that some rules will involving implicit type casting. For example `int1` and `int32` by arithemetic operations, we need to implicitly cast `int1` to `int32` which we defined yielding a warning:
+
+```python
+    elif exp_type(left) == 'i1' and exp_type(right) == 'i32':
+        left.value = tp_visitor._get_builder().zext(val(left), int32)
+    elif exp_type(left) == 'i32' and exp_type(right) == 'i1':
+        right.value = tp_visitor._get_builder().zext(val(right), int32)
+```
+
+```python
+ if ret_type != exp_type(left):
+        tp_visitor.n_warnings += 1
+        print(str(TImplicitCastWarning(exp_type(left), ret_type)) + f" at position (line {left._lineno}, col {left._colno})")
+```
+
+Also we can force the expression to do type casting of which the ruls are also defined in a survey:
+
+```python
+allowed_casting = [
+    ('i1'    , 'i32'  ),
+    ('i32'   , 'float'),
+    ('i1'    , 'float'),
+    ('float' , 'i1'   ),
+    ('float' , 'i32'  ),
+    ('[@ x i32]*'  , 'i32*'  ),
+    ('[@ x float]*', 'float*'),
+    ('[@ x [@ x i32]]*'  , 'i32*'  ),
+    ('[@ x [@ x float]]*', 'float*'),
+    ('[@ x [@ x [@ x i32]]]*'  , 'i32*'  ),
+    ('[@ x [@ x [@ x float]]]*', 'float*'),
+]
+```
+
+For the conversion between int and float:
+
+```python
+    elif (src_type, tgt_type) == ('i32', 'float'):
+        return tp_visitor._get_builder().sitofp(value, flpt)
+    elif (src_type, tgt_type) == ('float', 'i32'):
+        return tp_visitor._get_builder().fptosi(value, int32)
+```
+
+We support cast 1d/2d/3d-arry to pointers:
+
+```python
+    elif (src_type, tgt_type) == ('[@ x i32]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return val
+    elif (src_type, tgt_type) == ('[@ x [@ x i32]]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return tp_visitor._get_builder().bitcast(val, make_ptr(int32))
+    elif (src_type, tgt_type) == ('[@ x [@ x [@ x i32]]]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+```
 
 ## Chapter 5 - Code Generation
 
@@ -1331,16 +1639,56 @@ Notice that every time we do indexing, we need to pass one extral 0 value. This 
 
 ## Chapter 6 - Compilation
 
+![image-20210606212321294](readme.assets/image-20210606212321294.png)
+
+This is an example of manually compiling the intermediate representation generated by our `nanoirgen.py`. You can always just use `python src/nanoirgen.py -g -i samples/quicksort.c -o results/irgen.ll -e .exe` to generate the output directly
+
 ### §6.1 IR to Assembly
 
-```python
-        os.system(' '.join(["clang", args.output, "-S", "-o", ass]))
+This process can be executed by a the LLVM static compiler `llc` or just `clang`
+
+If using clang, we should use `clang irgen.ll -S -o irgen.s` to produce the assembly for viewing
+
+```shell
+clang <input_llvm_ir_file> -S -o <output_asm_file>
 ```
+
+In our implementation, we used the `os` package to call a system program and generate the result for us
+shell:
+
+python:
+
+```python
+os.system(' '.join(["clang", args.output, "-S", "-o", ass]))
+```
+
+![image-20210606212532064](readme.assets/image-20210606212532064.png)
+
+File content of `irgen.s`
+
+(Target Assembly Code)
+
+![image-20210606212615383](readme.assets/image-20210606212615383.png)
 
 ### §6.2 Assembling the Executable
 
+With the assembly, we can simple use a compiler like `gcc` or `clang` to produce the final executable machine code
+
+```shell
+clang <input_asm_file> -o <output_exec_file>
+```
+
+This can be done with `clang irgen.s -o irgen`
+
+or `gcc irgen.s -o irgen`
+
+In our implementation, we used the `os` package to call a system program and generate the result for us
+shell:
+
+python:
+
 ```python
-        os.system(' '.join(["clang", ass, "-o", exe]))
+os.system(' '.join(["clang", ass, "-o", exe]))
 ```
 
 ## Chapter 7 - Test Cases
@@ -1408,7 +1756,7 @@ Test cases:
 
    ```
    + - * / %
-   | & ~ ^ << >> 
+   | & ~ ^ << >>
    || && !
    < <= > >= == !=
    ```
@@ -1451,7 +1799,7 @@ Test cases:
    ```
    // Conditional Operator
    ?
-   
+
    // Delimeters
    ( )
    [ ]
@@ -1663,8 +2011,6 @@ Output after parsing the testing file:
 Obtaining the above results with enough complexity, we carefully examined each one of the output. It turned out that **all nodes were parsed as desired**, with satisfying orders and precedence. **We can conclude that our parser passed the test.**
 
 ### §7.3 IR Generation and Execution
-
-
 
 ## References
 
