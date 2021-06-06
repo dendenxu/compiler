@@ -5,6 +5,7 @@ from nanoast import *
 from nanolex import NanoLexer
 from nanoyacc import NanoParser
 from nanotype import *
+from nanoerror import *
 import nanotype as ntp
 import sys
 from termcolor import colored
@@ -34,6 +35,13 @@ class NanoVisitor(Visitor):
         self.defined_funcs = dict()
         self.func_params = dict()
         self.in_global = True
+        self.is_func_body = False
+        self.n_errors = 0
+        self.n_warnings = 0
+    
+    def _exit(self):
+        print(f"{self.n_errors}"+colored(" error(s)", "red")+f", {self.n_warnings}"+colored(" warning(s)", "yellow"))
+        exit(-1)
 
     def _push_builder(self, builder=None):
         if builder is not None:
@@ -44,6 +52,8 @@ class NanoVisitor(Visitor):
             self.builder_stack.append(builder)
 
     def _get_builder(self) -> ir.IRBuilder:
+        if self.builder_stack == []:
+            return None
         return self.builder_stack[-1]
 
     def _pop_builder(self):
@@ -52,11 +62,9 @@ class NanoVisitor(Visitor):
 
     def _push_scope(self):
         self.scope_stack.append(dict())
-        # print('push', self.scope_stack)
 
     def _pop_scope(self):
         pop = self.scope_stack.pop()
-        # print('pop', self.scope_stack)
         return pop
 
     def _push_block(self, block=None):
@@ -66,15 +74,22 @@ class NanoVisitor(Visitor):
         self.block_stack.append(block)
 
     def _get_block(self):
+        if self.block_stack == []:
+            return None
         return self.block_stack[-1]
 
     def _pop_block(self):
+        if self.block_stack == []:
+            return None
         return self.block_stack.pop()
 
     def _add_identifier(self, name, reference, type):
+        if self.scope_stack == []:
+            return None
         if name in self.scope_stack[-1]:
-            raise RuntimeError("{name} alredy declared")
+            return None
         self.scope_stack[-1][name] = {'ref':reference, 'typ':type}
+        return self.scope_stack[-1][name]
 
     def _get_identifier(self, name):
         for d in self.scope_stack[::-1]:  # reversing the scope_block
@@ -90,20 +105,14 @@ class NanoVisitor(Visitor):
 
     def _add_func(self, name, func, params=dict()):
         if name in self.defined_funcs.keys():
-            raise RuntimeError("{name} alredy declared")
+            return None
         self.defined_funcs[name] = [func, params]
+        return self.defined_funcs[name]
 
     def _get_func(self, name):
         if name in self.defined_funcs.keys():
             return self.defined_funcs[name][0]
-        else:
-            return None
-
-    def _get_func_param_refs(self, name):
-        if name in self.defined_funcs.keys():
-            return self.defined_funcs[name][1]
-        else:
-            return None
+        return None
 
     def visitProgNode(self, node: ProgNode):
         self._push_scope()
@@ -111,6 +120,9 @@ class NanoVisitor(Visitor):
         for func in node.funcs:
             func.accept(self)
         self._pop_scope()
+        print(f"{self.n_errors}"+colored(" error(s)", "red")+f", {self.n_warnings}"+colored(" warning(s)", "yellow"))
+        if self.n_errors:
+            self._exit()
 
     def visitFuncNode(self, node: FuncNode):
         self.in_global = False
@@ -126,27 +138,37 @@ class NanoVisitor(Visitor):
 
         node.type.accept(self)
         node.type = ir.FunctionType(typ(node.type), tuple(func_param_type_list))
+        if self._get_func(nam(node)) is not None:
+            self.n_errors += 1
+            print(IRedecFatal(nam(node)))
+            self._exit()
+            
         node.ref = ir.Function(self.module, typ(node), name=nam(node))
+        self._add_func(nam(node), node.ref)
         self.cur_func_name = nam(node.id)
-        self._add_func(self.cur_func_name, node.ref)
-
+        
         self._push_block()
         self._push_builder()
 
         func_args = list(ref(node).args)
         for i in range(len(func_args)):
             arg_ref = self._get_builder().alloca(func_param_type_list[i])
-            self._add_identifier(nam(node.params[i]), arg_ref, func_param_type_list[i])
+            res = self._add_identifier(nam(node.params[i]), arg_ref, func_param_type_list[i])
+            if res is None:
+                self.n_errors += 1
+                print(IRedecError(nam(node.params[i])))
             self._get_builder().store(func_args[i], arg_ref)
 
         node.block.accept(self)
 
         if self._get_builder().basic_block.terminator is None:
             ret_type = self._get_func(self.cur_func_name).ftype.return_type
-            if type(ret_type) == void:
+            if ret_type == void:
                 self._get_builder().ret_void()
             else:
                 self._get_builder().ret(ir.Constant(ret_type, 0))
+            self.n_warnings += 1
+            print(IFuncExitWarning(nam(node)))
 
         self._pop_builder()
         self._pop_block()
@@ -159,17 +181,21 @@ class NanoVisitor(Visitor):
             param.accept(self)
             call_func_args.append(val(param))
         func_ref = self._get_func(nam(node))
+        if func_ref is None:
+            self.n_errors += 1
+            print(IUndecFatal(nam(node)))
+            self._exit()
         func_args = list(func_ref.ftype.args)
         if len(func_ref.ftype.args) != len(call_func_args):
-            raise RuntimeError("args mismatch")
+            self.n_errors += 1
+            print(IArgsLenUnmatchFatal(len(call_func_args),len(func_ref.ftype.args)))
+            self._exit()
         else:
             for i in range(len(call_func_args)):
                 if exp_type(node.params[i]) != str(func_args[i]):
-                    print(node.params[i])
-                    print(func_args[i])
-                    print(exp_type(node.params[i]), str(func_args[i]))
-                    print(node)
-                    raise RuntimeError("args mismatch")
+                    self.n_errors += 1
+                    print(IArgsUnmatchFatal(exp_type(node.params[i]),str(func_args[i])))
+                    self._exit()
         node.value = self._get_builder().call(func_ref, tuple(call_func_args))
         node.exp_type = str(func_ref.ftype.return_type)
 
@@ -180,6 +206,10 @@ class NanoVisitor(Visitor):
     def visitArrSubNode(self, node: ArrSubNode):
         node.subee.accept(self)
         node.suber.accept(self)
+        if type(ref(node.subee).type.pointee) != ir.ArrayType:
+            self.n_errors += 1
+            print(TMismatchError(str(ref(node.subee).type.pointee), 'arrayType'))
+            self._exit()
         node.ref = self._get_builder().gep(ref(node.subee),
                                            [ir.Constant(int32, 0),
                                             val(node.suber), ])
@@ -195,28 +225,36 @@ class NanoVisitor(Visitor):
             node.type = void
         elif node.typestr == 'float':
             node.type = flpt
-        elif node.typestr == 'long':
-            node.type = long
         else:
             raise NotImplementedError
 
-    def visitBlockNode(self, node: BlockNode):
-        self._push_scope()
+    def visitBlockNode(self, node: BlockNode, scope=None):
+        if scope is None:
+            self._push_scope()
+        else:
+            self._push_scope(scope)
         for stmt in node.stmts:
             stmt.accept(self)
         return self._pop_scope()
 
     def visitRetNode(self, node: RetNode):
         node.exp.accept(self)
-        try:
+        cur_func_ret_type = str(self._get_func(self.cur_func_name).ftype.return_type)
+        if exp_type(node.exp) != cur_func_ret_type:
+            self.n_errors += 1
+            print(TMismatchError(exp_type(node.exp), cur_func_ret_type))
+            self._exit()
+        if exp_type(node.exp) != 'void':
             self._get_builder().ret(val(node.exp))
-        except Exception as e:
+        else:
             self._get_builder().ret_void()
 
     def visitIDNode(self, node: IDNode):
         item = self._get_identifier(node.name)
         if item is None:
-            raise RuntimeError(node.name, "not declared")
+            self.n_errors += 1
+            print(IUndecFatal(nam(node)))
+            self._exit()
         node.ref = item
         node.type = item.type
 
@@ -266,24 +304,36 @@ class NanoVisitor(Visitor):
             for a in list(reversed(node.arr)):
                 node.type = ir.ArrayType(node.type, a)
         if self.in_global:
-            node.item = ir.GlobalVariable(self.module, node.type, nam(node.id))
+            try:
+                node.item = ir.GlobalVariable(self.module, node.type, nam(node.id))
+            except Exception as e:
+                self.n_errors += 1
+                print(IRedecError(nam(node.id)))
+                self._exit()
             node.item.linkage = 'internal'
             if node.init is not None:
                 node.init.accept(self)
                 node.item.initializer = val(node.init)
+                self.n_warnings += 1
+                print(IGlobalNotInitWarning(nam(node.id)))
         else:
             node.item = self._get_builder().alloca(node.type)
             if node.init is not None:
                 node.init.accept(self)
                 self._get_builder().store(val(node.init), node.item)
-        self._add_identifier(nam(node.id), node.item, node.type)
+        res = self._add_identifier(nam(node.id), node.item, node.type)
+        if res is None:
+            self.n_errors += 1
+            print(IRedecError(nam(node.id)))
+            self._exit()
 
     def visitAssNode(self, node: AssNode):
         node.unary.accept(self)
         node.exp.accept(self)
         if exp_type(node.exp) != exp_type(node.unary):
-            print(exp_type(node.unary), exp_type(node.exp))
-            raise RuntimeError("type mismatch")
+            self.n_errors += 1
+            print(TMismatchError(exp_type(node.exp), exp_type(node.unary)))
+            self._exit()
         node.value = val(node.exp)
         self._get_builder().store(node.value, ref(node.unary))
 
@@ -301,37 +351,11 @@ class NanoVisitor(Visitor):
         if type(node.ifbody) == EmptyStmtNode:
             return
         if type(node.elsebody) == EmptyStmtNode:
-            # then_block = self._get_builder().append_basic_block()
-            # post_block = self._get_builder().append_basic_block()
-            # self._get_builder().cbranch(pred, then_block, post_block)
-            # self._get_builder().position_at_start(then_block)
-            # self._push_scope()
-            # node.ifbody.accept(self)
-            # self._pop_scope()
-            # self._get_builder().branch(post_block)
-            # self._get_builder().position_at_start(post_block)
             with self._get_builder().if_then(pred) as then:
-                # self._push_block(then)
                 self._push_scope()
                 node.ifbody.accept(self)
                 self._pop_scope()
-                # self._pop_block()
         else:
-            # then_block = self._get_builder().append_basic_block()
-            # otherwise_block = self._get_builder().append_basic_block()
-            # post_block = self._get_builder().append_basic_block()
-            # self._get_builder().cbranch(pred, then_block, otherwise_block)
-            # self._get_builder().position_at_start(then_block)
-            # self._push_scope()
-            # node.ifbody.accept(self)
-            # self._get_builder().branch(post_block)
-            # self._pop_scope()
-            # self._get_builder().position_at_start(otherwise_block)
-            # self._push_scope()
-            # node.elsebody.accept(self)
-            # self._get_builder().branch(post_block)
-            # self._pop_scope()
-            # self._get_builder().position_at_start(post_block)
             with self._get_builder().if_else(pred) as (then, othrewise):
                 with then:
                     # ifbody
@@ -552,7 +576,6 @@ class NanoVisitor(Visitor):
                     val(node.left),
                     val(node.right))
             else:
-                print(node)
                 raise NotImplementedError
         elif exp_type(node.left) in ('i32','i1') and exp_type(node.right) in ('i32','i1'):
             if node.op == '+':
@@ -619,13 +642,17 @@ class NanoVisitor(Visitor):
                     val(node.left),
                     val(node.right))
             else:
-                print(node)
                 raise NotImplementedError
         elif exp_type(node.left) == 'i32*' and exp_type(node.right) == 'i32':
             node.value = self._get_builder().gep(
                 val(node.left), [val(node.right)])
+        elif exp_type(node.left) == 'float*' and exp_type(node.right) == 'i32':
+            node.value = self._get_builder().gep(
+                val(node.left), [val(node.right)])
         else:
-            print(node)
+            self.n_errors += 1
+            print(TMismatchError(exp_type(node.left), exp_type(node.right)))
+            self._exit()
             raise NotImplementedError
 
 if __name__ == '__main__':
@@ -649,16 +676,16 @@ if __name__ == '__main__':
         print(colored(f"Abstract Syntax Tree:", "yellow", attrs=["bold"]))
         print(root)
 
-        tree = traverse(root)
-        addinfo(tree, args.input)
-        payload = json.dumps(tree)
-        if args.tree:
-            with open(args.tree, 'w') as f:
-                f.write(payload)
-            print(colored(f"Saved Structrued Tree to {args.tree}", 'yellow', attrs=['bold']))
+        # tree = traverse(root)
+        # addinfo(tree, args.input)
+        # payload = json.dumps(tree)
+        # if args.tree:
+        #     with open(args.tree, 'w') as f:
+        #         f.write(payload)
+        #     print(colored(f"Saved Structrued Tree to {args.tree}", 'yellow', attrs=['bold']))
 
-        r = requests.post(url=args.url, data=payload)
-        print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))
+        # r = requests.post(url=args.url, data=payload)
+        # print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))
 
         # global tp_visitor
         visitor = ntp.tp_visitor = NanoVisitor()

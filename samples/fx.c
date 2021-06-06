@@ -1,8 +1,15 @@
-int a[10];
-int main() {
-    for (int i=0;i<10;i++) {
-        a[i] = i;
-    }
-    int * b = (int*)a;
-    return *(b+4);
+void fx() {
+    return ;
+}
+int k(int a) {
+    int a =2;
+    return 0;
+}
+int main(int a, int b) {
+    int a[10][10][10][10];
+    int *b = (int*)a;
+    int a[10];
+    int b;
+    b[10];
+    return 0;
 }
