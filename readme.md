@@ -1026,9 +1026,7 @@ As we already have a scope stack, we can set the binding between name and refere
 
 ### §4.2 Type Checking (L value Checking)
 
-Type checking happens at many places and operations. 
-
-BinaryOperation:
+Type checking happens at many places and operations. For binary operation, we need to check that the left type and the right type is compatible. We use a survey to illustrate compatible rules and return type:
 
 ```python
 binCompatDict = {
@@ -1159,7 +1157,22 @@ binCompatDict = {
 }
 ```
 
-TypeCasting:
+Notice that some rules will involving implicit type casting. For example `int1` and `int32` by arithemetic operations, we need to implicitly cast `int1` to `int32` which we defined yielding a warning:
+
+```python
+    elif exp_type(left) == 'i1' and exp_type(right) == 'i32':
+        left.value = tp_visitor._get_builder().zext(val(left), int32)
+    elif exp_type(left) == 'i32' and exp_type(right) == 'i1':
+        right.value = tp_visitor._get_builder().zext(val(right), int32)
+```
+
+```python
+ if ret_type != exp_type(left):
+        tp_visitor.n_warnings += 1
+        print(str(TImplicitCastWarning(exp_type(left), ret_type)) + f" at position (line {left._lineno}, col {left._colno})")
+```
+
+Also we can force the expression to do type casting of which the ruls are also defined in a survey:
 
 ```python
 allowed_casting = [
@@ -1175,6 +1188,33 @@ allowed_casting = [
     ('[@ x [@ x [@ x i32]]]*'  , 'i32*'  ),
     ('[@ x [@ x [@ x float]]]*', 'float*'),
 ]
+```
+
+For the conversion between int and float:
+
+```python
+    elif (src_type, tgt_type) == ('i32', 'float'):
+        return tp_visitor._get_builder().sitofp(value, flpt)
+    elif (src_type, tgt_type) == ('float', 'i32'):
+        return tp_visitor._get_builder().fptosi(value, int32)
+```
+
+We support cast 1d/2d/3d-arry to pointers:
+
+```python
+    elif (src_type, tgt_type) == ('[@ x i32]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return val
+    elif (src_type, tgt_type) == ('[@ x [@ x i32]]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return tp_visitor._get_builder().bitcast(val, make_ptr(int32))
+    elif (src_type, tgt_type) == ('[@ x [@ x [@ x i32]]]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
 ```
 
 ## Chapter 5 - Code Generation
