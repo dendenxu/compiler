@@ -6,10 +6,7 @@ int k(int a) {
     return 0;
 }
 int main(int a, int b) {
-    int a[10][10][10][10];
-    int *b = (int*)a;
-    int a[10];
-    int b;
-    b[10];
-    return 0;
+    int a=1, b=2;
+    a = b = 3;
+    return a;
 }
