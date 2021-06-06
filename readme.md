@@ -648,13 +648,13 @@ Similar optimization occurs when we're parsing **expression list** of function c
   #############################################################
   #                     Function Definition                   #
   #############################################################
-
+  
   def p_func_def(self, p):
       '''
       function            : type id LPAREN param_list RPAREN curl_block
       '''
       p[0] = FuncNode(p[1], p[2], p[4], p[6])
-
+  
   def p_params(self, p):
       '''
       param_list          : type id comma_params
@@ -664,7 +664,7 @@ Similar optimization occurs when we're parsing **expression list** of function c
           p[3] = []
       p[3] = [param] + p[3]
       p[0] = p[3]
-
+  
   def p_comma_params(self, p):
       '''
       comma_params        : comma_params COMMA type id
@@ -817,13 +817,13 @@ There's an ugly solution to this:
   ...
   ...
   state 196
-
+  
       (17) statement -> IF LPAREN expression RPAREN ctrl_block .
       (18) statement -> IF LPAREN expression RPAREN ctrl_block . ELSE ctrl_block
-
+  
     ! shift/reduce conflict for ELSE resolved as shift
       ELSE            shift and go to state 202
-
+  
     ! ELSE            [ reduce using rule 17 (statement -> IF LPAREN expression RPAREN ctrl_block .) ]
   ...
   ...
@@ -1524,11 +1524,137 @@ Notice that every time we do indexing, we need to pass one extral 0 value. This 
 
 ## Chapter 7 - Test Cases
 
-### §7.1 Unit Tests
+### §7.1 Lexer
 
-### §7.2 Integrated Tests
+As the token list is defined in the [Token Definition](#§1.2 Token Definition) section, we wrote a file including all possible tokens (which is listed below) to test our lexer (`src/nanolex.py`). To run the lexer, use the command:
 
-### §7.3 System Tests
+```bash
+$ python3 src/nanolex.py samples/LexTest.txt
+```
+
+- **Input:** The file to be tokenized.
+- **Output:** Tokens (in the format of `LexToken(<type>,<value>,<lineno>,<lexpos>)`).
+
+Test cases:
+
+1. **Keywords**
+
+   Input:
+
+   ```
+   int float char void
+   if else
+   else if
+   do while
+   for
+   continue break
+   return
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-1.png" alt="lex-1" style="zoom:80%;" />
+
+2. **Identifiers**
+
+   Input:
+
+   ```
+   thisIsAnIdentifier
+   these are four Identifiers
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-2.png" alt="lex-2" style="zoom:80%;" />
+
+3. **Constants**
+
+   Input:
+
+   ```
+   999 -233
+   0.618 -6.666666
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-3.png" alt="lex-3" style="zoom:80%;" />
+
+4. **Operators**
+
+   Input:
+
+   ```
+   + - * / %
+   | & ~ ^ << >> 
+   || && !
+   < <= > >= == !=
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-4.png" alt="lex-4" style="zoom:80%;" />
+
+5. **Assignments**
+
+   Input:
+
+   ```
+   =
+   *= /= %=
+   += -=
+   <<= >>= &= ^= |=
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-5.png" alt="lex-5" style="zoom:80%;" />
+
+6. **Increment & Decrement**
+
+   Input:
+
+   ```
+   ++ --
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-6.png" alt="lex-6" style="zoom:80%;" />
+
+7. **Conditional Operator & Delimeters**
+
+   Input:
+
+   ```
+   // Conditional Operator
+   ?
+   
+   // Delimeters
+   ( )
+   [ ]
+   { }
+   . ,
+   ; :
+   ```
+
+   Output:
+
+   <img src="readme.assets/test/lex-7.png" alt="lex-7" style="zoom:80%;" />
+
+In conclusion, the program `nanolex.py` tokenized the input files as desired in all the test cases. Test passed.
+
+### §7.2 Yacc
+
+The grammar productions used in Nano C is listed in [BNF Definition for the Nano C Language](#§2.2 BNF Definition for the Nano C Language). File `samples/ParserTest.c` is designed to test the parser implemented by yacc.
+
+- **Input:** The file to be parsed.
+- **Output:** 
+
+### §7.3 IR Generation and Execution
+
+
 
 ## References
 
