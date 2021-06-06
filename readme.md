@@ -749,6 +749,102 @@ def p_assignment(self, p):
 
 
 
+#### Trick for Solving `Dangling-Else`
+
+The dangling else problem in grammar syntax parsing appears when no restriction is applied on the end of if statement
+
+with a grammar definition like:
+
+```python
+ '''
+    statment                   : IF LPAREN expression RPAREN ctrl_block ELSE ctrl_block
+                               | IF LPAREN expression RPAREN ctrl_block
+ '''
+```
+
+and a program like this:
+
+```python
+if (1) if (2) ; else ;
+```
+
+The else can be associated with the first `if` like with brackets:
+
+```python
+if (1) { if (2) ; } else ;
+```
+
+Or the second `if`:
+
+```python
+if (1) { if (2) ; else ; }
+```
+
+**without violating the grammar definition**!
+
+This is commonly known as *the dangling else* problem:
+
+- Whether and else statement should be paired with the outer most if statement or the inner most unpaired one?
+
+There's an ugly solution to this:
+
+- Define the grammar so that **only unmatched statement** can be associated with the if statement
+
+    ```python
+    '''
+    statement                : matched-stmt | unmatched-stmt
+    matched-stmt             : if  ( exp ) matched-stmt else matched-stmt 
+                             | other
+    unmatched-stmt           : if  ( exp ) statement
+                             | if  ( exp ) matched-stmt else unmatched-stmt
+    exp                      : 0 | 1 
+    '''
+    ```
+
+    > **This works by permitting** only a matched-statement to come before an else in an if-statement**, thus forcing all else-parts to be matched as soon as possible.** 
+
+    But this solution would require some painful modification of the parser code
+
+- And another solution would be marking the end of the if-else block with some special token like `end-if`
+
+    ```python
+    if (1) ; else ; endif
+    ```
+
+    Effectively acting as a pair (pairs) of curly brackets
+
+    solving the ambiguity by make the programmer do more
+
+- The **most popular** solution is to actually leave the grammar be
+
+    Leave everything be and let the **LALR** parser **prefer shift over reduce** when there's a shift-reduce conflict
+
+    And this is also the solution that we used
+
+    ```
+    ...
+    ...
+    state 196
+    
+        (17) statement -> IF LPAREN expression RPAREN ctrl_block .
+        (18) statement -> IF LPAREN expression RPAREN ctrl_block . ELSE ctrl_block
+        
+      ! shift/reduce conflict for ELSE resolved as shift
+        ELSE            shift and go to state 202
+    
+      ! ELSE            [ reduce using rule 17 (statement -> IF LPAREN expression RPAREN ctrl_block .) ]
+    ...
+    ...
+    WARNING: 
+    WARNING: Conflicts:
+    WARNING: 
+    WARNING: shift/reduce conflict for ELSE in state 196 resolved as shift
+    ```
+
+    > If the parser is produced by an SLR, LR(1) or LALR [LR parser](https://en.wikipedia.org/wiki/LR_parser) generator, the programmer will often rely on the generated parser feature of preferring shift over reduce whenever there is a conflict.[[2\]](https://en.wikipedia.org/wiki/Dangling_else#cite_note-Bison_Manual-2) Alternatively, the grammar can be rewritten to remove the conflict, at the expense of an increase in grammar size
+
+
+
 
 
 ## Abstract Syntax Tree
@@ -761,11 +857,25 @@ def p_assignment(self, p):
 
 ### Tree Visualization and Interaction
 
+
+
+
+
+## Semantic Analysis
+
+### Name Resolution
+
+### Type Checking (L value Checking)
+
+
+
 ## Code Generation
 
 ### LLVM Intermediate Representation
 
 ### Specific Optimization
+
+
 
 ## Compilation
 
