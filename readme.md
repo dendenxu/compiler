@@ -6,6 +6,8 @@ We'd only implement a subset of a subset of C. Don't even expect preprocessing.
 
 And **do remember to delete these lines after this repo goes public**
 
+[toc]
+
 ## Lexical Analysis
 
 ### Token Specification
@@ -146,7 +148,7 @@ t_ignore = ' \t'
 
 #### Line Number Memory
 
-To help the user pinpoint what's gone wrong the tokenization process, we "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
+To help the user pinpoint what's gone wrong the tokenization process, `ply` "remembers" every token's location (in terms of line number and token column), which will even be used in the later syntax analysis process.
 
 Specifically, we used `r'\n+'` to indicate newline(s)
 
@@ -194,7 +196,11 @@ Firstly, let's take a comprehensive look at our grammar:
 
 1. We *don't* implement preprocessing like **macros** and **includes**
 
+    - You cannot `#define` or `#include`
+
 2. We *don't* implement multi-file compilation, as a direct cause of the first rule
+
+    - You cannot `python nanoirgen.py a.c b.c c.c -o a.out`
 
 3. Thus we want a program to define the whole program (a single C source file)
 
@@ -259,6 +265,8 @@ Firstly, let's take a comprehensive look at our grammar:
         On a grammar level, this is expanded to be a bunch of variable definition and initialization to avoid a deep traversal into the actual AST
 
         *This optimization would be later illustrated in better detail in the next section*
+        
+    4. Note that type node should only be declared once in one declaration statement or declaration list, meaning `int * a, * b` is illegal, while `int *********** a, b, c=1, d` is OK 
 
 10. Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
 
@@ -266,53 +274,53 @@ Firstly, let's take a comprehensive look at our grammar:
 
 11. An expression falls in the following group:
 
-     1. **Binary Operations**: left hand side and right hand size operated by the operator
+      1. **Binary Operations**: left hand side and right hand size operated by the operator
 
-     2. **Unary Operations**: a single operator acted upon some other expression
+      2. **Unary Operations**: a single operator acted upon some other expression
 
-         We use **assignment operation** to simplify the use of `++`, `--` unary operators
+          We use **assignment operation** to simplify the use of `++`, `--` unary operators
 
-         These're simply reconstructed to `a = a + 1` (with assignment operation returning the assigned values)
+          These're simply reconstructed to `a = a + 1` (with assignment operation returning the assigned values)
 
-         *This optimization would be later illustrated in better detail in the next section*
+          *This optimization would be later illustrated in better detail in the next section*
 
-     3. **Ternary Operation(s)**: currently only supporting `?:` as ternary operators
+      3. **Ternary Operation(s)**: currently only supporting `?:` as ternary operators
 
-     4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as *left values*
+      4. **Assignment Expression**: the assignment of some `ID` or a dereferenced valid pointer `*(a+3)`, typically referred to as *left values*
 
-         Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Lexical Analysis) sections
+          Specific operators and their corresponding operations/precedence are defined in [Lexical Analysis](#Lexical Analysis) sections
 
-         Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
+          Note that we define the grammar from a **low to high** precedence order to account for their ambiguous order and associativity if not carefully specified.
 
-         - Note that **compound assignment** operations can be easily comprehended as a corresponding expression with a regular assignment operation: `<<=` `+=` `-=`, etc.
+          - Note that **compound assignment** operations can be easily comprehended as a corresponding expression with a regular assignment operation: `<<=` `+=` `-=`, etc.
 
-             *This optimization would be later illustrated in better detail in the next section*
+              *This optimization would be later illustrated in better detail in the next section*
 
-     5. **Function Calls** in the form of `ID(expression list)`
+      5. **Function Calls** in the form of `ID(expression list)`
 
-         You can also specify **no parameter**
+          You can also specify **no parameter**
 
-     6. **Array Subscription** in the form of `ID[expression]`
+      6. **Array Subscription** in the form of `ID[expression]`
 
-         In array definition (not an expression), you can also specify a set of empty bracket pairs, indicating a so-called "multidimensional array"
+          In array definition (not an expression), you can also specify a set of empty bracket pairs, indicating a so-called "multidimensional array"
 
-         **Although they're expected to be allocated as a continuous blob in the runtime memory**
+          **Although they're expected to be allocated as a continuous blob in the runtime memory**
 
 12. Expressions can be grouped by `(` and `)` to indicate their correspondence
 
-     As long as the grammar is unambiguous in this section, the programmer should be able to define arbitrarily complex expressions
+      As long as the grammar is unambiguous in this section, the programmer should be able to define arbitrarily complex expressions
 
 13. Expressions should also able to be downgraded to some specific stuff:
 
-     1. `ID` for identifiers, this can be variables or functions names
-     2. **integer constant** for some literal integers
-     3. **float constant** for some floating points
-     4. **character constant** wrapped with `''`
-     5. **string constant** wrapped with `""`
+      1. `ID` for identifiers, this can be variables or functions names
+      2. **integer constant** for some literal integers
+      3. **float constant** for some floating points
+      4. **character constant** wrapped with `''`
+      5. **string constant** wrapped with `""`
 
 14. We restrict that only **Unary Operation** can be used at the left side of an assignment. Though this restriction is far from achieving a true **valid left value** check, it would surely make the process of type checking less painful
 
-     *This optimization would be later illustrated in better detail in the next section*
+      *This optimization would be later illustrated in better detail in the next section*
 
 ### BNF Definition for the Nano C Language
 
@@ -479,9 +487,7 @@ p[0] = BinaryNode(BinaryNode(BinaryNode(p[2], p[1], BinaryNode(p[2], p[1], p[3])
 
 A nice visualization of this might be like:
 
-
-
-
+![binaryop](readme.assets/binaryop.svg)
 
 ### Actual Implementation
 
@@ -564,16 +570,176 @@ if __name__ == '__main__':
 3. `parser` is also built and automatically stored in a safe position `ply.yacc.parser`
 4. `root` is returned by the parser as the root of the AST, to be used by the intermediate representation generator
 5. `tree` is the simplified version (ready to be displayed with good visual look)
+6. We set up a server to receive the AST JSON object for mobility and compatibility for the visualization of the AST nodes
+7. `colored` from `termcolor` is applied extensively to give a visually pleasant command-line output
+8. `tree.json` will also be saved as a file for inspection
 
 
 
 ### Specific Optimizations
 
+#### Flattening
+
+We flatten declaration operations to make the actual IR generation a little bit less painful.
+
+- Given a list of declarations, initialized or not, we flatten all declarations into individual statements, so the compiler backend can uniformly take care of them
+
+    `int a, b, c;` would initially produce a list of declaration as `[DecNode, DecNode, DecNode]`
+
+    When the outer block is encountered, those expressions are flattened out as
+
+    `DecNode; DecNode; DecNode;`
+
+- This is implemented with the help of `BlockNode`
+
+    ```python
+    def p_block_stmt(self, p):
+        '''
+        block               : block curl_block
+                            | block statement
+        '''
+        if p[1] is None:
+            p[1] = BlockNode()
+        if isinstance(p[2], list):
+            for dec in p[2]:
+                p[1].append(dec)
+        else:
+            p[1].append(p[2])
+        p[0] = p[1]
+    ```
+
+
+The above implementation also illustrates other implementation of flattening listed grammar
+
+```python
+'''
+    block               : block curl_block
+                        | block statement
+                        |
+'''
+```
+
+is **left recursive**, thus the first block might just be `None`, and later all other blocks should be appended accordingly to whether we've already constructed a list from the first element.
+
+Similar optimization occurs when we're parsing **expression list** of function call/**parameter list** of function definition
+
+- **Expression List** in function call:
+
+    ```python
+    def p_exp_list(self, p):
+        '''
+        exp_list            : expression comma_exps
+        '''
+        if p[2] is None:
+            p[2] = []
+        p[2] = [p[1]] + p[2]
+        p[0] = p[2]
+
+    def p_comma_exp_list(self, p):
+        '''
+        comma_exps          : comma_exps COMMA expression
+        '''
+        if p[1] is None:
+            p[1] = []
+        p[1].append(p[3])
+        p[0] = p[1]
+    ```
+
+- **Parameter List** in function definition
+
+    ```python
+    #############################################################
+    #                     Function Definition                   #
+    #############################################################
+
+    def p_func_def(self, p):    
+        '''
+        function            : type id LPAREN param_list RPAREN curl_block
+        '''
+        p[0] = FuncNode(p[1], p[2], p[4], p[6])
+
+    def p_params(self, p):
+        '''
+        param_list          : type id comma_params
+        '''
+        param = ParamNode(p[1], p[2])
+        if p[3] is None:
+            p[3] = []
+        p[3] = [param] + p[3]
+        p[0] = p[3]
+
+    def p_comma_params(self, p):
+        '''
+        comma_params        : comma_params COMMA type id
+        '''
+        param = ParamNode(p[3], p[4])
+        if p[1] is None:
+            p[1] = []
+        p[1].append(param)
+        p[0] = p[1]
+    ```
+
+
+#### Preparations for Scope Resolution
+
+Every **block** of statements indicates a new name scope, whose resolution will be later talked about in the [Code Generation](#Code Generation) section
+
+Note that `BlockNode` is ***ABSTRACT***, meaning with the total removal of it, the compiler should still be able to work properly. The purpose of the aggregated node is to indicate nested scope creation
+
+- Thus, when parsing curly brackets pairs, we explicitly generate a `BlockNode` to mark the creation of a new scope
+
+- We also took care of `if-else-stmt` and `for-do-while-loop` statements, whose statement body is valid even when they've only got one individual statement
+
+    Those individual statement are also wrapped with an abstract `BlockNode`
+
+
+
+#### Abstraction of Complex Syntax
+
+For the compiler backend, `a += 1` is the same as `a = a + 1` and in our implementation, `a++` or `++a`
+
+So, when implementing similar relatively complex grammar, the parser automatically translates it to the format that the compiler recognizes
+
+Thus a simple `AssNode` (meaning, `Assignment Node`) can take care of all of these and free the IR from recognizing complex assignment and syntax sugar
+
+This is implemented as:
+
+```python
+#############################################################
+#                           Assignment                      #
+#############################################################
+
+def p_assignment(self, p):
+    '''
+    assignment          : unary EQUALS expression
+    unary               : PLUSPLUS unary
+                        | MINUSMINUS unary
+    postfix             : postfix PLUSPLUS
+                        | postfix MINUSMINUS
+    '''
+    if len(p) == 4:  # true assignment
+        p[0] = AssNode(p[1], p[3])
+    elif p[1] == "++":
+        p[0] = AssNode(p[2], BinaryNode('+', p[2], IntNode(1)))
+    elif p[1] == "--":
+        p[0] = AssNode(p[2], BinaryNode('-', p[2], IntNode(1)))
+    elif p[2] == "++":
+        p[0] = AssNode(p[1], BinaryNode('+', p[1], IntNode(1)))
+    elif p[2] == "--":
+        p[0] = AssNode(p[1], BinaryNode('-', p[1], IntNode(1)))
+```
+
+- [ ] Assignment
+
+
+
+
+
 ## Abstract Syntax Tree
 
-### Tree Node Design
+### Node Design
 
-### Tree Traversal (Optimization)
+### Tree Traversal
 
 ### Side Note: Python Hosted Server
 

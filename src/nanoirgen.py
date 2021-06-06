@@ -676,16 +676,16 @@ if __name__ == '__main__':
         print(colored(f"Abstract Syntax Tree:", "yellow", attrs=["bold"]))
         print(root)
 
-        # tree = traverse(root)
-        # addinfo(tree, args.input)
-        # payload = json.dumps(tree)
-        # if args.tree:
-        #     with open(args.tree, 'w') as f:
-        #         f.write(payload)
-        #     print(colored(f"Saved Structrued Tree to {args.tree}", 'yellow', attrs=['bold']))
+        tree = traverse(root)
+        addinfo(tree, args.input)
+        payload = json.dumps(tree)
+        if args.tree:
+            with open(args.tree, 'w') as f:
+                f.write(payload)
+            print(colored(f"Saved Structrued Tree to {args.tree}", 'yellow', attrs=['bold']))
 
-        # r = requests.post(url=args.url, data=payload)
-        # print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))
+        r = requests.post(url=args.url, data=payload)
+        print(colored(f"POST response: {r}", "yellow", attrs=["bold"]))
 
         # global tp_visitor
         visitor = ntp.tp_visitor = NanoVisitor()
