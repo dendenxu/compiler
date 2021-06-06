@@ -6,11 +6,11 @@
 
 
 
-- **Course Name:** Compiler Principle
+- **Course Name:** Compile Principle
 - **Student Name:** Feng Xiang, Wang Junzhe, Xu Zhen
 - **Student ID:** 3180103426, 3180103011, 3180105504
-- **Department:** Computer Science
-- **Major:** Computer Science
+- **Department:** Computer Science & Technology
+- **Major:** Computer Science & Technology
 - **Instructor:** Feng Yan
 
 
@@ -716,13 +716,13 @@ Similar optimization occurs when we're parsing **expression list** of function c
   #############################################################
   #                     Function Definition                   #
   #############################################################
-
+  
   def p_func_def(self, p):
       '''
       function            : type id LPAREN param_list RPAREN curl_block
       '''
       p[0] = FuncNode(p[1], p[2], p[4], p[6])
-
+  
   def p_params(self, p):
       '''
       param_list          : type id comma_params
@@ -732,7 +732,7 @@ Similar optimization occurs when we're parsing **expression list** of function c
           p[3] = []
       p[3] = [param] + p[3]
       p[0] = p[3]
-
+  
   def p_comma_params(self, p):
       '''
       comma_params        : comma_params COMMA type id
@@ -885,13 +885,13 @@ There's an ugly solution to this:
   ...
   ...
   state 196
-
+  
       (17) statement -> IF LPAREN expression RPAREN ctrl_block .
       (18) statement -> IF LPAREN expression RPAREN ctrl_block . ELSE ctrl_block
-
+  
     ! shift/reduce conflict for ELSE resolved as shift
       ELSE            shift and go to state 202
-
+  
     ! ELSE            [ reduce using rule 17 (statement -> IF LPAREN expression RPAREN ctrl_block .) ]
   ...
   ...
@@ -1867,7 +1867,7 @@ Test cases:
    ```
    // Conditional Operator
    ?
-
+   
    // Delimeters
    ( )
    [ ]
@@ -2080,7 +2080,7 @@ Obtaining the above results with enough complexity, we carefully examined each o
 
 ### §7.3 IR Generation and Execution
 
-#### checkpoint 1
+**Checkpoint** 1
 
 ```c
 /**
@@ -2096,7 +2096,7 @@ int main() {
 
 ![image-20210606214039710](./readme.assets/image-20210606214039710.png)
 
-#### checkpoint 2
+**Checkpoint** 2
 
 ```c
 /**
@@ -2116,7 +2116,7 @@ int main() {
 
 ![image-20210606214029210](./readme.assets/image-20210606214029210.png)
 
-#### checkpoint 3
+**Checkpoint** 3
 
 ```c
 /**
@@ -2136,7 +2136,7 @@ int main() {
 
 ![image-20210606214018531](./readme.assets/image-20210606214018531.png)
 
-#### checkpoint 4
+**Checkpoint** 4
 
 ```c
 /**
@@ -2158,7 +2158,7 @@ int main() {
 
 ![image-20210606214006372](./readme.assets/image-20210606214006372.png)
 
-#### checkpoint 5
+**Checkpoint** 5
 
 ```c
 /**
@@ -2176,7 +2176,7 @@ int main() {
 
 ![image-20210606213956059](./readme.assets/image-20210606213956059.png)
 
-#### checkpoint 6
+**Checkpoint** 6
 
 ```c
 /**
@@ -2203,7 +2203,7 @@ int main() {
 
 ![image-20210606213945661](./readme.assets/image-20210606213945661.png)
 
-#### checkpoint 7
+**Checkpoint** 7
 
 ```c
 /**
@@ -2229,7 +2229,7 @@ int main() {
 
 ![image-20210606213930583](./readme.assets/image-20210606213930583.png)
 
-#### checkpoint 8
+**Checkpoint** 8
 
 ```c
 /**
@@ -2266,7 +2266,7 @@ int main() {
 
 ![image-20210606213902148](./readme.assets/image-20210606213902148.png)
 
-#### checkpoint 9
+**Checkpoint** 9
 
 ```c
 /**
@@ -2294,7 +2294,7 @@ int main() {
 
 ![image-20210606213817850](./readme.assets/image-20210606213817850.png)
 
-#### checkpoint 10
+**Checkpoint** 10
 
 ```c
 /**
@@ -2326,7 +2326,7 @@ int main() {
 
 ![image-20210606213801033](./readme.assets/image-20210606213801033.png)
 
-#### checkpoint 11
+**Checkpoint** 11
 
 ```c
 /**
@@ -2363,7 +2363,7 @@ int main() {
 
 ![image-20210606213745784](./readme.assets/image-20210606213745784.png)
 
-#### checkpoint 12
+**Checkpoint** 12
 
 ```c
 /**
@@ -2450,7 +2450,7 @@ int main()
 
 ![image-20210606213723061](./readme.assets/image-20210606213723061.png)
 
-#### checkpoint 13
+**Checkpoint** 13
 
 ```c
 /**
@@ -2521,7 +2521,7 @@ int main() {
 
 ![image-20210606213708636](./readme.assets/image-20210606213708636.png)
 
-#### checkpoint 14
+**Checkpoint** 14
 
 ```c
 
@@ -2578,9 +2578,3 @@ int main(void)
 ```
 
 ![image-20210606213651435](./readme.assets/image-20210606213651435.png)
-
-
-## References
-
-- [PyCParser](https://github.com/eliben/pycparser)
-- `MiniDecaf`
