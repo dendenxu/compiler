@@ -1,6 +1,7 @@
 from argparse import RawDescriptionHelpFormatter, RawTextHelpFormatter
 from llvmlite import ir, binding
 from nanoast import *
+from nanoerror import *
 import re
 
 make_ptr = ir.PointerType
@@ -23,10 +24,8 @@ def typ(node: Node):
     elif type(node) in (FloatNode, IntNode, TypeNode, FuncNode):
         return node.type
     elif type(Node) == ArrSubNode:
-        print('here')
         return node.exp_type
     else:
-        print(type(node))
         raise NotImplementedError
 
 def nam(node: Node):
@@ -39,7 +38,6 @@ def nam(node: Node):
     elif type(node) == CallNode:
         return nam(node.id)
     else:
-        print(type(node))
         raise NotImplementedError
 
 def ref(node: Node):
@@ -54,8 +52,6 @@ def ref(node: Node):
     elif type(node) == BinaryNode:
         return node.value
     else:
-        print(type(node))
-        print(node)
         raise NotImplementedError
 
 def val(node: Node):
@@ -66,20 +62,21 @@ def val(node: Node):
             node.value = tp_visitor._get_builder().load(node.ref)
             return node.value
     else:
-        print(type(node))
         raise NotImplementedError
 
 def exp_type(node: Node) -> str:
     try:
+        if type(node) == EmptyExpNode:
+            node.exp_type = 'void'
         return node.exp_type
     except AttributeError as e:
         try:
             node.exp_type = str(typ(node))
             return node.exp_type
         except Exception as e:
-            print(node)
+            pass
     except NotImplementedError as e:
-        print(type(node))
+        pass
 
 binCompatDict = {
     #left       right      op       ret_type
@@ -202,17 +199,27 @@ binCompatDict = {
     ('float',   'i1',      '&&'):   'i1',
     ('i32*',    'i32',     '+' ):   'i32*',
     ('i32',     'i32*',    '+' ):   'i32*',
+    ('float*',  'i32',     '+' ):   'float*',
+    ('i32',     'float*',  '+' ):   'float*',
 }
 
 def binCompat(left: Node, right: Node, op: str):
     if not ((exp_type(left), exp_type(right), op) in binCompatDict.keys()):
         if exp_type(left) != exp_type(right):
-            print(exp_type(left), exp_type(right))
-            print(left, right)
-            raise RuntimeError("type mismatch")
+            tp_visitor.n_errors += 1
+            print(TMismatchError(exp_type(left), exp_type(right)))
+            tp_visitor._exit()
         ret_type = exp_type(left)
     else:
         ret_type = binCompatDict[exp_type(left),exp_type(right),op]
+    
+    if ret_type != exp_type(left):
+        tp_visitor.n_warnings += 1
+        print(TImplicitCastWarning(exp_type(left), ret_type))
+    if ret_type != exp_type(right):
+        tp_visitor.n_warnings += 1
+        print(TImplicitCastWarning(exp_type(right), ret_type))
+
         
     if exp_type(left) == 'i1' and exp_type(right) == 'i1' and op in ('+','-','*','/','%'):
         left.value = tp_visitor._get_builder().zext(val(left), int32)
@@ -235,7 +242,6 @@ def binCompat(left: Node, right: Node, op: str):
             left.value = tp_visitor._get_builder().icmp_signed('!=', val(left), ir.Constant(int32, 0))
         elif exp_type(left) == 'float':
             left.value = tp_visitor._get_builder().fcmp_ordered('!=', val(left), ir.Constant(flpt, 0))
-            
         if exp_type(right) == 'i32':
             right.value = tp_visitor._get_builder().icmp_signed('!=', val(right), ir.Constant(int32, 0))
         elif exp_type(right) == 'float':
@@ -251,17 +257,26 @@ allowed_casting = [
     ('float' , 'i32'  ),
     ('[@ x i32]*', 'i32*'),
     ('[@ x [@ x i32]]*', 'i32*'),
+    ('[@ x [@ x [@ x i32]]]*', 'i32*'),
+    ('[@ x float]*', 'float*'),
+    ('[@ x [@ x float]]*', 'float*'),
+    ('[@ x [@ x [@ x float]]]*', 'float*'),
 ]
 
 def cast(value, tgt_type: str, ref=None):
     src_type = str(value.type)
+    dep = 0
     if not ((src_type, tgt_type) in allowed_casting):
-        if not src_type.find('x'):
-            raise RuntimeError("unable to cast from %s to %s"%(src_type, tgt_type))
+        if not src_type.find(']'):
+            print(TCastError(src_type, tgt_type))
+            tp_visitor.n_errors += 1
+            tp_visitor._exit()
         src_type = re.sub(r'\[\d+', '[@', src_type)
         src_type += '*'
         if not ((src_type, tgt_type) in allowed_casting):
-            raise RuntimeError("unable to cast from %s to %s"%(src_type, tgt_type))
+            print(TCastError(src_type[:-1], tgt_type))
+            tp_visitor.n_errors += 1
+            tp_visitor._exit()
     if (src_type, tgt_type) == ('i1', 'i32'):
         return tp_visitor._get_builder().zext(value, int32)
     elif (src_type, tgt_type) == ('i32', 'float'):
@@ -280,3 +295,23 @@ def cast(value, tgt_type: str, ref=None):
         val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
                                                   ir.Constant(int32, 0),])
         return tp_visitor._get_builder().bitcast(val, make_ptr(int32))
+    elif (src_type, tgt_type) == ('[@ x [@ x [@ x i32]]]*', 'i32*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return val
+    elif (src_type, tgt_type) == ('[@ x float]*', 'float*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return val
+    elif (src_type, tgt_type) == ('[@ x [@ x float]]*', 'float*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return tp_visitor._get_builder().bitcast(val, make_ptr(int32))
+    elif (src_type, tgt_type) == ('[@ x [@ x [@ x float]]]*', 'float*'):
+        val = tp_visitor._get_builder().gep(ref, [ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),
+                                                  ir.Constant(int32, 0),])
+        return val
