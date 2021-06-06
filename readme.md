@@ -996,9 +996,39 @@ I believe you've all had that afternoon spent digging into your code trying to f
 
 ### §4.1 Name Resolution
 
+During compilation, our compiler associates identifiers such as the name of a variable with an address (memory location), datatype, or actual value. This process is called *binding*. The association lasts through all subsequent executions until a recompilation occurs, which might cause a rebinding. Before binding the names, our compiler must resolve all references to them in the compilation unit. This process is called *name resolution* Cour compiler considers all names to be in the same namespace. So, one declaration or definition in an inner scope can hide another in an outer scope.
+
+#### Scope Checking
+
+```python
+    def _get_identifier(self, name):
+        for d in self.scope_stack[::-1]:  # reversing the scope_block
+            if name in d:
+                return d[name]['ref']
+        return None
+```
+
+We use a scope stack to store the different symbol tables. We will recursively checking the scope from the last created scope to the oldest scope which is known as most recent variable matching rule.
+
+#### Binding Reference With Name
+
+```python
+def _add_identifier(self, name, reference, type):
+        if self.scope_stack == []:
+            return None
+        if name in self.scope_stack[-1]:
+            return None
+        self.scope_stack[-1][name] = {'ref': reference, 'typ': type}
+        return self.scope_stack[-1][name]
+```
+
+As we already have a scope stack, we can set the binding between name and reference by a python `dict` object and add the key-value to the latest scope.
+
 ### §4.2 Type Checking (L value Checking)
 
-Type checking happens at many places and operations.
+Type checking happens at many places and operations. 
+
+BinaryOperation:
 
 ```python
 binCompatDict = {
@@ -1129,7 +1159,7 @@ binCompatDict = {
 }
 ```
 
-
+TypeCasting:
 
 ```python
 allowed_casting = [
@@ -1146,8 +1176,6 @@ allowed_casting = [
     ('[@ x [@ x [@ x float]]]*', 'float*'),
 ]
 ```
-
-
 
 ## Chapter 5 - Code Generation
 
