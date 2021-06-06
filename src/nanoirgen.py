@@ -314,6 +314,7 @@ class NanoVisitor(Visitor):
             if node.init is not None:
                 node.init.accept(self)
                 node.item.initializer = val(node.init)
+            else:
                 self.n_warnings += 1
                 print(IGlobalNotInitWarning(nam(node.id)))
         else:

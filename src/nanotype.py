@@ -44,7 +44,8 @@ def ref(node: Node):
     if type(node) == FuncNode:
         return node.ref
     elif type(node) == IDNode:
-        return node.ref
+        return tp_visitor._get_identifier(node.name)
+        # return node.ref
     elif type(node) == UnaryNode:
         return node.ref
     elif type(node) == ArrSubNode:
@@ -265,6 +266,8 @@ allowed_casting = [
 
 def cast(value, tgt_type: str, ref=None):
     src_type = str(value.type)
+    if src_type == tgt_type:
+        return value
     dep = 0
     if not ((src_type, tgt_type) in allowed_casting):
         if not src_type.find(']'):
