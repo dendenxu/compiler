@@ -56,7 +56,7 @@ def ref(node: Node):
         raise NotImplementedError
 
 def val(node: Node):
-    if type(node) in (IDNode, CallNode, IntNode, FloatNode, BinaryNode, UnaryNode, ArrSubNode):
+    if type(node) in (IDNode, CallNode, IntNode, FloatNode, BinaryNode, UnaryNode, ArrSubNode, AssNode):
         try:
             return node.value
         except AttributeError as e:
@@ -208,7 +208,7 @@ def binCompat(left: Node, right: Node, op: str):
     if not ((exp_type(left), exp_type(right), op) in binCompatDict.keys()):
         if exp_type(left) != exp_type(right):
             tp_visitor.n_errors += 1
-            print(str(TMismatchError(exp_type(left), exp_type(right))) + f"at position (line {left._lineno}, col {left._colno})")
+            print(str(TMismatchError(exp_type(left), exp_type(right))) + f" at position (line {left._lineno}, col {left._colno})")
             tp_visitor._exit()
         ret_type = exp_type(left)
     else:
@@ -216,10 +216,10 @@ def binCompat(left: Node, right: Node, op: str):
     
     if ret_type != exp_type(left):
         tp_visitor.n_warnings += 1
-        print(str(TImplicitCastWarning(exp_type(left), ret_type)) + f"at position (line {left._lineno}, col {left._colno})")
+        print(str(TImplicitCastWarning(exp_type(left), ret_type)) + f" at position (line {left._lineno}, col {left._colno})")
     if ret_type != exp_type(right):
         tp_visitor.n_warnings += 1
-        print(str(TImplicitCastWarning(exp_type(right), ret_type)) + f"at position (line {left._lineno}, col {left._colno})")
+        print(str(TImplicitCastWarning(exp_type(right), ret_type)) + f" at position (line {left._lineno}, col {left._colno})")
 
         
     if exp_type(left) == 'i1' and exp_type(right) == 'i1' and op in ('+','-','*','/','%'):
@@ -271,13 +271,13 @@ def cast(value, tgt_type: str, ref=None, node=None):
     dep = 0
     if not ((src_type, tgt_type) in allowed_casting):
         if not src_type.find(']'):
-            print(str(TCastError(src_type, tgt_type)) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(TCastError(src_type, tgt_type)) + f" at position (line {node._lineno}, col {node._colno})")
             tp_visitor.n_errors += 1
             tp_visitor._exit()
         src_type = re.sub(r'\[\d+', '[@', src_type)
         src_type += '*'
         if not ((src_type, tgt_type) in allowed_casting):
-            print(str(TCastError(src_type[:-1], tgt_type)) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(TCastError(src_type[:-1], tgt_type)) + f" at position (line {node._lineno}, col {node._colno})")
             tp_visitor.n_errors += 1
             tp_visitor._exit()
     if (src_type, tgt_type) == ('i1', 'i32'):

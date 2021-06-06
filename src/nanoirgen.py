@@ -140,7 +140,7 @@ class NanoVisitor(Visitor):
         node.type = ir.FunctionType(typ(node.type), tuple(func_param_type_list))
         if self._get_func(nam(node)) is not None:
             self.n_errors += 1
-            print(str(IRedecFatal(nam(node))) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(IRedecFatal(nam(node))) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
             
         node.ref = ir.Function(self.module, typ(node), name=nam(node))
@@ -156,7 +156,7 @@ class NanoVisitor(Visitor):
             res = self._add_identifier(nam(node.params[i]), arg_ref, func_param_type_list[i])
             if res is None:
                 self.n_errors += 1
-                print(str(IRedecError(nam(node.params[i]))) + f"at position (line {node._lineno}, col {node._colno})")
+                print(str(IRedecError(nam(node.params[i]))) + f" at position (line {node._lineno}, col {node._colno})")
             self._get_builder().store(func_args[i], arg_ref)
 
         node.block.accept(self)
@@ -168,7 +168,7 @@ class NanoVisitor(Visitor):
             else:
                 self._get_builder().ret(ir.Constant(ret_type, 0))
             self.n_warnings += 1
-            print(str(IFuncExitWarning(nam(node))) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(IFuncExitWarning(nam(node))) + f" at position (line {node._lineno}, col {node._colno})")
 
         self._pop_builder()
         self._pop_block()
@@ -183,18 +183,18 @@ class NanoVisitor(Visitor):
         func_ref = self._get_func(nam(node))
         if func_ref is None:
             self.n_errors += 1
-            print(str(IUndecFatal(nam(node))) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(IUndecFatal(nam(node))) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
         func_args = list(func_ref.ftype.args)
         if len(func_ref.ftype.args) != len(call_func_args):
             self.n_errors += 1
-            print(str(IArgsLenUnmatchFatal(len(call_func_args),len(func_ref.ftype.args))) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(IArgsLenUnmatchFatal(len(call_func_args),len(func_ref.ftype.args))) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
         else:
             for i in range(len(call_func_args)):
                 if exp_type(node.params[i]) != str(func_args[i]):
                     self.n_errors += 1
-                    print(str(IArgsUnmatchFatal(exp_type(node.params[i]),str(func_args[i]))) + f"at position (line {node._lineno}, col {node._colno})")
+                    print(str(IArgsUnmatchFatal(exp_type(node.params[i]),str(func_args[i]))) + f" at position (line {node._lineno}, col {node._colno})")
                     self._exit()
         node.value = self._get_builder().call(func_ref, tuple(call_func_args))
         node.exp_type = str(func_ref.ftype.return_type)
@@ -208,7 +208,7 @@ class NanoVisitor(Visitor):
         node.suber.accept(self)
         if type(ref(node.subee).type.pointee) != ir.ArrayType:
             self.n_errors += 1
-            print(str(TMismatchError(str(ref(node.subee).type.pointee), 'arrayType')) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(TMismatchError(str(ref(node.subee).type.pointee), 'arrayType')) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
         node.ref = self._get_builder().gep(ref(node.subee),
                                            [ir.Constant(int32, 0),
@@ -242,7 +242,7 @@ class NanoVisitor(Visitor):
         cur_func_ret_type = str(self._get_func(self.cur_func_name).ftype.return_type)
         if exp_type(node.exp) != cur_func_ret_type:
             self.n_errors += 1
-            print(str(TMismatchError(exp_type(node.exp), cur_func_ret_type)) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(TMismatchError(exp_type(node.exp), cur_func_ret_type)) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
         if exp_type(node.exp) != 'void':
             self._get_builder().ret(val(node.exp))
@@ -253,7 +253,7 @@ class NanoVisitor(Visitor):
         item = self._get_identifier(node.name)
         if item is None:
             self.n_errors += 1
-            print(str(IUndecFatal(nam(node))) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(IUndecFatal(nam(node))) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
         node.ref = item
         node.type = item.type
@@ -308,7 +308,7 @@ class NanoVisitor(Visitor):
                 node.item = ir.GlobalVariable(self.module, node.type, nam(node.id))
             except Exception as e:
                 self.n_errors += 1
-                print(str(IRedecError(nam(node.id))) + f"at position (line {node._lineno}, col {node._colno})")
+                print(str(IRedecError(nam(node.id))) + f" at position (line {node._lineno}, col {node._colno})")
                 self._exit()
             node.item.linkage = 'internal'
             if node.init is not None:
@@ -316,7 +316,7 @@ class NanoVisitor(Visitor):
                 node.item.initializer = val(node.init)
             else:
                 self.n_warnings += 1
-                print(str(IGlobalNotInitWarning(nam(node.id))) + f"at position (line {node._lineno}, col {node._colno})")
+                print(str(IGlobalNotInitWarning(nam(node.id))) + f" at position (line {node._lineno}, col {node._colno})")
         else:
             node.item = self._get_builder().alloca(node.type)
             if node.init is not None:
@@ -325,7 +325,7 @@ class NanoVisitor(Visitor):
         res = self._add_identifier(nam(node.id), node.item, node.type)
         if res is None:
             self.n_errors += 1
-            print(str(IRedecError(nam(node.id))) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(IRedecError(nam(node.id))) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
 
     def visitAssNode(self, node: AssNode):
@@ -333,10 +333,11 @@ class NanoVisitor(Visitor):
         node.exp.accept(self)
         if exp_type(node.exp) != exp_type(node.unary):
             self.n_errors += 1
-            print(str(TMismatchError(exp_type(node.exp), exp_type(node.unary))) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(TMismatchError(exp_type(node.exp), exp_type(node.unary))) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
         node.value = val(node.exp)
         self._get_builder().store(node.value, ref(node.unary))
+        node.exp_type = exp_type(node.unary)
 
     def visitContinueNode(self, node: ContinueNode):
         self._get_builder().branch(self.loop_entr_stack[-1])
@@ -652,7 +653,7 @@ class NanoVisitor(Visitor):
                 val(node.left), [val(node.right)])
         else:
             self.n_errors += 1
-            print(str(TMismatchError(exp_type(node.left), exp_type(node.right))) + f"at position (line {node._lineno}, col {node._colno})")
+            print(str(TMismatchError(exp_type(node.left), exp_type(node.right))) + f" at position (line {node._lineno}, col {node._colno})")
             self._exit()
             raise NotImplementedError
 
