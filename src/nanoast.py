@@ -13,6 +13,13 @@ class Node(object):
 
     def __init__(self):
         self._indentLevel = 0
+        self._lineno = self._colno = 0
+        self.lineno = self.colno = 0
+
+    def update_pos(self, line: int, col: int):
+        self._lineno = line
+        self._colno = col
+        self.lineno, self.colno = line, col
 
     def accept(self, visitor: NanoVisitor):
         pass
@@ -82,7 +89,7 @@ class StringNode(EmptyLiteralNode):
         self.value = value
 
     def __str__(self):
-        return f"{self.__class__.__name__}({self.value})"
+        return f"{self.__class__.__name__}(\"{self.value}\")"
 
 
 #############################################################
@@ -134,6 +141,7 @@ class FuncNode(Node):
     def __str__(self):
         self.block._indentLevel = self._indentLevel + 1
         return self.TABSTR * self._indentLevel + colored(f"{self.__class__.__name__}", color='green', attrs=['bold']) + \
+            colored(f'{self._lineno, self._colno}', 'red') + \
             f"( {self.type} {self.id}( {', '.join(list(map(str, self.params)))} )" + \
             f" {{ {self.block}\n" + self.TABSTR * self._indentLevel + "} )EndFunc\n" + self.TABSTR
 

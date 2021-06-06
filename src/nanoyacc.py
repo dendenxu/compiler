@@ -126,6 +126,7 @@ class NanoParser():
         '''
         if p[1] is None:
             p[1] = ProgNode()
+            p[1].update_pos(p.lineno(0), self._find_tok_column(p.lexpos(0)))
         if isinstance(p[2], list):
             for dec in p[2]:
                 p[1].append(dec)
@@ -142,12 +143,14 @@ class NanoParser():
         function            : type id LPAREN param_list RPAREN curl_block
         '''
         p[0] = FuncNode(p[1], p[2], p[4], p[6])
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_params(self, p):
         '''
         param_list          : type id comma_params
         '''
         param = ParamNode(p[1], p[2])
+        param.update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
         if p[3] is None:
             p[3] = []
         p[3] = [param] + p[3]
@@ -158,6 +161,7 @@ class NanoParser():
         comma_params        : comma_params COMMA type id
         '''
         param = ParamNode(p[3], p[4])
+        param.update_pos(p.lineno(3), self._find_tok_column(p.lexpos(3)))
         if p[1] is None:
             p[1] = []
         p[1].append(param)
@@ -180,6 +184,7 @@ class NanoParser():
         # control block should wrap up the single statment as a block
         # for scope construction
         p[0] = BlockNode(p[1])
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_block_stmt(self, p):
         '''
@@ -188,6 +193,7 @@ class NanoParser():
         '''
         if p[1] is None:
             p[1] = BlockNode()
+            p[1].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
         if isinstance(p[2], list):
             for dec in p[2]:
                 p[1].append(dec)
@@ -225,7 +231,9 @@ class NanoParser():
             dec = p[1]
             p[1] = []
             p[1].append(dec)
-        p[1].append(DecNode(None, p[3], p[4], p[5]))
+        dec = DecNode(None, p[3], p[4], p[5])
+        dec.update_pos(p.lineno(3), self._find_tok_column(p.lexpos(3)))
+        p[1].append(dec)
         p[0] = p[1]
 
     def p_dec_init(self, p):
@@ -233,6 +241,7 @@ class NanoParser():
         dec_list            : id array_list typeinit
         '''
         p[0] = DecNode(None, p[1], p[2], p[3])
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     #############################################################
     #                      Single Statements                    #
@@ -243,24 +252,28 @@ class NanoParser():
         statement           : RETURN empty_or_exp SEMI
         '''
         p[0] = RetNode(p[2])
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_break_stmt(self, p):
         '''
         statement           : BREAK SEMI
         '''
         p[0] = BreakNode()
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_continue_stmt(self, p):
         '''
         statement           : CONTINUE SEMI
         '''
         p[0] = ContinueNode()
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_stmt_empty(self, p):
         '''
         statement           : SEMI
         '''
         p[0] = EmptyStmtNode()  # empty statment node
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     #############################################################
     #                         Control Flow                      #
@@ -276,18 +289,21 @@ class NanoParser():
             p[0] = IfStmtNode(p[3], p[5], p[7])  # with else statement
         else:
             p[0] = IfStmtNode(p[3], p[5], EmptyStmtNode())  # no else statement
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_while_stmt(self, p):
         '''
         statement           : WHILE LPAREN expression RPAREN ctrl_block
         '''
         p[0] = LoopNode(EmptyStmtNode(), p[3], p[5], EmptyStmtNode())  # simple while loop
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_do_while_stmt(self, p):
         '''
         statement           : DO ctrl_block WHILE LPAREN expression RPAREN SEMI
         '''
         p[0] = LoopNode(p[2], p[3], p[5], EmptyStmtNode())  # simple do-while loop
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_for_stmt(self, p):
         '''
@@ -296,6 +312,7 @@ class NanoParser():
         # assuming a BlockNode from for_init
         init = p[3]
         p[0] = LoopNode(init[0], init[1], p[5], init[2])
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_for_init(self, p):
         '''
@@ -330,12 +347,14 @@ class NanoParser():
         empty_or_exp             : 
         '''
         p[0] = EmptyExpNode()  # empty expression node
+        p[0].update_pos(p.lineno(0), self._find_tok_column(p.lexpos(0)))
 
     def p_cond_exp(self, p):
         '''
         conditional         : logical_or CONDOP expression COLON conditional
         '''
         p[0] = TernaryNode(p[1], p[2], p[3], p[4], p[5])
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     #############################################################
     #                           Assignment                      #
@@ -351,14 +370,17 @@ class NanoParser():
         '''
         if len(p) == 4:  # true assignment
             p[0] = AssNode(p[1], p[3])
-        elif p[1] == "++":
-            p[0] = AssNode(p[2], BinaryNode('+', p[2], IntNode(1)))
-        elif p[1] == "--":
-            p[0] = AssNode(p[2], BinaryNode('-', p[2], IntNode(1)))
-        elif p[2] == "++":
-            p[0] = AssNode(p[1], BinaryNode('+', p[1], IntNode(1)))
-        elif p[2] == "--":
-            p[0] = AssNode(p[1], BinaryNode('-', p[1], IntNode(1)))
+        else:
+            if p[1] == "++":
+                p[0] = AssNode(p[2], BinaryNode('+', p[2], IntNode(1)))
+            elif p[1] == "--":
+                p[0] = AssNode(p[2], BinaryNode('-', p[2], IntNode(1)))
+            elif p[2] == "++":
+                p[0] = AssNode(p[1], BinaryNode('+', p[1], IntNode(1)))
+            elif p[2] == "--":
+                p[0] = AssNode(p[1], BinaryNode('-', p[1], IntNode(1)))
+            p[0].exp.update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_unary_op(self, p):
         '''
@@ -374,6 +396,7 @@ class NanoParser():
             p[0] = UnaryNode(p[1], p[2])
         else:
             p[0] = UnaryNode(p[2], p[4])  # note that p[2] is a TypeNode for type casting
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     #############################################################
     #                  Arithmetic/Logical Operations            #
@@ -401,6 +424,8 @@ class NanoParser():
                             | multiplicative MOD unary
         '''
         p[0] = BinaryNode(p[2], p[1], p[3])
+        # Using pos of OP as the pos of the binary exp
+        p[0].update_pos(p.lineno(2), self._find_tok_column(p.lexpos(2)))
 
     #############################################################
     #                     Array Subscription                    #
@@ -411,6 +436,7 @@ class NanoParser():
         postfix             : postfix LBRACKET expression RBRACKET
         '''
         p[0] = ArrSubNode(p[1], p[3])
+        p[0].update_pos(p.lineno(2), self._find_tok_column(p.lexpos(2)))
 
     #############################################################
     #                       Function Call                       #
@@ -421,6 +447,7 @@ class NanoParser():
         postfix             : id LPAREN exp_list RPAREN
         '''
         p[0] = CallNode(p[1], p[3])
+        p[0].update_pos(p.lineno(2), self._find_tok_column(p.lexpos(2)))
 
     def p_exp_list(self, p):
         '''
@@ -455,32 +482,39 @@ class NanoParser():
         primary             : INT_CONST_DEC
         '''
         p[0] = IntNode(int(p[1]))
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_prim_float(self, p):
         '''
         primary             : FLOAT_CONST
         '''
         p[0] = FloatNode(float(p[1]))
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_prim_char(self, p):
         '''
         primary             : CHAR_CONST
         '''
         p[0] = CharNode(p[1])
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     def p_prim_string(self, p):
         '''
         primary             : STRING_LITERAL
         '''
         p[0] = StringNode(str(p[1]))
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     #############################################################
     #                        Name Resolution                    #
     #############################################################
 
     def p_id(self, p):
-        "id : ID"
+        '''
+        id                  : ID
+        '''
         p[0] = IDNode(p[1])
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     #############################################################
     #                        Type Resolution                    #
@@ -497,6 +531,7 @@ class NanoParser():
                             | type TIMES
         '''
         p[0] = TypeNode(p[1])  # nested type: pointers
+        p[0].update_pos(p.lineno(1), self._find_tok_column(p.lexpos(1)))
 
     ########################################################
     ###                                                  ###
@@ -522,6 +557,7 @@ class NanoParser():
         block               :
         '''
         p[0] = BlockNode()
+        p[0].update_pos(p.lineno(0), self._find_tok_column(p.lexpos(0)))
 
     def p_empty_list(self, p):
         '''
@@ -569,9 +605,19 @@ class NanoParser():
     #                      Syntax Error Rules                   #
     #############################################################
 
+    def _find_tok_column(self, lexpos):
+        """ Find the column of the given lexpos in its line.
+            lexer.lexdata points to the input
+        """
+        # last_cr = self.lexer.lexdata.rfind('\n', 0, token.lexpos)
+        last_cr = lex.lexer.lexdata.rfind('\n', 0, lexpos)
+        return lexpos - last_cr
+
     def p_error(self, p):
         # with a syntax error, the token should contain corresponding location
-        print(colored("Error: ", "red")+"Syntax error when parsing "+str(p))
+        errLine = p.lineno(0)
+        errCol = self._find_tok_column(p.lexpos(0))
+        print(colored(f"Error {errLine, errCol}:", "red") + "Syntax error when parsing " + str(p))
 
     #############################################################
     #                      External Functions                   #
@@ -579,13 +625,13 @@ class NanoParser():
 
     def parse(self, input, **kwargs) -> Node:
         try:
-            return self.parser.parse(input, **kwargs)
+            return self.parser.parse(input, tracking=True, **kwargs)
         except Exception as e:
             traceback.print_exc()
             print(colored("Error: ", "red")+f"{e}")
 
     def build(self, **kwargs):
-        self.parser = yacc.yacc(module=self, **kwargs)
+        self.parser = yacc.yacc(module=self, start='program', **kwargs)
 
     tokens = NanoLexer.tokens
 
@@ -609,8 +655,8 @@ if __name__ == '__main__':
         print(root)
 
         tree = traverse(root)
-        print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
-        print(tree)
+        # print(colored("Structrued Tree: ", 'yellow', attrs=['bold']))
+        # print(tree)
         addinfo(tree, args.input)
         payload = json.dumps(tree)
 
