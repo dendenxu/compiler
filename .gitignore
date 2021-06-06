@@ -6,3 +6,4 @@ parsetab.py
 trash/
 results/
 *tree.json
+*tree.svg
