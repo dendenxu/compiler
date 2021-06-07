@@ -39,3 +39,6 @@ these are four Identifiers
 { }
 . ,
 ; :
+
+// Illegal Operators
+# @
