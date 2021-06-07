@@ -177,7 +177,20 @@ class EmptyExpNode(Node):
         return f"{self.__class__.__name__}()"
 
 
-class ArrSubNode(Node):
+class AssNode(EmptyExpNode):
+
+    def __init__(self, unary: UnaryNode, exp: EmptyExpNode):
+        super().__init__()
+        self.unary, self.exp = unary, exp
+
+    def __str__(self):
+        return f"{self.__class__.__name__}( {self.unary} = {self.exp} )"
+
+    def accept(self, visitor: NanoVisitor):
+        return visitor.visitAssNode(self)
+
+
+class ArrSubNode(EmptyExpNode):
     def __init__(self, subee: UnaryNode, suber: UnaryNode):
         super().__init__()
         self.subee, self.suber = subee, suber
@@ -273,19 +286,6 @@ class BlockNode(EmptyStmtNode):
 
     def accept(self, visitor: NanoVisitor):
         return visitor.visitBlockNode(self)
-
-
-class AssNode(EmptyStmtNode):
-
-    def __init__(self, unary: UnaryNode, exp: EmptyExpNode):
-        super().__init__()
-        self.unary, self.exp = unary, exp
-
-    def __str__(self):
-        return f"{self.__class__.__name__}( {self.unary} = {self.exp} )"
-
-    def accept(self, visitor: NanoVisitor):
-        return visitor.visitAssNode(self)
 
 
 class DecNode(EmptyStmtNode):
